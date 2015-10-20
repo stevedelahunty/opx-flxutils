@@ -73,7 +73,7 @@ type Machine struct {
 // ProcessEvent will attemt to call a callback based on
 // the current state of the machine and the event passed in
 // dbdata will be called as an input to the callback func
-func (m Machine) ProcessEvent(e Event, cbdata interface{}) error {
+func (m *Machine) ProcessEvent(e Event, cbdata interface{}) error {
 
 	if !m.Begin {
 		return ErrorMachineNotStarted
@@ -85,7 +85,8 @@ func (m Machine) ProcessEvent(e Event, cbdata interface{}) error {
 		// save off current event
 		m.Curr.SetEvent(e)
 		// callbacks responsibility to return current state
-		m.Curr.SetState(f(m, cbdata))
+		m.Curr.SetState(f(*m, cbdata))
+		return nil
 	}
 
 	return InvalidStateEvent
@@ -94,9 +95,10 @@ func (m Machine) ProcessEvent(e Event, cbdata interface{}) error {
 // Start initializes the state machine with
 // an initial state and allows for processing of events
 // to occur
-func (m Machine) Start(s State) {
+func (m *Machine) Start(s State) bool {
 	m.Curr.SetState(s)
 	m.Begin = true
+	return m.Begin
 }
 
 // New initializes a machine
