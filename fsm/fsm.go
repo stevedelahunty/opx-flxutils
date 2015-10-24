@@ -59,6 +59,11 @@ type MachineState interface {
 	CurrentEvent() Event
 	SetState(State)
 	SetEvent(Event)
+	LoggerSet(func(string))
+	IsLoggerEna() bool
+	EnableLogging(bool)
+	StateStrMapSet(map[State]string)
+	// TODO History(State, Event)
 }
 
 // Machine is a pairing of Rules and a Subject.
