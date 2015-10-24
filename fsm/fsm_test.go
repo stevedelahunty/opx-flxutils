@@ -21,6 +21,11 @@ func (se *MyStateEvent) CurrentEvent() fsm.Event { return se.Event }
 func (se *MyStateEvent) SetState(s fsm.State)    { se.State = s }
 func (se *MyStateEvent) SetEvent(e fsm.Event)    { se.Event = e }
 
+func (se *MyStateEvent) LoggerSet(log func(string))                 {}
+func (se *MyStateEvent) EnableLogging(ena bool)                     {}
+func (se *MyStateEvent) IsLoggerEna() bool                          { return false }
+func (se *MyStateEvent) StateStrMapSet(strMap map[fsm.State]string) {}
+
 const (
 	exampleState1 = iota
 	exampleState2
