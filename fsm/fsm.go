@@ -57,8 +57,15 @@ func (r Ruleset) AddRule(s State, e Event, cb Callback) error {
 type MachineState interface {
 	CurrentState() State
 	CurrentEvent() Event
+	PreviousState() State
+	PreviousEvent() Event
 	SetState(State)
 	SetEvent(Event)
+	LoggerSet(func(string))
+	IsLoggerEna() bool
+	EnableLogging(bool)
+	StateStrMapSet(map[State]string)
+	// TODO History(State, Event)
 }
 
 // Machine is a pairing of Rules and a Subject.
