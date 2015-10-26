@@ -12,14 +12,18 @@ type MyFSM struct {
 }
 
 type MyStateEvent struct {
-	State fsm.State
-	Event fsm.Event
+	PrevState fsm.State
+	PrevEvent fsm.Event
+	State     fsm.State
+	Event     fsm.Event
 }
 
-func (se *MyStateEvent) CurrentState() fsm.State { return se.State }
-func (se *MyStateEvent) CurrentEvent() fsm.Event { return se.Event }
-func (se *MyStateEvent) SetState(s fsm.State)    { se.State = s }
-func (se *MyStateEvent) SetEvent(e fsm.Event)    { se.Event = e }
+func (se *MyStateEvent) CurrentState() fsm.State  { return se.State }
+func (se *MyStateEvent) CurrentEvent() fsm.Event  { return se.Event }
+func (se *MyStateEvent) PreviousState() fsm.State { return se.State }
+func (se *MyStateEvent) PreviousEvent() fsm.Event { return se.Event }
+func (se *MyStateEvent) SetState(s fsm.State)     { se.State = s }
+func (se *MyStateEvent) SetEvent(e fsm.Event)     { se.Event = e }
 
 func (se *MyStateEvent) LoggerSet(log func(string))                 {}
 func (se *MyStateEvent) EnableLogging(ena bool)                     {}

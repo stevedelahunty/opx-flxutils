@@ -57,6 +57,8 @@ func (r Ruleset) AddRule(s State, e Event, cb Callback) error {
 type MachineState interface {
 	CurrentState() State
 	CurrentEvent() Event
+	PreviousState() State
+	PreviousEvent() Event
 	SetState(State)
 	SetEvent(Event)
 	LoggerSet(func(string))
