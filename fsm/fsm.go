@@ -17,9 +17,9 @@ type Key struct {
 type Callback func(m Machine, data interface{}) State
 
 var (
-	ErrorMachineNotStarted       = errors.New("FSM: Start() not called")
-	InvalidStateEvent            = errors.New("FSM: Invalid FSM State-Event")
-	ErrorMachineStateEventExists = errors.New("FSM: FSM State-Event already exists. FSM only supports one callback")
+	ErrorMachineNotStarted       = errors.New("FSM: ERROR Start() not called")
+	InvalidStateEvent            = errors.New("FSM: ERROR Invalid FSM State-Event")
+	ErrorMachineStateEventExists = errors.New("FSM: ERROR FSM State-Event already exists. FSM only supports one callback")
 )
 
 // StateEvent is the key to callbacks
@@ -60,7 +60,7 @@ type MachineState interface {
 	PreviousState() State
 	PreviousEvent() Event
 	SetState(State)
-	SetEvent(Event)
+	SetEvent(string, Event)
 	LoggerSet(func(string))
 	IsLoggerEna() bool
 	EnableLogging(bool)
@@ -80,7 +80,7 @@ type Machine struct {
 // ProcessEvent will attemt to call a callback based on
 // the current state of the machine and the event passed in
 // dbdata will be called as an input to the callback func
-func (m *Machine) ProcessEvent(e Event, cbdata interface{}) error {
+func (m *Machine) ProcessEvent(es string, e Event, cbdata interface{}) error {
 
 	if !m.Begin {
 		return ErrorMachineNotStarted
@@ -90,7 +90,7 @@ func (m *Machine) ProcessEvent(e Event, cbdata interface{}) error {
 
 	if f, ok := r[k]; ok {
 		// save off current event
-		m.Curr.SetEvent(e)
+		m.Curr.SetEvent(es, e)
 		// callbacks responsibility to return current state
 		m.Curr.SetState(f(*m, cbdata))
 		return nil

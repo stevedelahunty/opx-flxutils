@@ -18,12 +18,12 @@ type MyStateEvent struct {
 	Event     fsm.Event
 }
 
-func (se *MyStateEvent) CurrentState() fsm.State  { return se.State }
-func (se *MyStateEvent) CurrentEvent() fsm.Event  { return se.Event }
-func (se *MyStateEvent) PreviousState() fsm.State { return se.State }
-func (se *MyStateEvent) PreviousEvent() fsm.Event { return se.Event }
-func (se *MyStateEvent) SetState(s fsm.State)     { se.State = s }
-func (se *MyStateEvent) SetEvent(e fsm.Event)     { se.Event = e }
+func (se *MyStateEvent) CurrentState() fsm.State         { return se.State }
+func (se *MyStateEvent) CurrentEvent() fsm.Event         { return se.Event }
+func (se *MyStateEvent) PreviousState() fsm.State        { return se.State }
+func (se *MyStateEvent) PreviousEvent() fsm.Event        { return se.Event }
+func (se *MyStateEvent) SetState(s fsm.State)            { se.State = s }
+func (se *MyStateEvent) SetEvent(es string, e fsm.Event) { se.Event = e }
 
 func (se *MyStateEvent) LoggerSet(log func(string))                 {}
 func (se *MyStateEvent) EnableLogging(ena bool)                     {}
@@ -51,7 +51,7 @@ func TestProcessEventNoStartCalled(t *testing.T) {
 	myFsm := &MyFSM{FSM: &fsm.Machine{Curr: &MyStateEvent{},
 		Rules: &rules}}
 
-	rv := myFsm.FSM.ProcessEvent(exampleEvent1, nil)
+	rv := myFsm.FSM.ProcessEvent("FSM", exampleEvent1, nil)
 	if rv != fsm.ErrorMachineNotStarted {
 		t.Error("Expected Error", fsm.ErrorMachineNotStarted)
 	}
@@ -102,7 +102,7 @@ func TestProcessEventBadEventForGivenState(t *testing.T) {
 	begin := myFsm.FSM.Start(exampleState1)
 	fmt.Println("Begin", begin)
 
-	rv := myFsm.FSM.ProcessEvent(exampleEvent2, nil)
+	rv := myFsm.FSM.ProcessEvent("FSM", exampleEvent2, nil)
 	if rv != fsm.InvalidStateEvent {
 		t.Error("Expected Error", fsm.InvalidStateEvent, "\nActual", rv)
 	}
@@ -131,7 +131,7 @@ func TestProcessEventGoodStateTransition(t *testing.T) {
 	myFsm.FSM.Start(exampleState1)
 
 	// First transition
-	rv := myFsm.FSM.ProcessEvent(exampleEvent1, nil)
+	rv := myFsm.FSM.ProcessEvent("FSM", exampleEvent1, nil)
 	if rv != nil {
 		t.Error("Expected no error")
 	}
@@ -143,7 +143,7 @@ func TestProcessEventGoodStateTransition(t *testing.T) {
 	}
 
 	// Second transition
-	rv2 := myFsm.FSM.ProcessEvent(exampleEvent2, nil)
+	rv2 := myFsm.FSM.ProcessEvent("FSM", exampleEvent2, nil)
 	if rv2 != nil {
 		t.Error("Expected no error")
 	}
