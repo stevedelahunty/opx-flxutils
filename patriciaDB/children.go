@@ -52,13 +52,13 @@ func (list *sparseChildList) head() *Trie {
 
 func (list *sparseChildList) add(child *Trie) childList {
 	// Search for an empty spot and insert the child if possible.
-	if len(list.children) != cap(list.children) {
+	//if len(list.children) != cap(list.children) {
 		list.children = append(list.children, child)
 		return list
-	}
+	//}
 
 	// Otherwise we have to transform to the dense list type.
-	return newDenseChildList(list, child)
+	//return newDenseChildList(list, child)
 }
 
 func (list *sparseChildList) replace(b byte, child *Trie) {

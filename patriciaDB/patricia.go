@@ -10,7 +10,7 @@ import (
 
 const (
 	DefaultMaxPrefixPerNode         = 4
-	DefaultMaxChildrenPerSparseNode = 8
+	DefaultMaxChildrenPerSparseNode = 2
 )
 
 type    Prefix      []byte
@@ -79,7 +79,7 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 	var leftover Prefix
     //trie.dump();
 	root = trie
-	var prefixlen int
+	var prefixlen, lastNonNilPrefix int
 	//fmt.Printf("get longest prefixnode")
 	for {
 		// Compute what part of prefix matches.
@@ -89,6 +89,10 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 		}
 		common := root.longestCommonPrefixLength(prefix)
         prefixlen = prefixlen + common
+	    node := trie.Get(inpPrefix[:prefixlen])
+        if(node != nil) {
+	      lastNonNilPrefix = prefixlen
+		}
 		prefix = prefix[common:]
 
 		// We used up the whole prefix, subtree found.
@@ -117,7 +121,7 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 		root = child
 	}
 	//fmt.Printf("After for loop, prefixlen = %d\n", prefixlen)
-	node := trie.Get(inpPrefix[:prefixlen])
+	node := trie.Get(inpPrefix[:lastNonNilPrefix])
     if(node != nil) {
 	   return node
 	} else {
