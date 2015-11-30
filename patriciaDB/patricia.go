@@ -22,8 +22,8 @@ type Trie struct {
 	prefix Prefix
 	item   Item
 
-	maxPrefixPerNode         int
-	maxChildrenPerSparseNode int
+//	maxPrefixPerNode         int8
+//	maxChildrenPerSparseNode int8
 
 	children childList
 }
@@ -31,13 +31,13 @@ type Trie struct {
 func NewTrie() *Trie {
 	trie := &Trie{}
 
-	if trie.maxPrefixPerNode <= 0 {
+	/*if trie.maxPrefixPerNode <= 0 {
 		trie.maxPrefixPerNode = DefaultMaxPrefixPerNode
 	}
 	if trie.maxChildrenPerSparseNode <= 0 {
 		trie.maxChildrenPerSparseNode = DefaultMaxChildrenPerSparseNode
-	}
-	trie.children = newSparseChildList(trie.maxChildrenPerSparseNode)
+	}*/
+	trie.children = newSparseChildList(DefaultMaxChildrenPerSparseNode)//trie.maxChildrenPerSparseNode)
 	return trie
 }
 
@@ -59,9 +59,9 @@ func (trie *Trie) Set(key Prefix, item Item) {
 	trie.put(key, item, true)
 }
 
-func (trie *Trie) total() int {
+/*func (trie *Trie) total() int {
 	return 1 + trie.children.total()
-}
+}*/
 
 // Get returns the item located at key.
 //
@@ -208,7 +208,7 @@ func (trie *Trie) empty() bool {
 
 func (trie *Trie) reset() {
 	trie.prefix = nil
-	trie.children = newSparseChildList(trie.maxPrefixPerNode)
+	trie.children = newSparseChildList(DefaultMaxPrefixPerNode)//trie.maxPrefixPerNode)
 }
 
 func (trie *Trie) put(key Prefix, item Item, replace bool) (inserted bool) {
@@ -224,12 +224,12 @@ func (trie *Trie) put(key Prefix, item Item, replace bool) (inserted bool) {
 	)
 
 	if node.prefix == nil {
-		if len(key) <= trie.maxPrefixPerNode {
+		if len(key) <= DefaultMaxPrefixPerNode {//trie.maxPrefixPerNode {
 			node.prefix = key
 			goto InsertItem
 		}
-		node.prefix = key[:trie.maxPrefixPerNode]
-		key = key[trie.maxPrefixPerNode:]
+		node.prefix = key[:DefaultMaxPrefixPerNode]//trie.maxPrefixPerNode]
+		key = key[DefaultMaxPrefixPerNode:]//trie.maxPrefixPerNode:]
 		goto AppendChild
 	}
 
@@ -273,14 +273,14 @@ AppendChild:
 	// This loop starts with empty node.prefix that needs to be filled.
 	for len(key) != 0 {
 		child := NewTrie()
-		if len(key) <= trie.maxPrefixPerNode {
+		if len(key) <= DefaultMaxPrefixPerNode{//trie.maxPrefixPerNode {
 			child.prefix = key
 			node.children = node.children.add(child)
 			node = child
 			goto InsertItem
 		} else {
-			child.prefix = key[:trie.maxPrefixPerNode]
-			key = key[trie.maxPrefixPerNode:]
+			child.prefix = key[:DefaultMaxPrefixPerNode]//:trie.maxPrefixPerNode]
+			key = key[DefaultMaxPrefixPerNode:]//trie.maxPrefixPerNode:]
 			node.children = node.children.add(child)
 			node = child
 		}
@@ -311,7 +311,7 @@ func (trie *Trie) compact() *Trie {
 	}
 
 	// Make sure the combined prefixes fit into a single node.
-	if len(trie.prefix)+len(child.prefix) > trie.maxPrefixPerNode {
+	if len(trie.prefix)+len(child.prefix) > DefaultMaxPrefixPerNode {//trie.maxPrefixPerNode {
 		return trie
 	}
 
@@ -401,7 +401,7 @@ func (trie *Trie) dump() string {
 func (trie *Trie) print(writer io.Writer, indent int) {
 	//fmt.Fprintf(writer, "%s%s %v\n", strings.Repeat(" ", indent), string(trie.prefix), trie.item)
 	fmt.Printf("%s%s %v\n", strings.Repeat(" ", indent), string(trie.prefix), trie.item)
-	trie.children.print(writer, indent+2)
+	//trie.children.print(writer, indent+2)
 }
 
 // Errors ----------------------------------------------------------------------

@@ -1,7 +1,7 @@
 package patriciaDB
 
 import (
-	"io"
+//	"io"
 	"sort"
 )
 
@@ -13,8 +13,8 @@ type childList interface {
 	remove(child *Trie)
 	next(b byte) *Trie
 	walk(prefix *Prefix, visitor VisitorFunc) error
-	print(w io.Writer, indent int)
-	total() int
+	//print(w io.Writer, indent int)
+	//total() int
 }
 
 type tries []*Trie
@@ -122,7 +122,7 @@ func (list *sparseChildList) walk(prefix *Prefix, visitor VisitorFunc) error {
 	return nil
 }
 
-func (list *sparseChildList) total() int {
+/*func (list *sparseChildList) total() int {
 	tot := 0
 	for _, child := range list.children {
 		if child != nil {
@@ -138,7 +138,7 @@ func (list *sparseChildList) print(w io.Writer, indent int) {
 			child.print(w, indent)
 		}
 	}
-}
+}*/
 
 type denseChildList struct {
 	min      int
@@ -263,7 +263,7 @@ func (list *denseChildList) walk(prefix *Prefix, visitor VisitorFunc) error {
 	return nil
 }
 
-func (list *denseChildList) print(w io.Writer, indent int) {
+/*func (list *denseChildList) print(w io.Writer, indent int) {
 	for _, child := range list.children {
 		if child != nil {
 			child.print(w, indent)
@@ -279,4 +279,4 @@ func (list *denseChildList) total() int {
 		}
 	}
 	return tot
-}
+}*/
