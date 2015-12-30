@@ -6,6 +6,13 @@ import (
 	"database/sql/driver"
 )
 
+func ConvertBoolToInt(val bool) int {
+	if val {
+		return 1
+	}
+	return 0
+}
+
 func ExecuteSQLStmt(dbCmd string, dbHdl *sql.DB) (driver.Result, error) {
 	var result driver.Result
 	txn, err := dbHdl.Begin()
