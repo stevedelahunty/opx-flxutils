@@ -12,7 +12,12 @@ func ConvertBoolToInt(val bool) int {
 	}
 	return 0
 }
-
+func ConvertIntToBool(val int) bool {
+	if val == 1 {
+		return true
+	}
+	return false
+}
 func ExecuteSQLStmt(dbCmd string, dbHdl *sql.DB) (driver.Result, error) {
 	var result driver.Result
 	txn, err := dbHdl.Begin()
