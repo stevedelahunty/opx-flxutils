@@ -12,8 +12,10 @@ func ConvertBoolToInt(val bool) int {
 	}
 	return 0
 }
-func ConvertIntToBool(val int) bool {
-	if val == 1 {
+func ConvertStrBoolIntToBool(val int) bool {
+	if val == "true" {
+		return true
+	} else if val == "True" {
 		return true
 	}
 	return false
