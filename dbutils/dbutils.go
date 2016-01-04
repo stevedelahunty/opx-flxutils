@@ -1,9 +1,9 @@
 package dbutils
 
 import (
-	"fmt"
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
 )
 
 func ConvertBoolToInt(val bool) int {
@@ -12,7 +12,7 @@ func ConvertBoolToInt(val bool) int {
 	}
 	return 0
 }
-func ConvertStrBoolIntToBool(val int) bool {
+func ConvertStrBoolIntToBool(val string) bool {
 	if val == "true" {
 		return true
 	} else if val == "True" {
