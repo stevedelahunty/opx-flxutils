@@ -29,19 +29,22 @@ func (clnt *IPCClientBase) GetBulkObject(obj models.ConfigObj, currMarker int64,
 //
 // This method gets Thrift related IPC handles.
 //
-func CreateIPCHandles(address string) (thrift.TTransport, *thrift.TBinaryProtocolFactory) {
+func CreateIPCHandles(address string) (thrift.TTransport, *thrift.TBinaryProtocolFactory, error) {
 	var transportFactory thrift.TTransportFactory
 	var ttransport thrift.TTransport
 	var protocolFactory *thrift.TBinaryProtocolFactory
 	var err error
 
 	protocolFactory = thrift.NewTBinaryProtocolFactoryDefault()
-	transportFactory = thrift.NewTTransportFactory()
+	transportFactory = thrift.NewTBufferedTransportFactory(8192)
 	ttransport, err = thrift.NewTSocket(address)
+	if err != nil {
+		return nil, nil, err
+	}
 	ttransport = transportFactory.GetTransport(ttransport)
 	if err = ttransport.Open(); err != nil {
 		//logger.Println("Failed to Open Transport", transport, protocolFactory)
-		return nil, nil
+		return nil, nil, err
 	}
-	return ttransport, protocolFactory
+	return ttransport, protocolFactory, err
 }
