@@ -17,6 +17,8 @@ func ConvertStrBoolIntToBool(val string) bool {
 		return true
 	} else if val == "True" {
 		return true
+	} else if val == "1" {
+		return true
 	}
 	return false
 }
