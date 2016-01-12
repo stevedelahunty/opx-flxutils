@@ -13,6 +13,7 @@ func ConvertBoolToInt(val bool) int {
 	return 0
 }
 func ConvertStrBoolIntToBool(val string) bool {
+	fmt.Println("ConvertStrBoolIntToBool: val", val)
 	if val == "true" {
 		return true
 	} else if val == "True" {
