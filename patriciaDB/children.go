@@ -13,6 +13,7 @@ type childList interface {
 	remove(child *Trie)
 	next(b byte) *Trie
 	walk(prefix *Prefix, visitor VisitorFunc) error
+	walkAndUpdate(prefix *Prefix, visitor UpdateFunc, handle Item) error
 	//print(w io.Writer, indent int)
 	//total() int
 }
@@ -91,6 +92,34 @@ func (list *sparseChildList) next(b byte) *Trie {
 			return child
 		}
 	}
+	return nil
+}
+
+func (list *sparseChildList) walkAndUpdate(prefix *Prefix, visitor UpdateFunc, handle Item) error {
+
+	sort.Sort(list.children)
+
+	for _, child := range list.children {
+		*prefix = append(*prefix, child.prefix...)
+		if child.item != nil {
+			err := visitor(*prefix, child.item, handle)
+			if err != nil {
+				if err == SkipSubtree {
+					*prefix = (*prefix)[:len(*prefix)-len(child.prefix)]
+					continue
+				}
+				*prefix = (*prefix)[:len(*prefix)-len(child.prefix)]
+				return err
+			}
+		}
+
+		err := child.children.walkAndUpdate(prefix, visitor, handle)
+		*prefix = (*prefix)[:len(*prefix)-len(child.prefix)]
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -234,6 +263,33 @@ func (list *denseChildList) next(b byte) *Trie {
 		return nil
 	}
 	return list.children[i-list.min]
+}
+
+func (list *denseChildList) walkAndUpdate(prefix *Prefix, visitor UpdateFunc, handle Item) error {
+	for _, child := range list.children {
+		if child == nil {
+			continue
+		}
+		*prefix = append(*prefix, child.prefix...)
+		if child.item != nil {
+			if err := visitor(*prefix, child.item, handle); err != nil {
+				if err == SkipSubtree {
+					*prefix = (*prefix)[:len(*prefix)-len(child.prefix)]
+					continue
+				}
+				*prefix = (*prefix)[:len(*prefix)-len(child.prefix)]
+				return err
+			}
+		}
+
+		err := child.children.walkAndUpdate(prefix, visitor, handle)
+		*prefix = (*prefix)[:len(*prefix)-len(child.prefix)]
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (list *denseChildList) walk(prefix *Prefix, visitor VisitorFunc) error {

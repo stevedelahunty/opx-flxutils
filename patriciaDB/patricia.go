@@ -16,6 +16,7 @@ const (
 type    Prefix      []byte
 type	Item        interface{}
 type	VisitorFunc func(prefix Prefix, item Item) error
+type UpdateFunc func(prefix Prefix, item Item, handle Item) error
 
 
 type Trie struct {
@@ -142,6 +143,14 @@ func (trie *Trie) Match(prefix Prefix) (matchedExactly bool) {
 func (trie *Trie) Visit(visitor VisitorFunc) error {
 	return trie.walk(nil, visitor)
 }
+
+// Visit calls visitor on every node containing a non-nil item
+// in alphabetical order.
+//
+func (trie *Trie) VisitAndUpdate(visitor UpdateFunc, handle Item) error {
+	return trie.walkAndUpdate(nil, visitor, handle)
+}
+
 
 // Delete deletes the item represented by the given prefix.
 //
@@ -355,6 +364,35 @@ func (trie *Trie) findSubtree(prefix Prefix) (parent *Trie, root *Trie, found bo
 		parent = root
 		root = child
 	}
+}
+
+
+func (trie *Trie) walkAndUpdate(actualRootPrefix Prefix, visitor UpdateFunc, handle Item) error {
+	var prefix Prefix
+	// Allocate a bit more space for prefix at the beginning.
+	if actualRootPrefix == nil {
+		prefix = make(Prefix, 32+len(trie.prefix))
+		copy(prefix, trie.prefix)
+		prefix = prefix[:len(trie.prefix)]
+	} else {
+		prefix = make(Prefix, 32+len(actualRootPrefix))
+		copy(prefix, actualRootPrefix)
+		prefix = prefix[:len(actualRootPrefix)]
+	}
+
+	// Visit the root first. Not that this works for empty trie as well since
+	// in that case item == nil && len(children) == 0.
+	if trie.item != nil {
+		if err := visitor(prefix, trie.item, handle); err != nil {
+			if err == SkipSubtree {
+				return nil
+			}
+			return err
+		}
+	}
+
+	// Then continue to the children.
+	return trie.children.walkAndUpdate(&prefix, visitor, handle)
 }
 
 func (trie *Trie) walk(actualRootPrefix Prefix, visitor VisitorFunc) error {
