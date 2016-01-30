@@ -98,9 +98,11 @@ func (list *sparseChildList) next(b byte) *Trie {
 func (list *sparseChildList) walkAndUpdate(prefix *Prefix, visitor UpdateFunc, handle Item) error {
 
 	sort.Sort(list.children)
-
-	for _, child := range list.children {
+	for i:=0;i<len(list.children);i++ {
+	//for _, child := range list.children {
+		child := list.children[i]
 		*prefix = append(*prefix, child.prefix...)
+		curr_len := len(list.children)
 		if child.item != nil {
 			err := visitor(*prefix, child.item, handle)
 			if err != nil {
@@ -117,6 +119,9 @@ func (list *sparseChildList) walkAndUpdate(prefix *Prefix, visitor UpdateFunc, h
 		*prefix = (*prefix)[:len(*prefix)-len(child.prefix)]
 		if err != nil {
 			return err
+		}
+		if len(list.children) < curr_len {	//the current node was deleted
+			i = i - 1
 		}
 	}
 
