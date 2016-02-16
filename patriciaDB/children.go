@@ -1,7 +1,7 @@
 package patriciaDB
 
 import (
-//	"io"
+	"io"
 	"sort"
 )
 
@@ -12,9 +12,10 @@ type childList interface {
 	replace(b byte, child *Trie)
 	remove(child *Trie)
 	next(b byte) *Trie
+    nextWithLongestPrefixMatch(b byte) (trie *Trie, exact bool)
 	walk(prefix *Prefix, visitor VisitorFunc) error
 	walkAndUpdate(prefix *Prefix, visitor UpdateFunc, handle Item) error
-	//print(w io.Writer, indent int)
+	print(w io.Writer, indent int)
 	//total() int
 }
 
@@ -86,6 +87,25 @@ func (list *sparseChildList) remove(child *Trie) {
 	panic("removing non-existent child")
 }
 
+func (list *sparseChildList) nextWithLongestPrefixMatch(b byte) (trie *Trie, exact bool) {
+	logger.Println("Looking for byte ", b)
+	var longestPrefixChild *Trie = nil
+	for _, child := range list.children {
+		logger.Println("Scanning child ", child.prefix, " child.prefix[0] = ", child.prefix[0])
+		if child.prefix[0] == b {
+			logger.Println("returning child ", child.prefix, "exact byte match")
+			return child,true
+		}
+		if uint(child.prefix[0]) < uint(b) {
+			logger.Println("potential child ", child.prefix, " a potential match")
+             if longestPrefixChild == nil || (uint(longestPrefixChild.prefix[0]) < uint(child.prefix[0])) {
+			   longestPrefixChild = child
+			}
+		}
+	}
+	return longestPrefixChild,exact
+}
+
 func (list *sparseChildList) next(b byte) *Trie {
 	for _, child := range list.children {
 		if child.prefix[0] == b {
@@ -155,8 +175,8 @@ func (list *sparseChildList) walk(prefix *Prefix, visitor VisitorFunc) error {
 
 	return nil
 }
-
-/*func (list *sparseChildList) total() int {
+/*
+func (list *sparseChildList) total() int {
 	tot := 0
 	for _, child := range list.children {
 		if child != nil {
@@ -165,14 +185,14 @@ func (list *sparseChildList) walk(prefix *Prefix, visitor VisitorFunc) error {
 	}
 	return tot
 }
-
+*/
 func (list *sparseChildList) print(w io.Writer, indent int) {
 	for _, child := range list.children {
 		if child != nil {
 			child.print(w, indent)
 		}
 	}
-}*/
+}
 
 type denseChildList struct {
 	min      int
@@ -269,7 +289,9 @@ func (list *denseChildList) next(b byte) *Trie {
 	}
 	return list.children[i-list.min]
 }
-
+func (list *denseChildList) nextWithLongestPrefixMatch(b byte) (trie *Trie, exact bool) {
+	return nil,exact
+}
 func (list *denseChildList) walkAndUpdate(prefix *Prefix, visitor UpdateFunc, handle Item) error {
 	for _, child := range list.children {
 		if child == nil {
@@ -324,14 +346,14 @@ func (list *denseChildList) walk(prefix *Prefix, visitor VisitorFunc) error {
 	return nil
 }
 
-/*func (list *denseChildList) print(w io.Writer, indent int) {
+func (list *denseChildList) print(w io.Writer, indent int) {
 	for _, child := range list.children {
 		if child != nil {
 			child.print(w, indent)
 		}
 	}
 }
-
+/*
 func (list *denseChildList) total() int {
 	tot := 0
 	for _, child := range list.children {
