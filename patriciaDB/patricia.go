@@ -147,12 +147,12 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 		}
 
 		// There is some prefix left, move to the children.
-		child := root.children.nextWithLongestPrefixMatch(prefix[0])
-		if child == nil {
+		   child,_ := root.children.nextWithLongestPrefixMatch(prefix[0])
+		   if child == nil {
 			//logger.Println("No child found for root ", root.prefix)
 			// There is nowhere to continue, there is no subtree matching prefix.
-			break
-		}
+			  break
+		   }
 
 //		parent = root
 		root = child
