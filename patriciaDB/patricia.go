@@ -3,9 +3,12 @@ package patriciaDB
 import (
 	"bytes"
 	"errors"
-	"fmt"
+//	"fmt"
 	"io"
 	"strings"
+	"log"
+	"os"
+	"log/syslog"
 )
 
 const (
@@ -17,6 +20,7 @@ type    Prefix      []byte
 type	Item        interface{}
 type	VisitorFunc func(prefix Prefix, item Item) error
 type UpdateFunc func(prefix Prefix, item Item, handle Item) error
+var logger *log.Logger
 
 
 type Trie struct {
@@ -30,6 +34,16 @@ type Trie struct {
 }
 
 func NewTrie() *Trie {
+	if logger == nil {
+	  logger = log.New(os.Stdout, "Patricia trie :", log.Ldate|log.Ltime|log.Lshortfile)
+
+	  syslogger, err := syslog.New(syslog.LOG_NOTICE|syslog.LOG_INFO|syslog.LOG_DAEMON, "RIBD")
+	  if err == nil {
+		syslogger.Info("### Patricia trie initailized")
+		logger.SetOutput(syslogger)
+	  }
+	}
+
 	trie := &Trie{}
 
 	/*if trie.maxPrefixPerNode <= 0 {
@@ -77,19 +91,20 @@ func (trie *Trie) Get(key Prefix) (item Item) {
 func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 	var root *Trie 
 	var inpPrefix = prefix
-	var leftover Prefix
-    //trie.dump();
+	var leftover, prefixLeftover Prefix
+    trie.dump();
 	root = trie
 	var prefixlen, lastNonNilPrefix int
-	//fmt.Printf("get longest prefixnode")
+	//logger.Println("get longest prefixnode")
 	for {
 		// Compute what part of prefix matches.
-	//    fmt.Printf("prefix  = %v root.prefix=%v\n", prefix, root.prefix)
+	    logger.Println("prefix  = ", prefix, " root.prefix= ",  root.prefix)
         if(len(prefix) < len(root.prefix)) {
 			break
 		}
 		common := root.longestCommonPrefixLength(prefix)
         prefixlen = prefixlen + common
+		logger.Println("common: ", common, "  prefixLen : ",prefixlen)
 	    node := trie.Get(inpPrefix[:prefixlen])
         if(node != nil) {
 	      lastNonNilPrefix = prefixlen
@@ -98,22 +113,43 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 
 		// We used up the whole prefix, subtree found.
 		if len(prefix) == 0 {
-	//		found = true
+			logger.Println("len(prefix) == 0?")
+		//	found = true
 			leftover = root.prefix[common:]
 			break
 		}
 
 		// Partial match means that there is no subtree matching prefix.
 		if common < len(root.prefix) {
-           prefixlen = prefixlen - common
+           //prefixlen = prefixlen - common
  			leftover = root.prefix[common:]
-			fmt.Printf("leftover = %v\n", leftover)
-			break
+			prefixLeftover = inpPrefix[prefixlen:]
+			logger.Println("leftover = ", leftover, " len(leftover) = ", len(leftover), " prefixLeftover = ", prefixLeftover," len(prefixleftover) = ", len(prefixLeftover))
+	        if len(prefixLeftover) != len(leftover) {
+				break
+			} else {
+				found := true
+				for i:=0;i<len(leftover);i++ {
+					lti := uint(leftover[i])
+					prti := uint(prefixLeftover[i])
+					if lti > prti {
+						logger.Println("lti ", lti, " > ", prti)
+						found = false
+						break
+					} 
+				}
+				if found {
+					logger.Println("found == true, get node with prefix ", root.prefix)
+				   node = root.Item()
+			       return node
+				}
+		     }
 		}
 
 		// There is some prefix left, move to the children.
-		child := root.children.next(prefix[0])
+		child := root.children.nextWithLongestPrefixMatch(prefix[0])
 		if child == nil {
+			//logger.Println("No child found for root ", root.prefix)
 			// There is nowhere to continue, there is no subtree matching prefix.
 			break
 		}
@@ -121,7 +157,8 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 //		parent = root
 		root = child
 	}
-	//fmt.Printf("After for loop, prefixlen = %d\n", prefixlen)
+//	logger.Println("After for loop, prefixlen = ", prefixlen)
+//	logger.Println("leftover = ", leftover, " prefixLeftover = ", prefixLeftover)
 	node := trie.Get(inpPrefix[:lastNonNilPrefix])
     if(node != nil) {
 	   return node
@@ -339,6 +376,7 @@ func (trie *Trie) findSubtree(prefix Prefix) (parent *Trie, root *Trie, found bo
 	for {
 		// Compute what part of prefix matches.
 		common := root.longestCommonPrefixLength(prefix)
+		//logger.Println("common: ", common)
 		prefix = prefix[common:]
 
 		// We used up the whole prefix, subtree found.
@@ -424,10 +462,10 @@ func (trie *Trie) walk(actualRootPrefix Prefix, visitor VisitorFunc) error {
 }
 
 func (trie *Trie) longestCommonPrefixLength(prefix Prefix) (i int) {
-//	fmt.Printf("len(prefix)=%d len(trie.prefix)=%d\n", len(prefix), len(trie.prefix))
+	//logger.Println("len(prefix)= ",  len(prefix), " len(trie.prefix)= ", len(trie.prefix))
 	for ; i < len(prefix) && i < len(trie.prefix) && prefix[i] == trie.prefix[i]; i++ {
 	}
-	return
+	return i
 }
 
 func (trie *Trie) dump() string {
@@ -438,8 +476,8 @@ func (trie *Trie) dump() string {
 
 func (trie *Trie) print(writer io.Writer, indent int) {
 	//fmt.Fprintf(writer, "%s%s %v\n", strings.Repeat(" ", indent), string(trie.prefix), trie.item)
-	fmt.Printf("%s%s %v\n", strings.Repeat(" ", indent), string(trie.prefix), trie.item)
-	//trie.children.print(writer, indent+2)
+	logger.Println(strings.Repeat(" ", indent), trie.prefix, trie.item)
+	trie.children.print(writer, indent+2)
 }
 
 // Errors ----------------------------------------------------------------------
