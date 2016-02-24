@@ -121,6 +121,10 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 
 		// Partial match means that there is no subtree matching prefix.
 		if common < len(root.prefix) {
+			if common == 0 && prefixlen == 0{
+				logger.Println("common:0, prefixlen=0, no match")
+				break
+			}
            //prefixlen = prefixlen - common
  			leftover = root.prefix[common:]
 			prefixLeftover = inpPrefix[prefixlen:]
