@@ -39,6 +39,11 @@ type PolicyEngineDB struct {
 	localPolicyStmtDB *LocalDBSlice
 	PolicyDB *patriciaDB.Trie
 	localPolicyDB *LocalDBSlice
+    PolicyStmtPolicyMapDB map[string] []string //policies using this statement
+    PrefixPolicyListDB *patriciaDB.Trie
+    ProtocolPolicyListDB map[string][]string//policystmt names assoociated with every protocol type
+    ImportPolicyPrecedenceMap map[int] string
+    ExportPolicyPrecedenceMap map[int] string
 }
 
 func NewPolicyEngineDB() (policyEngineDB *PolicyEngineDB) {
@@ -62,5 +67,11 @@ func NewPolicyEngineDB() (policyEngineDB *PolicyEngineDB) {
    localPolicyDB := make([]LocalDB,0)
    localPolicySlice := LocalDBSlice(localPolicyDB)
    policyEngineDB.localPolicyDB = &localPolicySlice
+
+   policyEngineDB.PolicyStmtPolicyMapDB = make(map[string] []string) 
+   policyEngineDB.PrefixPolicyListDB = patriciaDB.NewTrie()
+   policyEngineDB.ProtocolPolicyListDB = make(map[string][]string)
+   policyEngineDB.ImportPolicyPrecedenceMap = make(map[int] string)
+   policyEngineDB.ExportPolicyPrecedenceMap = make(map[int] string)
    return policyEngineDB
 }
