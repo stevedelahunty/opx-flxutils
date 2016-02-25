@@ -70,13 +70,13 @@ func (db * PolicyEngineDB) CreatePolicyDstIpMatchPrefixSetCondition(inCfg Policy
 	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(inCfg.Name))
 	if(policyCondition == nil) {
 	   fmt.Println("Defining a new policy condition with name ", inCfg.Name)
-	   newPolicyCondition := PolicyCondition{Name:inCfg.Name,ConditionType:policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch,ConditionInfo:conditionInfo ,LocalDBSliceIdx:(len(*db.localPolicyConditionsDB))}
+	   newPolicyCondition := PolicyCondition{Name:inCfg.Name,ConditionType:policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch,ConditionInfo:conditionInfo ,LocalDBSliceIdx:(len(*db.LocalPolicyConditionsDB))}
        newPolicyCondition.ConditionGetBulkInfo = conditionGetBulkInfo 
 	   if ok := db.PolicyConditionsDB.Insert(patriciaDB.Prefix(inCfg.Name), newPolicyCondition); ok != true {
 	   fmt.Println(" return value not ok")
 	   return val, err
 	}
-	db.localPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(inCfg.Name))
+	db.LocalPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(inCfg.Name))
     } else {
 		fmt.Println("Duplicate Condition name")
 		err = errors.New("Duplicate policy condition definition")
@@ -92,13 +92,13 @@ func (db * PolicyEngineDB)CreatePolicyMatchProtocolCondition(cfg PolicyCondition
 	if(policyCondition == nil) {
 	   fmt.Println("Defining a new policy condition with name ", cfg.Name)
 	   matchProto := cfg.MatchProtocolConditionInfo
-	   newPolicyCondition := PolicyCondition{Name:cfg.Name,ConditionType:policyCommonDefs.PolicyConditionTypeProtocolMatch,ConditionInfo:matchProto ,LocalDBSliceIdx:(len(*db.localPolicyConditionsDB))}
+	   newPolicyCondition := PolicyCondition{Name:cfg.Name,ConditionType:policyCommonDefs.PolicyConditionTypeProtocolMatch,ConditionInfo:matchProto ,LocalDBSliceIdx:(len(*db.LocalPolicyConditionsDB))}
        newPolicyCondition.ConditionGetBulkInfo = "match Protocol " + matchProto
 		if ok := db.PolicyConditionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyCondition); ok != true {
 			fmt.Println(" return value not ok")
 			return val, err
 		}
-	    db.localPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+	    db.LocalPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
 	} else {
 		fmt.Println("Duplicate Condition name")
 		err = errors.New("Duplicate policy condition definition")
@@ -121,20 +121,3 @@ func (db * PolicyEngineDB)CreatePolicyCondition(cfg PolicyConditionConfig) (err 
 	}
 	return err
 }
-/*
-func GetPolicyConditionsDB() (db *patriciaDB.Trie, err error) { 
-	if PolicyConditionsDB == nil {
-		fmt.Println("policyConditions nil")
-		err := errors.New("policyConditions nil")
-		return nil,err
-	}
-	return PolicyConditionsDB, err
-}
-func GetLocalPolicyConditionsDB()(db []LocalDB, err error) { 
-	if localPolicyConditionsDB == nil {
-		fmt.Println("local policyConditions nil")
-		err := errors.New("local policyConditions nil")
-		return nil,err
-	}
-	return localPolicyConditionsDB, err
-}*/

@@ -46,13 +46,13 @@ func (db * PolicyEngineDB) CreatePolicyRouteDispositionAction(cfg PolicyActionCo
 		  err = errors.New("User should set either one of accept/reject to true for this action type")
 		  return val,err	
 	   }
-	   newPolicyAction := PolicyAction{Name:cfg.Name,ActionType:policyCommonDefs.PolicyActionTypeRouteDisposition,ActionInfo:routeDispositionAction ,LocalDBSliceIdx:(len(*db.localPolicyActionsDB))}
+	   newPolicyAction := PolicyAction{Name:cfg.Name,ActionType:policyCommonDefs.PolicyActionTypeRouteDisposition,ActionInfo:routeDispositionAction ,LocalDBSliceIdx:(len(*db.LocalPolicyActionsDB))}
        newPolicyAction.ActionGetBulkInfo =   routeDispositionAction
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			fmt.Println(" return value not ok")
 			return val, err
 		}
-	  db.localPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+	  db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
 	} else {
 		fmt.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
@@ -66,13 +66,13 @@ func (db * PolicyEngineDB) CreatePolicyAdminDistanceAction(cfg PolicyActionConfi
 	policyAction := db.PolicyActionsDB.Get(patriciaDB.Prefix(cfg.Name))
 	if(policyAction == nil) {
 	   fmt.Println("Defining a new policy action with name ", cfg.Name, "Setting admin distance value to ", cfg.SetAdminDistanceValue)
-	   newPolicyAction := PolicyAction{Name:cfg.Name,ActionType:policyCommonDefs.PoilcyActionTypeSetAdminDistance,ActionInfo:cfg.SetAdminDistanceValue ,LocalDBSliceIdx:(len(*db.localPolicyActionsDB))}
+	   newPolicyAction := PolicyAction{Name:cfg.Name,ActionType:policyCommonDefs.PoilcyActionTypeSetAdminDistance,ActionInfo:cfg.SetAdminDistanceValue ,LocalDBSliceIdx:(len(*db.LocalPolicyActionsDB))}
        newPolicyAction.ActionGetBulkInfo =  "Set admin distance to value "+strconv.Itoa(int(cfg.SetAdminDistanceValue))
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			fmt.Println(" return value not ok")
 			return val, err
 		}
-	  db.localPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+	  db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
 	} else {
 		fmt.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
@@ -97,13 +97,13 @@ func (db * PolicyEngineDB) CreatePolicyRedistributionAction(cfg PolicyActionConf
           err = errors.New("Invalid redistribute option")
 		  return val,err
 	   }
-	   newPolicyAction := PolicyAction{Name:cfg.Name,ActionType:policyCommonDefs.PolicyActionTypeRouteRedistribute,ActionInfo:redistributeActionInfo ,LocalDBSliceIdx:(len(*db.localPolicyActionsDB))}
+	   newPolicyAction := PolicyAction{Name:cfg.Name,ActionType:policyCommonDefs.PolicyActionTypeRouteRedistribute,ActionInfo:redistributeActionInfo ,LocalDBSliceIdx:(len(*db.LocalPolicyActionsDB))}
        newPolicyAction.ActionGetBulkInfo = cfg.RedistributeAction + " Redistribute to Target Protocol " + cfg.RedistributeTargetProtocol
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			fmt.Println(" return value not ok")
 			return val, err
 		}
-	    db.localPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+	    db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
 	} else {
 		fmt.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
@@ -139,11 +139,11 @@ func GetPolicyActionsDB() (db *patriciaDB.Trie, err error) {
 	return PolicyActionsDB, err
 }
 func GetLocalPolicyActionsDB()(db []LocalDB, err error) { 
-	if localPolicyActionsDB == nil {
+	if LocalPolicyActionsDB == nil {
 		fmt.Println("local policyActions nil")
 		err := errors.New("local policyActions nil")
 		return nil,err
 	}
-	return localPolicyActionsDB, err
+	return LocalPolicyActionsDB, err
 }
 */

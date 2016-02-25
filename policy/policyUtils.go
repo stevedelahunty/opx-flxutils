@@ -32,13 +32,13 @@ func (slice *LocalDBSlice )updateLocalDB(prefix patriciaDB.Prefix) {
 }
 type PolicyEngineDB struct {
 	PolicyConditionsDB *patriciaDB.Trie
-	localPolicyConditionsDB *LocalDBSlice
+	LocalPolicyConditionsDB *LocalDBSlice
 	PolicyActionsDB *patriciaDB.Trie
-	localPolicyActionsDB *LocalDBSlice
+	LocalPolicyActionsDB *LocalDBSlice
 	PolicyStmtDB *patriciaDB.Trie
-	localPolicyStmtDB *LocalDBSlice
+	LocalPolicyStmtDB *LocalDBSlice
 	PolicyDB *patriciaDB.Trie
-	localPolicyDB *LocalDBSlice
+	LocalPolicyDB *LocalDBSlice
     PolicyStmtPolicyMapDB map[string] []string //policies using this statement
     PrefixPolicyListDB *patriciaDB.Trie
     ProtocolPolicyListDB map[string][]string//policystmt names assoociated with every protocol type
@@ -49,24 +49,24 @@ type PolicyEngineDB struct {
 func NewPolicyEngineDB() (policyEngineDB *PolicyEngineDB) {
    policyEngineDB = &PolicyEngineDB{}
    policyEngineDB.PolicyActionsDB = patriciaDB.NewTrie()
-   localPolicyActionsDB := make([]LocalDB,0)
-   localActionSlice := LocalDBSlice(localPolicyActionsDB)
-   policyEngineDB.localPolicyActionsDB = &localActionSlice
+   LocalPolicyActionsDB := make([]LocalDB,0)
+   localActionSlice := LocalDBSlice(LocalPolicyActionsDB)
+   policyEngineDB.LocalPolicyActionsDB = &localActionSlice
 
    policyEngineDB.PolicyConditionsDB = patriciaDB.NewTrie()
-   localPolicyConditionsDB := make([]LocalDB,0)
-   localConditionSlice := LocalDBSlice(localPolicyConditionsDB)
-   policyEngineDB.localPolicyConditionsDB = &localConditionSlice
+   LocalPolicyConditionsDB := make([]LocalDB,0)
+   localConditionSlice := LocalDBSlice(LocalPolicyConditionsDB)
+   policyEngineDB.LocalPolicyConditionsDB = &localConditionSlice
 
    policyEngineDB.PolicyStmtDB = patriciaDB.NewTrie()
-   localPolicyStmtDB := make([]LocalDB,0)
-   localStmtSlice := LocalDBSlice(localPolicyStmtDB)
-   policyEngineDB.localPolicyStmtDB = &localStmtSlice
+   LocalPolicyStmtDB := make([]LocalDB,0)
+   localStmtSlice := LocalDBSlice(LocalPolicyStmtDB)
+   policyEngineDB.LocalPolicyStmtDB = &localStmtSlice
 
    policyEngineDB.PolicyDB = patriciaDB.NewTrie()
-   localPolicyDB := make([]LocalDB,0)
-   localPolicySlice := LocalDBSlice(localPolicyDB)
-   policyEngineDB.localPolicyDB = &localPolicySlice
+   LocalPolicyDB := make([]LocalDB,0)
+   localPolicySlice := LocalDBSlice(LocalPolicyDB)
+   policyEngineDB.LocalPolicyDB = &localPolicySlice
 
    policyEngineDB.PolicyStmtPolicyMapDB = make(map[string] []string) 
    policyEngineDB.PrefixPolicyListDB = patriciaDB.NewTrie()

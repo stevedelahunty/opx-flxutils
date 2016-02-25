@@ -38,6 +38,7 @@ type Policy struct {
 	ImportPolicy       bool
 	ExportPolicy       bool  
 	GlobalPolicy       bool
+	Extensions         interface {}
 }
 
 type PolicyDefinitionStmtPrecedence  struct {
@@ -52,6 +53,7 @@ type PolicyDefinitionConfig struct{
  	Export bool
 	Import bool
 	Global bool
+	Extensions         interface {}
 }
 
 type PrefixPolicyListInfo struct {
@@ -332,12 +334,12 @@ func (db *PolicyEngineDB) CreatePolicyStatement(cfg PolicyStmtConfig) (err error
 			}
 		}
 	   }
-        newPolicyStmt.LocalDBSliceIdx = int8(len(*db.localPolicyStmtDB))
+        newPolicyStmt.LocalDBSliceIdx = int8(len(*db.LocalPolicyStmtDB))
 		if ok := db.PolicyStmtDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyStmt); ok != true {
 			fmt.Println(" return value not ok")
 			return err
 		}
-		db.localPolicyStmtDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+		db.LocalPolicyStmtDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
 	} else {
 		fmt.Println("Duplicate Policy definition name")
 		err = errors.New("Duplicate policy definition")
@@ -357,10 +359,10 @@ func (db *PolicyEngineDB) DeletePolicyStatement(cfg PolicyStmtConfig) (err error
 	if(policyStmtInfoGet != nil) {
        //invalidate localPolicyStmt 
 	   policyStmtInfo := policyStmtInfoGet.(PolicyStmt)
-	   if policyStmtInfo.LocalDBSliceIdx < int8(len(*db.localPolicyStmtDB)) {
+	   if policyStmtInfo.LocalDBSliceIdx < int8(len(*db.LocalPolicyStmtDB)) {
           fmt.Println("local DB slice index for this policy stmt is ", policyStmtInfo.LocalDBSliceIdx)
-		  localPolicyStmtDB := LocalDBSlice (*db.localPolicyStmtDB)
-		  localPolicyStmtDB[policyStmtInfo.LocalDBSliceIdx].IsValid = false		
+		  LocalPolicyStmtDB := LocalDBSlice (*db.LocalPolicyStmtDB)
+		  LocalPolicyStmtDB[policyStmtInfo.LocalDBSliceIdx].IsValid = false		
 	   }
 	  // PolicyEngineTraverseAndReverse(policyStmtInfo)
 	   fmt.Println("Deleting policy statement with name ", cfg.Name)
@@ -436,12 +438,13 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
        for k:=range newPolicy.PolicyStmtPrecedenceMap {
 		fmt.Println("key k = ", k)
 	   }
-       newPolicy.LocalDBSliceIdx = int8(len(*db.localPolicyDB))
+       newPolicy.LocalDBSliceIdx = int8(len(*db.LocalPolicyDB))
+	   newPolicy.Extensions = cfg.Extensions
 	   if ok := db.PolicyDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicy); ok != true {
 			fmt.Println(" return value not ok")
 			return err
 		}
-		db.localPolicyDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+		db.LocalPolicyDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
 		if cfg.Import {
 		   fmt.Println("Adding ", newPolicy.Name, " as import policy")
 		   if db.ImportPolicyPrecedenceMap == nil {
@@ -455,7 +458,7 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 		   }
 		   db.ExportPolicyPrecedenceMap[int(cfg.Precedence)]=cfg.Name
 		}
-	     PolicyEngineTraverseAndApplyPolicy(newPolicy)
+	     db.PolicyEngineTraverseAndApplyPolicy(newPolicy)
 	} else {
 		fmt.Println("Duplicate Policy definition name")
 		err = errors.New("Duplicate policy definition")
@@ -475,12 +478,12 @@ func (db *PolicyEngineDB) DeletePolicyDefinition(cfg PolicyDefinitionConfig) (er
 	if(policyInfoGet != nil) {
        //invalidate localPolicy 
 	   policyInfo := policyInfoGet.(Policy)
-	   if policyInfo.LocalDBSliceIdx < int8(len(*db.localPolicyDB)) {
+	   if policyInfo.LocalDBSliceIdx < int8(len(*db.LocalPolicyDB)) {
           fmt.Println("local DB slice index for this policy is ", policyInfo.LocalDBSliceIdx)
-		  localPolicyDB := LocalDBSlice (*db.localPolicyDB)
-		  localPolicyDB[policyInfo.LocalDBSliceIdx].IsValid = false		
+		  LocalPolicyDB := LocalDBSlice (*db.LocalPolicyDB)
+		  LocalPolicyDB[policyInfo.LocalDBSliceIdx].IsValid = false		
 	   }
-	   PolicyEngineTraverseAndReversePolicy(policyInfo)
+	   db.PolicyEngineTraverseAndReversePolicy(policyInfo)
 	   fmt.Println("Deleting policy with name ", cfg.Name)
 		if ok := db.PolicyDB.Delete(patriciaDB.Prefix(cfg.Name)); ok != true {
 			fmt.Println(" return value not ok for delete PolicyDB")
