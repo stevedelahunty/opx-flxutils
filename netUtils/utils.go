@@ -1,0 +1,89 @@
+// netUtils.go
+package netUtils
+
+import (
+	"net"
+	"errors"
+	"fmt"
+	"utils/patriciaDB"
+)
+func GetNetowrkPrefixFromStrings(ipAddr string, mask string) (prefix patriciaDB.Prefix, err error) {
+	destNetIpAddr, err := GetIP(ipAddr)
+	if err != nil {
+		fmt.Println("destNetIpAddr invalid")
+		return prefix, err
+	}
+	networkMaskAddr, err := GetIP(mask)
+	if err != nil {
+		fmt.Println("networkMaskAddr invalid")
+		return prefix, err
+	}
+	prefix, err = GetNetworkPrefix(destNetIpAddr, networkMaskAddr)
+	if err != nil {
+		fmt.Println("err=", err)
+		return prefix, err
+	}
+	return prefix, err
+}
+func GetNetworkPrefixFromCIDR(ipAddr string) (ipPrefix patriciaDB.Prefix, err error) {
+	var ipMask net.IP
+	ip, ipNet, err := net.ParseCIDR(ipAddr)
+	if err != nil {
+		return ipPrefix, err
+	}
+	ipMask = make(net.IP, 4)
+	copy(ipMask, ipNet.Mask)
+	ipAddrStr := ip.String()
+	ipMaskStr := net.IP(ipMask).String()
+	ipPrefix ,err= GetNetowrkPrefixFromStrings(ipAddrStr, ipMaskStr)
+    return ipPrefix, err
+}
+func GetIPInt(ip net.IP) (ipInt int, err error) {
+	if ip == nil {
+		fmt.Printf("ip address %v invalid\n", ip)
+		return ipInt, errors.New("Invalid destination network IP Address")
+	}
+	ip = ip.To4()
+	parsedPrefixIP := int(ip[3]) | int(ip[2])<<8 | int(ip[1])<<16 | int(ip[0])<<24
+	ipInt = parsedPrefixIP
+	return ipInt, nil
+}
+
+func GetIP(ipAddr string) (ip net.IP, err error) {
+	ip = net.ParseIP(ipAddr)
+	if ip == nil {
+		return ip, errors.New("Invalid destination network IP Address")
+	}
+	ip = ip.To4()
+	return ip, nil
+}
+
+func GetPrefixLen(networkMask net.IP) (prefixLen int, err error) {
+	ipInt, err := GetIPInt(networkMask)
+	if err != nil {
+		return -1, err
+	}
+	for prefixLen = 0; ipInt != 0; ipInt >>= 1 {
+		prefixLen += ipInt & 1
+	}
+	return prefixLen, nil
+}
+
+func GetNetworkPrefix(destNetIp net.IP, networkMask net.IP) (destNet patriciaDB.Prefix, err error) {
+	prefixLen, err := GetPrefixLen(networkMask)
+	if err != nil {
+		fmt.Println("err when getting prefixLen, err= ", err)
+		return destNet, err
+	}
+	vdestMask := net.IPv4Mask(networkMask[0], networkMask[1], networkMask[2], networkMask[3])
+	netIp := destNetIp.Mask(vdestMask)
+	numbytes := prefixLen / 8
+	if (prefixLen % 8) != 0 {
+		numbytes++
+	}
+	destNet = make([]byte, numbytes)
+	for i := 0; i < numbytes; i++ {
+		destNet[i] = netIp[i]
+	}
+	return destNet, err
+}
