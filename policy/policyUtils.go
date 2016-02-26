@@ -15,6 +15,24 @@ const (
 	Invalid = -1
 	Valid = 0
 )
+type PolicyEngineFilterEntityParams struct {
+	DestNetIp      string	//CIDR format 
+	NextHopIp      string
+	RouteProtocol  string
+	CreatePath     bool
+	DeletePath     bool
+	PolicyList    []string
+	PolicyHitCounter int
+}
+//struct sent to the application for updating its local maps/DBs 
+type PolicyDetails struct {
+	Policy            string
+	PolicyStmt        string
+	ConditionList     []string
+	ActionList        []string
+	EntityDeleted     bool    //whether this policy/stmt resulted in deleting the entity
+}
+
 type LocalDB struct {
 	Prefix  patriciaDB.Prefix
 	IsValid bool
@@ -30,6 +48,10 @@ func (slice *LocalDBSlice )updateLocalDB(prefix patriciaDB.Prefix) {
 	*slice = append(*slice, localDBRecord)
 
 }
+type	 Policyfunc func(actionInfo interface{}, params interface{})
+type	 PolicyCheckfunc func(params interface{}) bool
+type EntityUpdatefunc func(details PolicyDetails, params interface{})
+
 type PolicyEngineDB struct {
 	PolicyConditionsDB *patriciaDB.Trie
 	LocalPolicyConditionsDB *LocalDBSlice
@@ -44,6 +66,11 @@ type PolicyEngineDB struct {
     ProtocolPolicyListDB map[string][]string//policystmt names assoociated with every protocol type
     ImportPolicyPrecedenceMap map[int] string
     ExportPolicyPrecedenceMap map[int] string
+	DefaultImportPolicyActionFunc Policyfunc
+	DefaultExportPolicyActionFunc Policyfunc
+	IsEntityPresentFunc PolicyCheckfunc
+	UpdateEntityDB EntityUpdatefunc
+	ActionfuncMap map[int]Policyfunc
 }
 
 func NewPolicyEngineDB() (policyEngineDB *PolicyEngineDB) {
@@ -73,5 +100,22 @@ func NewPolicyEngineDB() (policyEngineDB *PolicyEngineDB) {
    policyEngineDB.ProtocolPolicyListDB = make(map[string][]string)
    policyEngineDB.ImportPolicyPrecedenceMap = make(map[int] string)
    policyEngineDB.ExportPolicyPrecedenceMap = make(map[int] string)
+   policyEngineDB.ActionfuncMap = make(map[int]Policyfunc)
    return policyEngineDB
+}
+
+func (db*PolicyEngineDB) SetDefaultImportPolicyActionFunc(defaultfunc Policyfunc){
+	db.DefaultImportPolicyActionFunc = defaultfunc
+}
+func (db*PolicyEngineDB) SetDefaultExportPolicyActionFunc(defaultfunc Policyfunc){
+	db.DefaultExportPolicyActionFunc = defaultfunc
+}
+func (db*PolicyEngineDB) SetIsEntityPresentFunc(IsPresent PolicyCheckfunc) {
+	db.IsEntityPresentFunc = IsPresent
+}
+func (db*PolicyEngineDB) SetEntityUpdateFunc(updatefunc EntityUpdatefunc) {
+	db.UpdateEntityDB = updatefunc
+}
+func (db *PolicyEngineDB) SetActionFunc(action int, setfunc Policyfunc) {
+	db.ActionfuncMap[action] = setfunc
 }

@@ -5,6 +5,7 @@ import (
 	"net"
 	"errors"
 	"fmt"
+	"strconv"
 	"utils/patriciaDB"
 )
 func GetNetowrkPrefixFromStrings(ipAddr string, mask string) (prefix patriciaDB.Prefix, err error) {
@@ -86,4 +87,18 @@ func GetNetworkPrefix(destNetIp net.IP, networkMask net.IP) (destNet patriciaDB.
 		destNet[i] = netIp[i]
 	}
 	return destNet, err
+}
+func GetCIDR(ipAddr string, mask string) (addr string, err error) {
+	maskIP,err:=GetIP(mask)
+	if err != nil {
+       fmt.Println("err in getting mask IP for mask string", mask)
+	   return addr, err
+	}
+	prefixLen,err := GetPrefixLen(maskIP)
+	if err != nil {
+	   fmt.Println("err in getting prefix len for mask string", mask)
+	   return addr, err
+	}
+	addr = ipAddr + "/"+strconv.Itoa(prefixLen)
+	return addr, err
 }
