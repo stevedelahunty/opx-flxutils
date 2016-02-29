@@ -51,6 +51,8 @@ func (slice *LocalDBSlice )updateLocalDB(prefix patriciaDB.Prefix) {
 type	 Policyfunc func(actionInfo interface{}, params interface{})
 type	 PolicyCheckfunc func(params interface{}) bool
 type EntityUpdatefunc func(details PolicyDetails, params interface{})
+type PolicyApplyfunc func(entity PolicyEngineFilterEntityParams, policyData interface{}, params interface{})
+type EntityTraverseAndApplyPolicyfunc func(data interface{}, updatefunc PolicyApplyfunc )
 
 type PolicyEngineDB struct {
 	PolicyConditionsDB *patriciaDB.Trie
@@ -71,6 +73,7 @@ type PolicyEngineDB struct {
 	IsEntityPresentFunc PolicyCheckfunc
 	UpdateEntityDB EntityUpdatefunc
 	ActionfuncMap map[int]Policyfunc
+	TraverseAndApplyPolicyFunc EntityTraverseAndApplyPolicyfunc
 }
 
 func NewPolicyEngineDB() (policyEngineDB *PolicyEngineDB) {
@@ -118,4 +121,13 @@ func (db*PolicyEngineDB) SetEntityUpdateFunc(updatefunc EntityUpdatefunc) {
 }
 func (db *PolicyEngineDB) SetActionFunc(action int, setfunc Policyfunc) {
 	db.ActionfuncMap[action] = setfunc
+}
+func (db *PolicyEngineDB) SetTraverseAndApplyPolicyFunc(updatefunc EntityTraverseAndApplyPolicyfunc) {
+	db.TraverseAndApplyPolicyFunc = updatefunc
+}
+func isPolicyTypeSame(oldPolicy Policy, policy Policy) (same bool){
+	if oldPolicy.ExportPolicy == policy.ExportPolicy && oldPolicy.ImportPolicy==policy.ImportPolicy {
+		same = true
+	}
+	return same
 }

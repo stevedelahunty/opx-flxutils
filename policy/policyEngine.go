@@ -175,6 +175,35 @@ func (db *PolicyEngineDB) PolicyEngineMatchConditions(entity PolicyEngineFilterE
    }
     return match,conditionsList
 }
+func (db *PolicyEngineDB) PolicyEngineUndoPolicyForRoute(entity *PolicyEngineFilterEntityParams, policy Policy, params interface{}) {
+	fmt.Println("policyEngineUndoPolicyForRoute - policy name ", policy.Name, "  route: ", entity.DestNetIp," type:", entity.RouteProtocol)
+/*    ipPrefix,err:=getNetowrkPrefixFromStrings(route.Ipaddr, route.Mask)
+	if err != nil {
+		fmt.Println("Invalid prefix, err= ", err)
+		return
+	}
+    policyRouteIndex := PolicyRouteIndex{routeIP:route.Ipaddr,routeMask:route.Mask, policy:policy.name}
+	policyStmtMap := PolicyRouteMap[policyRouteIndex]
+	if policyStmtMap.policyStmtMap == nil{
+		fmt.Println("Unexpected:None of the policy statements of this policy have been applied on this route")
+		return
+	}
+	for stmt,conditionsAndActionsList:=range policyStmtMap.policyStmtMap {
+		fmt.Println("Applied policyStmtName ",stmt)
+		policyStmt := PolicyStmtDB.Get(patriciaDB.Prefix(stmt))
+        if policyStmt == nil {
+			fmt.Println("Invalid policyStmt")
+			continue
+		}
+		policyEngineUndoActionsPolicyStmt(route,policy,policyStmt.(PolicyStmt), params, conditionsAndActionsList)
+		//check if the route still exists - it may have been deleted by the previous statement action
+        routeInfoRecordList := RouteInfoMap.Get(ipPrefix)
+		if routeInfoRecordList == nil {
+			fmt.Println("this route no longer exists")
+			break
+		}
+	}*/
+}
 func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilterEntityParams, policy Policy, policyStmt PolicyStmt, policyPath int, params interface{}, hit *bool, deleted *bool) {
 	fmt.Println("policyEngineApplyPolicyStmt - ", policyStmt.Name)
 	var conditionList []string
@@ -242,11 +271,47 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicy(entity *PolicyEngineFilterEnti
 		}
 	}
 }
+func (db *PolicyEngineDB) PolicyEngineApplyForEntity(entity PolicyEngineFilterEntityParams, policyData interface{}, params interface{}) {
+   fmt.Println("policyEngineApplyForEntity" )	
+   policy := policyData.(Policy)
+   policyHit := false
+     if len(entity.PolicyList) == 0 {
+	  fmt.Println("This route has no policy applied to it so far, just apply the new policy")
+      db.PolicyEngineApplyPolicy(&entity, policy, policyCommonDefs.PolicyPath_All,params, &policyHit)
+     } else {
+      fmt.Println("This route already has policy applied to it - len(route.PolicyList) - ", len(entity.PolicyList))
+    
+	  for i:=0;i<len(entity.PolicyList);i++ {
+		 fmt.Println("policy at index ", i)
+	     policyInfo := db.PolicyDB.Get(patriciaDB.Prefix(entity.PolicyList[i]))
+	     if policyInfo == nil {
+		    fmt.Println("Unexpected: Invalid policy in the route policy list")
+	     } else {
+	       oldPolicy := policyInfo.(Policy)
+		   if !isPolicyTypeSame(oldPolicy, policy) {
+			 fmt.Println("The policy type applied currently is not the same as new policy, so apply new policy")
+              db.PolicyEngineApplyPolicy(&entity, policy, policyCommonDefs.PolicyPath_All,params, &policyHit)
+		   } else if oldPolicy.Precedence < policy.Precedence {
+			 fmt.Println("The policy types are same and precedence of the policy applied currently is lower than the new policy, so do nothing")
+			 return 
+		   } else {
+			fmt.Println("The new policy's precedence is lower, so undo old policy's actions and apply the new policy")
+			db.PolicyEngineUndoPolicyForRoute(&entity, oldPolicy, params)
+			db.PolicyEngineApplyPolicy(&entity, policy, policyCommonDefs.PolicyPath_All,params, &policyHit)
+		   }
+		}
+	  }	
+    }
+}
 
 func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(policy Policy) {
 	fmt.Println("PolicyEngineTraverseAndApplyPolicy -  apply policy ", policy.Name)
     if policy.ExportPolicy || policy.ImportPolicy{
 	   fmt.Println("Applying import/export policy to all routes")
+	   if db.TraverseAndApplyPolicyFunc != nil {
+	      fmt.Println("Calling TraverseAndApplyPolicyFunc function")
+	      db.TraverseAndApplyPolicyFunc(policy, db.PolicyEngineApplyForEntity)	
+	   }
 	  // PolicyEngineTraverseAndApply(policy)
 	} else if policy.GlobalPolicy {
 		fmt.Println("Need to apply global policy")
