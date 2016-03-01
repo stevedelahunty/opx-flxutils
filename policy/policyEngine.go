@@ -15,7 +15,7 @@ import (
 //	"asicd/asicdConstDefs"
 	"bytes"
   //  "database/sql"
-    "fmt"
+   "fmt"
 )
 func (db *PolicyEngineDB) ActionListHasAction(actionList []string, actionType int, action string) (match bool) {
 	fmt.Println("ActionListHasAction for action ", action)
@@ -24,6 +24,55 @@ func (db *PolicyEngineDB) ActionListHasAction(actionList []string, actionType in
 func (db *PolicyEngineDB) PolicyEngineCheck(route interface{}, policyType int) (actionList []string){
 	fmt.Println("PolicyEngineTest to see if there are any policies  ")
 	return nil
+}
+func (db *PolicyEngineDB) PolicyEngineUndoActionsPolicyStmt(policy Policy, policyStmt PolicyStmt, params interface{}, conditionsAndActionsList ConditionsAndActionsList) {
+	fmt.Println("policyEngineUndoActionsPolicyStmt")
+	if conditionsAndActionsList.ActionList == nil {
+		fmt.Println("No actions")
+		return
+	}
+	var i int
+	for i=0;i<len(conditionsAndActionsList.ActionList);i++ {
+	  fmt.Printf("Find policy action number %d name %s in the action database\n", i, conditionsAndActionsList.ActionList[i])
+	  actionItem := db.PolicyActionsDB.Get(patriciaDB.Prefix(policyStmt.Actions[i]))
+	  if actionItem == nil {
+	     fmt.Println("Did not find action ", conditionsAndActionsList.ActionList[i], " in the action database")	
+		 continue
+	  }
+	  actionInfo := actionItem.(PolicyAction)
+	  if db.UndoActionfuncMap[actionInfo.ActionType] != nil {
+			db.UndoActionfuncMap[actionInfo.ActionType](actionItem,conditionsAndActionsList.ConditionList, params, policyStmt)	
+	  }
+	}
+}
+func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFilterEntityParams, policy Policy, params interface{}) {
+	fmt.Println("policyEngineUndoPolicyForRoute - policy name ", policy.Name, "  route: ", entity.DestNetIp, " type:", entity.RouteProtocol)
+    policyEntityIndex := db.GetPolicyEntityMapIndex(entity,policy.Name)
+	if policyEntityIndex == nil {
+		fmt.Println("policy entity map index nil")
+		return
+	}
+	policyStmtMap := db.PolicyEntityMap[policyEntityIndex]
+	if policyStmtMap.PolicyStmtMap == nil{
+		fmt.Println("Unexpected:None of the policy statements of this policy have been applied on this route")
+		return
+	}
+	for stmt,conditionsAndActionsList:=range policyStmtMap.PolicyStmtMap {
+		fmt.Println("Applied policyStmtName ",stmt)
+		policyStmt :=db. PolicyStmtDB.Get(patriciaDB.Prefix(stmt))
+        if policyStmt == nil {
+			fmt.Println("Invalid policyStmt")
+			continue
+		}
+		db.PolicyEngineUndoActionsPolicyStmt(policy,policyStmt.(PolicyStmt), params, conditionsAndActionsList)
+		//check if the route still exists - it may have been deleted by the previous statement action
+	   if db.IsEntityPresentFunc != nil {
+		if !(db.IsEntityPresentFunc(params)) {
+			fmt.Println("This entity no longer exists")
+			break
+		}
+	  }
+	}
 }
 func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilterEntityParams, policyStmt PolicyStmt, params interface {}) (actionList []string){
 	fmt.Println("policyEngineImplementActions")
@@ -48,13 +97,13 @@ func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilter
 		      fmt.Println("PolicyActionTypeRouteDisposition action to be applied")
 	           addActionToList = true
 			  if db.ActionfuncMap[policyCommonDefs.PolicyActionTypeRouteDisposition] != nil {
-			     db.ActionfuncMap[policyCommonDefs.PolicyActionTypeRouteDisposition](action.ActionInfo,params)	
+			     db.ActionfuncMap[policyCommonDefs.PolicyActionTypeRouteDisposition](action.ActionInfo,nil, params)	
 			  }
 			  break
 		   case policyCommonDefs.PolicyActionTypeRouteRedistribute:
 		      fmt.Println("PolicyActionTypeRouteRedistribute action to be applied")
 			  if db.ActionfuncMap[policyCommonDefs.PolicyActionTypeRouteRedistribute] != nil {
-			     db.ActionfuncMap[policyCommonDefs.PolicyActionTypeRouteRedistribute](action.ActionInfo,params)	
+			     db.ActionfuncMap[policyCommonDefs.PolicyActionTypeRouteRedistribute](action.ActionInfo,nil, params)	
 			  }
 	          addActionToList = true
 			  break
@@ -116,6 +165,55 @@ func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Pre
 	} 
 	return match
 }
+func (db *PolicyEngineDB) DstIpPrefixMatchConditionfunc (entity PolicyEngineFilterEntityParams, condition PolicyCondition, policyStmt PolicyStmt) (match bool) {
+	fmt.Println("dstIpPrefixMatchConditionfunc")
+	ipPrefix,err := netUtils.GetNetworkPrefixFromCIDR(entity.DestNetIp)
+	if err != nil {
+		fmt.Println("Invalid ipPrefix for the route ", entity.DestNetIp)
+		return false
+	}
+	match = db.FindPrefixMatch(entity.DestNetIp, ipPrefix,policyStmt.Name)
+	if match {
+		fmt.Println("Found a match for this prefix")
+	}
+	return match
+}
+func (db *PolicyEngineDB) ProtocolMatchConditionfunc (entity PolicyEngineFilterEntityParams, condition PolicyCondition, policyStmt PolicyStmt) (match bool) {
+	fmt.Println("protocolMatchConditionfunc")
+	matchProto := condition.ConditionInfo.(string)
+	if matchProto == entity.RouteProtocol {
+	   fmt.Println("Protocol condition matches")
+	   match = true
+	} 
+	return match
+}
+func (db *PolicyEngineDB) ConditionCheckValid(entity PolicyEngineFilterEntityParams,conditionsList []string, policyStmt PolicyStmt) (valid bool) {
+   fmt.Println("conditionCheckValid")	
+   valid = true
+   if conditionsList == nil {
+      fmt.Println("No conditions to match, so valid")
+	  return true	
+   }
+   for i:=0;i<len(conditionsList);i++ {
+	  fmt.Printf("Find policy condition number %d name %s in the condition database\n", i, policyStmt.Conditions[i])
+	  conditionItem := db.PolicyConditionsDB.Get(patriciaDB.Prefix(conditionsList[i]))
+	  if conditionItem == nil {
+	     fmt.Println("Did not find condition ", conditionsList[i], " in the condition database")	
+		 continue
+	  }
+	  condition := conditionItem.(PolicyCondition)
+	  fmt.Printf("policy condition number %d type %d\n", i, condition.ConditionType)
+	  if db.ConditionCheckfuncMap[condition.ConditionType] != nil {
+	      match := db.ConditionCheckfuncMap[condition.ConditionType](entity,condition,policyStmt)
+		  if !match {
+			fmt.Println("Condition does not match")
+			return false
+		  }
+	  }
+	}
+   fmt.Println("returning valid= ", valid)
+   return valid
+}
 func (db *PolicyEngineDB) PolicyEngineMatchConditions(entity PolicyEngineFilterEntityParams, policyStmt PolicyStmt) (match bool, conditionsList []string){
     fmt.Println("policyEngineMatchConditions")
 	var i int
@@ -132,33 +230,13 @@ func (db *PolicyEngineDB) PolicyEngineMatchConditions(entity PolicyEngineFilterE
 	  }
 	  condition := conditionItem.(PolicyCondition)
 	  fmt.Printf("policy condition number %d type %d\n", i, condition.ConditionType)
-      switch condition.ConditionType {
-		case policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch:
-		  fmt.Println("PolicyConditionTypeDstIpPrefixMatch case")
-		  ipPrefix,err := netUtils.GetNetworkPrefixFromCIDR(entity.DestNetIp)
-		  if err != nil {
-			fmt.Println("Invalid ipPrefix for the route ", entity.DestNetIp)
-			return match,conditionsList
-		  }
-		  match := db.FindPrefixMatch(entity.DestNetIp, ipPrefix,policyStmt.Name)
+	  if db.ConditionCheckfuncMap[condition.ConditionType] != nil {
+	      match = db.ConditionCheckfuncMap[condition.ConditionType](entity,condition,policyStmt)
 		  if match {
-		    fmt.Println("Found a match for this prefix")
+			fmt.Println("Condition match found")
 			anyConditionsMatch = true
 			addConditiontoList = true
 		  }
-		break
-		case policyCommonDefs.PolicyConditionTypeProtocolMatch:
-		  fmt.Println("PolicyConditionTypeProtocolMatch case")
-		  matchProto := condition.ConditionInfo.(string)
-		  if matchProto == entity.RouteProtocol {
-			fmt.Println("Protocol condition matches")
-			anyConditionsMatch = true
-			addConditiontoList = true
-		  } 
-		break
-		default:
-		  fmt.Println("Not a known condition type")
-          break
 	  }
 	  if addConditiontoList == true{
 		if conditionsList == nil {
@@ -174,35 +252,6 @@ func (db *PolicyEngineDB) PolicyEngineMatchConditions(entity PolicyEngineFilterE
 	return true,conditionsList
    }
     return match,conditionsList
-}
-func (db *PolicyEngineDB) PolicyEngineUndoPolicyForRoute(entity *PolicyEngineFilterEntityParams, policy Policy, params interface{}) {
-	fmt.Println("policyEngineUndoPolicyForRoute - policy name ", policy.Name, "  route: ", entity.DestNetIp," type:", entity.RouteProtocol)
-/*    ipPrefix,err:=getNetowrkPrefixFromStrings(route.Ipaddr, route.Mask)
-	if err != nil {
-		fmt.Println("Invalid prefix, err= ", err)
-		return
-	}
-    policyRouteIndex := PolicyRouteIndex{routeIP:route.Ipaddr,routeMask:route.Mask, policy:policy.name}
-	policyStmtMap := PolicyRouteMap[policyRouteIndex]
-	if policyStmtMap.policyStmtMap == nil{
-		fmt.Println("Unexpected:None of the policy statements of this policy have been applied on this route")
-		return
-	}
-	for stmt,conditionsAndActionsList:=range policyStmtMap.policyStmtMap {
-		fmt.Println("Applied policyStmtName ",stmt)
-		policyStmt := PolicyStmtDB.Get(patriciaDB.Prefix(stmt))
-        if policyStmt == nil {
-			fmt.Println("Invalid policyStmt")
-			continue
-		}
-		policyEngineUndoActionsPolicyStmt(route,policy,policyStmt.(PolicyStmt), params, conditionsAndActionsList)
-		//check if the route still exists - it may have been deleted by the previous statement action
-        routeInfoRecordList := RouteInfoMap.Get(ipPrefix)
-		if routeInfoRecordList == nil {
-			fmt.Println("this route no longer exists")
-			break
-		}
-	}*/
 }
 func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilterEntityParams, policy Policy, policyStmt PolicyStmt, policyPath int, params interface{}, hit *bool, deleted *bool) {
 	fmt.Println("policyEngineApplyPolicyStmt - ", policyStmt.Name)
@@ -239,6 +288,9 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 	if db.UpdateEntityDB != nil {
 		policyDetails := PolicyDetails{Policy:policy.Name, PolicyStmt:policyStmt.Name,ConditionList:conditionList,ActionList:actionList, EntityDeleted:*deleted}
 		db.UpdateEntityDB(policyDetails,params)
+	}
+	if entity.CreatePath == true {
+		db.AddPolicyEntityMapEntry(*entity, policy.Name, policyStmt.Name, conditionList, actionList)
 	}
 }
 
@@ -296,12 +348,63 @@ func (db *PolicyEngineDB) PolicyEngineApplyForEntity(entity PolicyEngineFilterEn
 			 return 
 		   } else {
 			fmt.Println("The new policy's precedence is lower, so undo old policy's actions and apply the new policy")
-			db.PolicyEngineUndoPolicyForRoute(&entity, oldPolicy, params)
+			db.PolicyEngineUndoPolicyForEntity(entity, oldPolicy, params)
 			db.PolicyEngineApplyPolicy(&entity, policy, policyCommonDefs.PolicyPath_All,params, &policyHit)
 		   }
 		}
 	  }	
     }
+}
+
+func (db *PolicyEngineDB) PolicyEngineApplyGlobalPolicyStmt(policy Policy, policyStmt PolicyStmt) {
+	fmt.Println("policyEngineApplyGlobalPolicyStmt - ", policyStmt.Name)
+    var conditionItem interface{}=nil
+//global policies can only have statements with 1 condition and 1 action
+	if policyStmt.Actions == nil {
+		fmt.Println("No policy actions defined")
+		return
+	}
+	if policyStmt.Conditions == nil {
+		fmt.Println("No policy conditions")
+	} else {
+		if len(policyStmt.Conditions) > 1 {
+			fmt.Println("only 1 condition allowed for global policy stmt")
+			return
+		}
+		conditionItem = db.PolicyConditionsDB.Get(patriciaDB.Prefix(policyStmt.Conditions[0]))
+		if conditionItem == nil {
+			fmt.Println("Condition ", policyStmt.Conditions[0]," not found")
+			return
+		}
+		actionItem := db.PolicyActionsDB.Get(patriciaDB.Prefix(policyStmt.Actions[0]))
+		if actionItem == nil {
+			fmt.Println("Action ", policyStmt.Actions[0]," not found")
+			return
+		}
+		actionInfo := actionItem.(PolicyAction)
+		if db.ActionfuncMap[actionInfo.ActionType] != nil {
+			db.ActionfuncMap[actionInfo.ActionType](actionItem,conditionItem,nil)	
+		}
+	}
+}
+
+func (db *PolicyEngineDB) PolicyEngineApplyGlobalPolicy(policy Policy) {
+	fmt.Println("policyEngineApplyGlobalPolicy")
+     var policyStmtKeys []int
+	 for k:=range policy.PolicyStmtPrecedenceMap {
+		fmt.Println("key k = ", k)
+		policyStmtKeys = append(policyStmtKeys,k)
+	}
+	sort.Ints(policyStmtKeys)
+	for i:=0;i<len(policyStmtKeys);i++ {
+		fmt.Println("Key: ", policyStmtKeys[i], " policyStmtName ", policy.PolicyStmtPrecedenceMap[policyStmtKeys[i]])
+		policyStmt := db.PolicyStmtDB.Get((patriciaDB.Prefix(policy.PolicyStmtPrecedenceMap[policyStmtKeys[i]])))
+        if policyStmt == nil {
+			fmt.Println("Invalid policyStmt")
+			continue
+		}
+		db.PolicyEngineApplyGlobalPolicyStmt(policy,policyStmt.(PolicyStmt))
+	}
 }
 
 func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(policy Policy) {
@@ -312,10 +415,9 @@ func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(policy Policy) {
 	      fmt.Println("Calling TraverseAndApplyPolicyFunc function")
 	      db.TraverseAndApplyPolicyFunc(policy, db.PolicyEngineApplyForEntity)	
 	   }
-	  // PolicyEngineTraverseAndApply(policy)
 	} else if policy.GlobalPolicy {
 		fmt.Println("Need to apply global policy")
-		//policyEngineApplyGlobalPolicy(policy)
+		db.PolicyEngineApplyGlobalPolicy(policy)
 	}
 }
 
@@ -323,7 +425,7 @@ func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicy(policy Policy){
 	fmt.Println("PolicyEngineTraverseAndReversePolicy -  reverse policy ", policy.Name)
     if policy.ExportPolicy || policy.ImportPolicy{
 	   fmt.Println("Reversing import/export policy ")
-	   //PolicyEngineTraverseAndReverse(policy)
+	   db.TraverseAndReversePolicyFunc(policy)
 	} else if policy.GlobalPolicy {
 		fmt.Println("Need to reverse global policy")
 		//policyEngineReverseGlobalPolicy(policy)
@@ -410,14 +512,17 @@ func (db *PolicyEngineDB) PolicyEngineFilter(entity PolicyEngineFilterEntityPara
 		if policyPath == policyCommonDefs.PolicyPath_Import {
 		   fmt.Println("Applying default import policy")
 			if db.DefaultImportPolicyActionFunc != nil {
-				db.DefaultImportPolicyActionFunc(nil,params)
+				db.DefaultImportPolicyActionFunc(nil,nil,params)
 			}
 		} else if policyPath == policyCommonDefs.PolicyPath_Export {
 			fmt.Println("Applying default export policy")
 			if db.DefaultExportPolicyActionFunc != nil {
-				db.DefaultExportPolicyActionFunc(nil,params)
+				db.DefaultExportPolicyActionFunc(nil,nil,params)
 			}
 		}
+	}
+	if entity.DeletePath == true {
+		db.DeletePolicyEntityMapEntry(entity,"")
 	}
 }
 
