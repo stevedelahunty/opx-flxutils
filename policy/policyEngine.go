@@ -47,6 +47,9 @@ func (db *PolicyEngineDB) PolicyEngineUndoActionsPolicyStmt(policy Policy, polic
 }
 func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFilterEntityParams, policy Policy, params interface{}) {
 	fmt.Println("policyEngineUndoPolicyForRoute - policy name ", policy.Name, "  route: ", entity.DestNetIp, " type:", entity.RouteProtocol)
+    if db.GetPolicyEntityMapIndex == nil {
+		return
+	}
     policyEntityIndex := db.GetPolicyEntityMapIndex(entity,policy.Name)
 	if policyEntityIndex == nil {
 		fmt.Println("policy entity map index nil")
@@ -289,9 +292,7 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 		policyDetails := PolicyDetails{Policy:policy.Name, PolicyStmt:policyStmt.Name,ConditionList:conditionList,ActionList:actionList, EntityDeleted:*deleted}
 		db.UpdateEntityDB(policyDetails,params)
 	}
-	if entity.CreatePath == true {
-		db.AddPolicyEntityMapEntry(*entity, policy.Name, policyStmt.Name, conditionList, actionList)
-	}
+	db.AddPolicyEntityMapEntry(*entity, policy.Name, policyStmt.Name, conditionList, actionList)
 }
 
 func (db *PolicyEngineDB) PolicyEngineApplyPolicy(entity *PolicyEngineFilterEntityParams, policy Policy, policyPath int,params interface{}, hit *bool) {
@@ -355,7 +356,38 @@ func (db *PolicyEngineDB) PolicyEngineApplyForEntity(entity PolicyEngineFilterEn
 	  }	
     }
 }
-
+func (db *PolicyEngineDB) PolicyEngineReverseGlobalPolicyStmt(policy Policy, policyStmt PolicyStmt) {
+	fmt.Println("policyEngineApplyGlobalPolicyStmt - ", policyStmt.Name)
+    var conditionItem interface{}=nil
+//global policies can only have statements with 1 condition and 1 action
+	if policyStmt.Actions == nil {
+		fmt.Println("No policy actions defined")
+		return
+	}
+	if policyStmt.Conditions == nil {
+		fmt.Println("No policy conditions")
+	} else {
+		if len(policyStmt.Conditions) > 1 {
+			fmt.Println("only 1 condition allowed for global policy stmt")
+			return
+		}
+		conditionItem = db.PolicyConditionsDB.Get(patriciaDB.Prefix(policyStmt.Conditions[0]))
+		if conditionItem == nil {
+			fmt.Println("Condition ", policyStmt.Conditions[0]," not found")
+			return
+		}
+		actionItem := db.PolicyActionsDB.Get(patriciaDB.Prefix(policyStmt.Actions[0]))
+		if actionItem == nil {
+			fmt.Println("Action ", policyStmt.Actions[0]," not found")
+			return
+		}
+		actionInfo := actionItem.(PolicyAction)
+		if db.UndoActionfuncMap[actionInfo.ActionType] != nil {
+			//since global policies have just 1 condition, we can pass that as the params to the undo call
+			db.UndoActionfuncMap[actionInfo.ActionType](actionItem,nil,conditionItem, policyStmt)	
+		}
+	}
+}
 func (db *PolicyEngineDB) PolicyEngineApplyGlobalPolicyStmt(policy Policy, policyStmt PolicyStmt) {
 	fmt.Println("policyEngineApplyGlobalPolicyStmt - ", policyStmt.Name)
     var conditionItem interface{}=nil
@@ -387,7 +419,24 @@ func (db *PolicyEngineDB) PolicyEngineApplyGlobalPolicyStmt(policy Policy, polic
 		}
 	}
 }
-
+func (db *PolicyEngineDB) PolicyEngineReverseGlobalPolicy(policy Policy) {
+	fmt.Println("policyEngineReverseGlobalPolicy")
+     var policyStmtKeys []int
+	 for k:=range policy.PolicyStmtPrecedenceMap {
+		fmt.Println("key k = ", k)
+		policyStmtKeys = append(policyStmtKeys,k)
+	}
+	sort.Ints(policyStmtKeys)
+	for i:=0;i<len(policyStmtKeys);i++ {
+		fmt.Println("Key: ", policyStmtKeys[i], " policyStmtName ", policy.PolicyStmtPrecedenceMap[policyStmtKeys[i]])
+		policyStmt := db.PolicyStmtDB.Get((patriciaDB.Prefix(policy.PolicyStmtPrecedenceMap[policyStmtKeys[i]])))
+        if policyStmt == nil {
+			fmt.Println("Invalid policyStmt")
+			continue
+		}
+		db.PolicyEngineReverseGlobalPolicyStmt(policy,policyStmt.(PolicyStmt))
+	}
+}
 func (db *PolicyEngineDB) PolicyEngineApplyGlobalPolicy(policy Policy) {
 	fmt.Println("policyEngineApplyGlobalPolicy")
      var policyStmtKeys []int
@@ -428,10 +477,10 @@ func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicy(policy Policy){
 	   db.TraverseAndReversePolicyFunc(policy)
 	} else if policy.GlobalPolicy {
 		fmt.Println("Need to reverse global policy")
-		//policyEngineReverseGlobalPolicy(policy)
+		db.PolicyEngineReverseGlobalPolicy(policy)
 	}
-	
 }
+
 func (db *PolicyEngineDB) PolicyEngineFilter(entity PolicyEngineFilterEntityParams, policyPath int, params interface{}) {
 	fmt.Println("PolicyEngineFilter")
 	var policyPath_Str string

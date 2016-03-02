@@ -172,6 +172,9 @@ func (db *PolicyEngineDB) AddPolicyEntityMapEntry(entity PolicyEngineFilterEntit
 	if db.PolicyEntityMap == nil {
 		db.PolicyEntityMap = make(map[PolicyEntityMapIndex]PolicyStmtMap)
 	}
+    if db.GetPolicyEntityMapIndex == nil {
+		return
+	}
 	policyEntityMapIndex := db.GetPolicyEntityMapIndex(entity, policy)
 	if policyEntityMapIndex == nil {
 		fmt.Println("policyEntityMapKey nil")
@@ -201,6 +204,9 @@ func (db *PolicyEngineDB) DeletePolicyEntityMapEntry(entity PolicyEngineFilterEn
 	fmt.Println("DeletePolicyEntityMapEntry for policy ", policy)
 	if db.PolicyEntityMap == nil {
 		fmt.Println("PolicyEntityMap empty")
+		return
+	}
+    if db.GetPolicyEntityMapIndex == nil {
 		return
 	}
 	policyEntityMapIndex := db.GetPolicyEntityMapIndex(entity, policy)
