@@ -2,79 +2,65 @@ package logging
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
+	nanomsg "github.com/op/go-nanomsg"
+	"infra/sysd/sysdCommonDefs"
 	"io/ioutil"
 	"log/syslog"
 )
 
-//Logging levels
-type SRDebugLevel uint8
-
-const (
-	CRIT   SRDebugLevel = 0
-	ERR    SRDebugLevel = 1
-	WARN   SRDebugLevel = 2
-	ALERT  SRDebugLevel = 3
-	EMERG  SRDebugLevel = 4
-	NOTICE SRDebugLevel = 5
-	INFO   SRDebugLevel = 6
-	DEBUG  SRDebugLevel = 7
-	TRACE  SRDebugLevel = 8
-)
-
-func ConvertLevelStrToVal(str string) SRDebugLevel {
-	var val SRDebugLevel
+func ConvertLevelStrToVal(str string) sysdCommonDefs.SRDebugLevel {
+	var val sysdCommonDefs.SRDebugLevel
 	switch str {
 	case "crit":
-		val = CRIT
+		val = sysdCommonDefs.CRIT
 	case "err":
-		val = ERR
+		val = sysdCommonDefs.ERR
 	case "warn":
-		val = WARN
+		val = sysdCommonDefs.WARN
 	case "alert":
-		val = ALERT
+		val = sysdCommonDefs.ALERT
 	case "emerg":
-		val = EMERG
+		val = sysdCommonDefs.EMERG
 	case "notice":
-		val = NOTICE
+		val = sysdCommonDefs.NOTICE
 	case "info":
-		val = INFO
+		val = sysdCommonDefs.INFO
 	case "debug":
-		val = DEBUG
+		val = sysdCommonDefs.DEBUG
 	case "trace":
-		val = TRACE
+		val = sysdCommonDefs.TRACE
 	}
 	return val
 }
 
-type ComponentsJson struct {
-	Name  string       `json:Name`
-	Level SRDebugLevel `json:Level`
+type ComponentJson struct {
+	Module string `json:Module`
+	Level  string `json:Level`
 }
 
 type LoggingJson struct {
-	SystemLogging string           `json:SystemLogging`
-	Components    []ComponentsJson `json:Components`
+	SystemLogging string          `json:SystemLogging`
+	Components    []ComponentJson `json:Components`
 }
 
 type Writer struct {
-	componentName string
-	globalLogging bool
-	myLogLevel    SRDebugLevel
-	initialized   bool
-	sysLogger     *syslog.Writer
+	GlobalLogging   bool
+	MyComponentName string
+	MyLogLevel      sysdCommonDefs.SRDebugLevel
+	initialized     bool
+	sysLogger       *syslog.Writer
+	subSocket       *nanomsg.SubSocket
+	socketCh        chan []byte
 }
 
-func NewLogger(name string, tag string) (*Writer, error) {
+func NewLogger(paramsDir string, name string, tag string) (*Writer, error) {
 	var loggingConfig LoggingJson
 	var err error
 	srLogger := &Writer{}
-	srLogger.componentName = name
+	srLogger.MyComponentName = name
 
-	paramsDir := flag.String("params", "./params", "Params directory")
-	flag.Parse()
-	fileName := *paramsDir
+	fileName := paramsDir
 	if fileName[len(fileName)-1] != '/' {
 		fileName = fileName + "/"
 	}
@@ -85,14 +71,18 @@ func NewLogger(name string, tag string) (*Writer, error) {
 		fmt.Println("Failed to read logging config file")
 		return nil, err
 	}
-	json.Unmarshal(data, &loggingConfig)
+	err = json.Unmarshal(data, &loggingConfig)
+	if err != nil {
+		fmt.Println("Failed to unmarshal logging config: ", err)
+		return nil, err
+	}
 
 	if loggingConfig.SystemLogging == "on" {
-		srLogger.globalLogging = true
+		srLogger.GlobalLogging = true
 	}
-	for _, module := range loggingConfig.Components {
-		if module.Name == name {
-			srLogger.myLogLevel = module.Level
+	for _, component := range loggingConfig.Components {
+		if component.Module == name {
+			srLogger.MyLogLevel = ConvertLevelStrToVal(component.Level)
 			break
 		}
 	}
@@ -100,23 +90,20 @@ func NewLogger(name string, tag string) (*Writer, error) {
 	srLogger.sysLogger, err = syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, tag)
 	if err == nil {
 		srLogger.initialized = true
-		fmt.Println("Logging level ", srLogger.myLogLevel, " set for ", srLogger.componentName)
+		fmt.Println("Logging level ", srLogger.MyLogLevel, " set for ", srLogger.MyComponentName)
 	}
 	return srLogger, err
 }
 
-func (logger *Writer) SetGlobal(logging string) error {
-	if logging == "on" {
-		logger.globalLogging = true
-	} else {
-		logger.globalLogging = false
-	}
+func (logger *Writer) SetGlobal(Enable bool) error {
+	logger.GlobalLogging = Enable
+	fmt.Println("Changed global logging to: ", logger.GlobalLogging, " for ", logger.MyComponentName)
 	return nil
 }
 
-func (logger *Writer) SetLevel(level SRDebugLevel) error {
-	logger.myLogLevel = level
-	fmt.Println("Changed logging level to: ", logger.myLogLevel, " for ", logger.componentName)
+func (logger *Writer) SetLevel(level sysdCommonDefs.SRDebugLevel) error {
+	logger.MyLogLevel = level
+	fmt.Println("Changed logging level to: ", logger.MyLogLevel, " for ", logger.MyComponentName)
 	return nil
 }
 
@@ -156,28 +143,28 @@ func (logger *Writer) Emerg(message string) error {
 }
 
 func (logger *Writer) Notice(message string) error {
-	if logger.initialized && logger.globalLogging && logger.myLogLevel >= NOTICE {
+	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.NOTICE {
 		return logger.sysLogger.Notice(message)
 	}
 	return nil
 }
 
 func (logger *Writer) Info(message string) error {
-	if logger.initialized && logger.globalLogging && logger.myLogLevel >= INFO {
+	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.INFO {
 		return logger.sysLogger.Info(message)
 	}
 	return nil
 }
 
 func (logger *Writer) Debug(message string) error {
-	if logger.initialized && logger.globalLogging && logger.myLogLevel >= DEBUG {
+	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.DEBUG {
 		return logger.sysLogger.Debug(message)
 	}
 	return nil
 }
 
 func (logger *Writer) Write(message string) (int, error) {
-	if logger.initialized && logger.globalLogging && logger.myLogLevel >= TRACE {
+	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.TRACE {
 		n, err := logger.sysLogger.Write([]byte(message))
 		return n, err
 	}
@@ -191,4 +178,91 @@ func (logger *Writer) Close() error {
 	}
 	logger = nil
 	return err
+}
+
+func (logger *Writer) SetupSubSocket() error {
+	var err error
+	var socket *nanomsg.SubSocket
+	if socket, err = nanomsg.NewSubSocket(); err != nil {
+		logger.Err(fmt.Sprintf("Failed to create subscribe socket %s, error:%s", sysdCommonDefs.PUB_SOCKET_ADDR, err))
+		return err
+	}
+
+	if err = socket.Subscribe(""); err != nil {
+		logger.Err(fmt.Sprintf("Failed to subscribe to \"\" on subscribe socket %s, error:%s", sysdCommonDefs.PUB_SOCKET_ADDR, err))
+		return err
+	}
+
+	if _, err = socket.Connect(sysdCommonDefs.PUB_SOCKET_ADDR); err != nil {
+		logger.Err(fmt.Sprintf("Failed to connect to publisher socket %s, error:%s", sysdCommonDefs.PUB_SOCKET_ADDR, err))
+		return err
+	}
+
+	logger.Info(fmt.Sprintf("Connected to publisher socker %s", sysdCommonDefs.PUB_SOCKET_ADDR))
+	if err = socket.SetRecvBuffer(1024 * 1024); err != nil {
+		logger.Err(fmt.Sprintln("Failed to set the buffer size for subsriber socket %s, error:", sysdCommonDefs.PUB_SOCKET_ADDR, err))
+		return err
+	}
+	logger.subSocket = socket
+	logger.socketCh = make(chan []byte)
+	return nil
+}
+
+func (logger *Writer) ProcessSysdNotification(rxBuf []byte) error {
+	var msg sysdCommonDefs.Notification
+	err := json.Unmarshal(rxBuf, &msg)
+	if err != nil {
+		logger.Err(fmt.Sprintln("Unable to unmarshal sysd notification: ", rxBuf))
+		return err
+	}
+	if msg.Type == sysdCommonDefs.G_LOG {
+		var gLog sysdCommonDefs.GlobalLogging
+		err = json.Unmarshal(msg.Payload, &gLog)
+		if err != nil {
+			logger.Err(fmt.Sprintln("Unable to unmarshal sysd global logging notification: ", msg.Payload))
+			return err
+		}
+		logger.SetGlobal(gLog.Enable)
+	}
+	if msg.Type == sysdCommonDefs.C_LOG {
+		var cLog sysdCommonDefs.ComponentLogging
+		err = json.Unmarshal(msg.Payload, &cLog)
+		if err != nil {
+			logger.Err(fmt.Sprintln("Unable to unmarshal sysd component logging notification: ", msg.Payload))
+			return err
+		}
+		if cLog.Name == logger.MyComponentName {
+			logger.SetLevel(cLog.Level)
+		}
+	}
+	return nil
+}
+
+func (logger *Writer) ProcessSysdNotifications() error {
+	for {
+		select {
+		case rxBuf := <-logger.socketCh:
+			if rxBuf != nil {
+				logger.ProcessSysdNotification(rxBuf)
+			}
+		}
+	}
+	return nil
+}
+
+func (logger *Writer) ListenForSysdNotifications() error {
+	err := logger.SetupSubSocket()
+	if err != nil {
+		logger.Err(fmt.Sprintln("Failed to subscribe to sysd notifications"))
+		return err
+	}
+	go logger.ProcessSysdNotifications()
+	for {
+		rxBuf, err := logger.subSocket.Recv(0)
+		if err != nil {
+			logger.Err(fmt.Sprintln("Recv on BFD subscriber socket failed with error:", err))
+			continue
+		}
+		logger.socketCh <- rxBuf
+	}
 }
