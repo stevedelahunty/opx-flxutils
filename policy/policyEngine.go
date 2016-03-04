@@ -21,9 +21,45 @@ func (db *PolicyEngineDB) ActionListHasAction(actionList []string, actionType in
 	fmt.Println("ActionListHasAction for action ", action)
 	return match
 }
-func (db *PolicyEngineDB) PolicyEngineCheck(route interface{}, policyType int) (actionList []string){
-	fmt.Println("PolicyEngineTest to see if there are any policies  ")
-	return nil
+func (db *PolicyEngineDB) PolicyEngineCheckActionsForEntity(entity PolicyEngineFilterEntityParams, policyConditionType int) (actionList []string){
+	fmt.Println("PolicyEngineTest to see if there are any policies for condition ", policyConditionType)
+	var policyStmtList []string
+	switch policyConditionType {
+		case policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch:
+		  break
+		case policyCommonDefs.PolicyConditionTypeProtocolMatch:
+          policyStmtList = db.ProtocolPolicyListDB[entity.RouteProtocol]
+		  break
+		default :
+		  fmt.Println("Unknown conditonType")
+		  return nil
+	}
+	if policyStmtList == nil || len (policyStmtList) == 0{
+		fmt.Println("no policy statements configured for this protocol")
+		return nil
+	}
+	for i:=0;i<len(policyStmtList);i++ {
+		fmt.Println("Found policy stmt ", policyStmtList[i], " for this entity")
+        policyList := db.PolicyStmtPolicyMapDB[policyStmtList[i]]
+		if policyList == nil || len(policyList) == 0 {
+			fmt.Println("No policies configured for this entity")
+			return nil
+		}
+		for j:=0;j<len(policyList);j++ {
+			fmt.Println("Found policy ", policyList[j], "for this statement")
+			policyStmtInfo := db.PolicyStmtDB.Get(patriciaDB.Prefix(policyStmtList[i]))
+			if policyStmtInfo == nil {
+				fmt.Println("Did not find this stmt in the DB")
+				return nil
+			}
+			policyStmt := policyStmtInfo.(PolicyStmt)
+			if db.ConditionCheckValid(entity, policyStmt.Conditions, policyStmt) {
+				fmt.Println("All conditions valid for this route, so this policy will be potentially applied to this route")
+                 return policyStmt.Actions
+			}
+		}
+	}
+	return actionList
 }
 func (db *PolicyEngineDB) PolicyEngineUndoActionsPolicyStmt(policy Policy, policyStmt PolicyStmt, params interface{}, conditionsAndActionsList ConditionsAndActionsList) {
 	fmt.Println("policyEngineUndoActionsPolicyStmt")
