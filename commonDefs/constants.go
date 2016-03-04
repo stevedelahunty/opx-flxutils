@@ -8,4 +8,5 @@ const (
 	IfTypeP2P      = iota
 	IfTypeBcast    = 1
 	IfTypeLoopback = 2
+	IfTypeNull = 3
 )
