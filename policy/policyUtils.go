@@ -2,9 +2,11 @@
 package policy
 
 import (
-	"fmt"
 	"utils/patriciaDB"
 	"utils/policy/policyCommonDefs"
+	"os"
+	"log/syslog"
+	"log"
 )
 const (
 	add = iota
@@ -66,6 +68,7 @@ type EntityTraverseAndApplyPolicyfunc func(data interface{}, updatefunc PolicyAp
 type PolicyEntityMapIndex interface {}
 
 type PolicyEngineDB struct {
+	Logger *log.Logger
 	PolicyConditionsDB *patriciaDB.Trie
 	LocalPolicyConditionsDB *LocalDBSlice
 	PolicyActionsDB *patriciaDB.Trie
@@ -93,12 +96,21 @@ type PolicyEngineDB struct {
 }
 
 func (db*PolicyEngineDB) buildPolicyConditionCheckfuncMap () {
-	fmt.Println("buildPolicyConditionCheckfuncMap")
+	db.Logger.Println("buildPolicyConditionCheckfuncMap")
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch] = db.DstIpPrefixMatchConditionfunc
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeProtocolMatch] = db.ProtocolMatchConditionfunc
 }
 func NewPolicyEngineDB() (policyEngineDB *PolicyEngineDB) {
    policyEngineDB = &PolicyEngineDB{}
+	if policyEngineDB.Logger == nil {
+	  policyEngineDB.Logger = log.New(os.Stdout, "PolicyEngine :", log.Ldate|log.Ltime|log.Lshortfile)
+
+	  syslogger, err := syslog.New(syslog.LOG_NOTICE|syslog.LOG_INFO|syslog.LOG_DAEMON, "PolicyEngine")
+	  if err == nil {
+		syslogger.Info("### PolicyEngineDB initailized")
+		policyEngineDB.Logger.SetOutput(syslogger)
+	  }
+	}
    policyEngineDB.PolicyActionsDB = patriciaDB.NewTrie()
    LocalPolicyActionsDB := make([]LocalDB,0)
    localActionSlice := LocalDBSlice(LocalPolicyActionsDB)
@@ -166,7 +178,7 @@ func isPolicyTypeSame(oldPolicy Policy, policy Policy) (same bool){
 	return same
 }
 func (db *PolicyEngineDB) AddPolicyEntityMapEntry(entity PolicyEngineFilterEntityParams, policy string, policyStmt string, conditionList []string, actionList []string) {
-	fmt.Println("AddPolicyEntityMapEntry")
+	db.Logger.Println("AddPolicyEntityMapEntry")
 	var policyStmtMap PolicyStmtMap
 	var conditionsAndActionsList ConditionsAndActionsList
 	if db.PolicyEntityMap == nil {
@@ -177,7 +189,7 @@ func (db *PolicyEngineDB) AddPolicyEntityMapEntry(entity PolicyEngineFilterEntit
 	}
 	policyEntityMapIndex := db.GetPolicyEntityMapIndex(entity, policy)
 	if policyEntityMapIndex == nil {
-		fmt.Println("policyEntityMapKey nil")
+		db.Logger.Println("policyEntityMapKey nil")
 		return
 	}
 	policyStmtMap, ok:= db.PolicyEntityMap[policyEntityMapIndex]
@@ -186,7 +198,7 @@ func (db *PolicyEngineDB) AddPolicyEntityMapEntry(entity PolicyEngineFilterEntit
 	}
 	_, ok = policyStmtMap.PolicyStmtMap[policyStmt]
 	if ok {
-		fmt.Println("policy statement map for statement ", policyStmt, " already in place for policy ", policy)
+		db.Logger.Println("policy statement map for statement ", policyStmt, " already in place for policy ", policy)
 		return
 	} 
 	conditionsAndActionsList.ConditionList = make([]string,0)
@@ -201,9 +213,9 @@ func (db *PolicyEngineDB) AddPolicyEntityMapEntry(entity PolicyEngineFilterEntit
 	db.PolicyEntityMap[policyEntityMapIndex]=policyStmtMap
 }
 func (db *PolicyEngineDB) DeletePolicyEntityMapEntry(entity PolicyEngineFilterEntityParams, policy string) {
-	fmt.Println("DeletePolicyEntityMapEntry for policy ", policy)
+	db.Logger.Println("DeletePolicyEntityMapEntry for policy ", policy)
 	if db.PolicyEntityMap == nil {
-		fmt.Println("PolicyEntityMap empty")
+		db.Logger.Println("PolicyEntityMap empty")
 		return
 	}
     if db.GetPolicyEntityMapIndex == nil {
@@ -211,7 +223,7 @@ func (db *PolicyEngineDB) DeletePolicyEntityMapEntry(entity PolicyEngineFilterEn
 	}
 	policyEntityMapIndex := db.GetPolicyEntityMapIndex(entity, policy)
 	if policyEntityMapIndex == nil {
-		fmt.Println("policyEntityMapIndex nil")
+		db.Logger.Println("policyEntityMapIndex nil")
 		return
 	}
 	//PolicyRouteMap[policyRouteIndex].policyStmtMap=nil
