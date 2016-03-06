@@ -281,6 +281,8 @@ func (db *PolicyEngineDB) PolicyEngineMatchConditions(entity PolicyEngineFilterE
 			db.Logger.Println("Condition match found")
 			anyConditionsMatch = true
 			addConditiontoList = true
+		  } else {
+			allConditionsMatch = false
 		  }
 	  }
 	  if addConditiontoList == true{
