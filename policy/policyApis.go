@@ -20,6 +20,9 @@ type PolicyStmt struct {				//policy engine uses this
 	Actions            []string
 	PolicyList    [] string
 	LocalDBSliceIdx        int8  
+	ImportStmt       bool
+	ExportStmt       bool  
+	GlobalStmt       bool
 }
 type PolicyStmtConfig struct{
 	Name string
@@ -202,20 +205,32 @@ func (db *PolicyEngineDB) UpdatePrefixPolicyTable(conditionInfo interface{}, nam
 	 }
    }
 }
-func (db *PolicyEngineDB) UpdateStatements(policy Policy, policyStmt string, op int) (err error) {
-	db.Logger.Println("UpdateStatements for stmt ", policyStmt)
-	Item := db.PolicyStmtDB.Get(patriciaDB.Prefix(policyStmt))
-	if(Item != nil) {
-		stmt := Item.(PolicyStmt)
-		if stmt.PolicyList == nil {
-			stmt.PolicyList = make([]string,0)
+func (db *PolicyEngineDB) UpdateStatements(policy Policy, policyStmt PolicyStmt, op int) (err error) {
+	db.Logger.Println("UpdateStatements for stmt ", policyStmt.Name)
+	if stmt.PolicyList == nil {
+		if op == del {
+			db.Logger.Println("stmt.PolicyList nil")
+			return err
 		}
-        stmt.PolicyList = append(stmt.PolicyList, policy.Name)
-		db.PolicyStmtDB.Set(patriciaDB.Prefix(policyStmt), stmt)
-	} else {
-		db.Logger.Println("action name ", policyStmt, " not defined")
-		err = errors.New("action name not defined")
+		stmt.PolicyList = make([]string,0)
 	}
+	if op == add {
+       stmt.PolicyList = append(stmt.PolicyList, policy.Name)
+	}
+	found :=false
+	if op == del {
+		for i =0; i< len(stmt.PolicyList);i++ {
+			if stmt.PolicyList[i] == policy {
+				db.Logger.Println("Found the policy in the policy stmt table, deleting it")
+                 found = true
+				break
+			}
+		}
+		if found {
+		   stmt.PolicyList = append(stmt.PolicyList[:i], stmt.PolicyList[i+1:]...)
+		}
+	}
+	db.PolicyStmtDB.Set(patriciaDB.Prefix(policyStmt.Name), stmt)
 	return err
 }
 
@@ -323,8 +338,14 @@ func (db *PolicyEngineDB) CreatePolicyStatement(cfg PolicyStmtConfig) (err error
 	   }
 	   if len(cfg.Actions) > 0 {
 	      db.Logger.Println("Policy Statement has %d ", len(cfg.Actions)," number of actions")	
+          if len(cfg.Actions) > 1 {
+		      db.Logger.Println("Cannot have more than 1 action in a policy")
+			  err = errors.New("Cannot have more than 1 action in a policy")
+			  return err	
+		  }
 		  newPolicyStmt.Actions = make([] string, 0)
-		  for i=0;i<len(cfg.Actions);i++ {
+		  for i=0;i<len(cfg.Actions);i++ {	
+			newPolicyStmt.ExportStmt,newPolicyStmt.ImportStmt,newPolicyStmt.GlobalStmt = db.PolicyActionType(cfg.Actions[i])
 			newPolicyStmt.Actions = append(newPolicyStmt.Actions,cfg.Actions[i])
 			err = db.UpdateActions(newPolicyStmt, cfg.Actions[i], add)
 			if err != nil {
@@ -386,23 +407,6 @@ func (db *PolicyEngineDB) DeletePolicyStatement(cfg PolicyStmtConfig) (err error
 
 func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (err error) {
 	db.Logger.Println("CreatePolicyDefinition")
-	if cfg.Import && db.ImportPolicyPrecedenceMap != nil {
-	   _,ok:=db.ImportPolicyPrecedenceMap[int(cfg.Precedence)]
-	   if ok {
-		db.Logger.Println("There is already a import policy with this precedence.")
-		err =  errors.New("There is already a import policy with this precedence.")
-         return err
-	   }
-	} else if cfg.Export && db.ExportPolicyPrecedenceMap != nil {
-	   _,ok:=db.ExportPolicyPrecedenceMap[int(cfg.Precedence)]
-	   if ok {
-		db.Logger.Println("There is already a export policy with this precedence.")
-		err =  errors.New("There is already a export policy with this precedence.")
-         return err
-	   }
-	} else if cfg.Global {
-		db.Logger.Println("This is a global policy")
-	}
 	policy := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
 	var i int
 	if(policy == nil) {
@@ -411,24 +415,30 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 	   newPolicy.Name = cfg.Name
 	   newPolicy.Precedence = cfg.Precedence
 	   newPolicy.MatchType = cfg.MatchType
-       if cfg.Export == false && cfg.Import == false && cfg.Global == false {
-			db.Logger.Println("Need to set import, export or global to true")
-			return err
-	   }	  
-	   newPolicy.ExportPolicy = cfg.Export
-	   newPolicy.ImportPolicy = cfg.Import
-	   newPolicy.GlobalPolicy = cfg.Global
 	   db.Logger.Println("Policy has %d ", len(cfg.PolicyDefinitionStatements)," number of statements")
 	   newPolicy.PolicyStmtPrecedenceMap = make(map[int]string)	
 	   for i=0;i<len(cfg.PolicyDefinitionStatements);i++ {
+		  stmt := PolicyStmt
 		  db.Logger.Println("Adding statement ", cfg.PolicyDefinitionStatements[i].Statement, " at precedence id ", cfg.PolicyDefinitionStatements[i].Precedence)
           newPolicy.PolicyStmtPrecedenceMap[int(cfg.PolicyDefinitionStatements[i].Precedence)] = cfg.PolicyDefinitionStatements[i].Statement 
+	      Item := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.PolicyDefinitionStatements[i].Statement))
+	      if(Item != nil) {
+		      stmt = Item.(PolicyStmt)
+	      } else {
+		      db.Logger.Println("action name ", cfg.PolicyDefinitionStatements[i].Statement, " not defined")
+		      err = errors.New("action name not defined")
+	      }
+		  err  = db.SetAndValidatePolicyType(&newPolicy, stmt)
+		  if err ! = nil {
+		      db.Logger.Println("Error in setting policy type")
+			  return err
+		  }
 		  err = db.UpdateGlobalStatementTable(newPolicy.Name, cfg.PolicyDefinitionStatements[i].Statement, add)
 		  if err != nil {
 			db.Logger.Println("UpdateGlobalStatementTable returned err ", err)
 			return err
 		  }
-		  err = db.UpdateStatements(newPolicy, cfg.PolicyDefinitionStatements[i].Statement, add)
+		  err = db.UpdateStatements(newPolicy, stmt, add)
 		  if err != nil {
 			db.Logger.Println("updateStatements returned err ", err)
 			return err
@@ -444,13 +454,13 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 			return err
 		}
 		db.LocalPolicyDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
-		if cfg.Import {
+		if newPolicy.ImportPolicy {
 		   db.Logger.Println("Adding ", newPolicy.Name, " as import policy")
 		   if db.ImportPolicyPrecedenceMap == nil {
 	          db.ImportPolicyPrecedenceMap = make(map[int]string)	
 		   }
 		   db.ImportPolicyPrecedenceMap[int(cfg.Precedence)]=cfg.Name
-		} else if cfg.Export {
+		} else if newPolicy.ExportPolicy {
 		   db.Logger.Println("Adding ", newPolicy.Name, " as export policy")
 		   if db.ExportPolicyPrecedenceMap == nil {
 	          db.ExportPolicyPrecedenceMap = make(map[int]string)	
@@ -494,7 +504,14 @@ func (db *PolicyEngineDB) DeletePolicyDefinition(cfg PolicyDefinitionConfig) (er
 			db.Logger.Println("UpdateGlobalStatementTable returned err ", err)
 			return err
 		  }
-		  err = db.UpdateStatements(policyInfo, v, del)
+	      Item := db.PolicyStmtDB.Get(patriciaDB.Prefix(v))
+	      if(Item != nil) {
+		      stmt := Item.(PolicyStmt)
+	      } else {
+		      db.Logger.Println("action name ", v, " not defined")
+		      err = errors.New("action name not defined")
+	      }
+		  err = db.UpdateStatements(policyInfo, stmt, del)
 		  if err != nil {
 			db.Logger.Println("updateStatements returned err ", err)
 			return err
