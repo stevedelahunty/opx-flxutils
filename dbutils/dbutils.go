@@ -18,6 +18,12 @@ func ConvertIntToBool(val int) bool {
 	}
 	return false
 }
+func ConvertStringToBool(val string) bool {
+	if val == "true" {
+		return true
+	}
+	return false
+}
 func ConvertStrBoolIntToBool(val string) bool {
 	if val == "true" {
 		return true
