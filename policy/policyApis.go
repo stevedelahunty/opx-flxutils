@@ -205,8 +205,9 @@ func (db *PolicyEngineDB) UpdatePrefixPolicyTable(conditionInfo interface{}, nam
 	 }
    }
 }
-func (db *PolicyEngineDB) UpdateStatements(policy Policy, policyStmt PolicyStmt, op int) (err error) {
-	db.Logger.Println("UpdateStatements for stmt ", policyStmt.Name)
+func (db *PolicyEngineDB) UpdateStatements(policy Policy, stmt PolicyStmt, op int) (err error) {
+	db.Logger.Println("UpdateStatements for stmt ", stmt.Name)
+    var i int
 	if stmt.PolicyList == nil {
 		if op == del {
 			db.Logger.Println("stmt.PolicyList nil")
@@ -220,7 +221,7 @@ func (db *PolicyEngineDB) UpdateStatements(policy Policy, policyStmt PolicyStmt,
 	found :=false
 	if op == del {
 		for i =0; i< len(stmt.PolicyList);i++ {
-			if stmt.PolicyList[i] == policy {
+			if stmt.PolicyList[i] == policy.Name {
 				db.Logger.Println("Found the policy in the policy stmt table, deleting it")
                  found = true
 				break
@@ -230,7 +231,7 @@ func (db *PolicyEngineDB) UpdateStatements(policy Policy, policyStmt PolicyStmt,
 		   stmt.PolicyList = append(stmt.PolicyList[:i], stmt.PolicyList[i+1:]...)
 		}
 	}
-	db.PolicyStmtDB.Set(patriciaDB.Prefix(policyStmt.Name), stmt)
+	db.PolicyStmtDB.Set(patriciaDB.Prefix(stmt.Name), stmt)
 	return err
 }
 
@@ -293,20 +294,35 @@ func (db *PolicyEngineDB) UpdateConditions(policyStmt PolicyStmt, conditionName 
 	return err
 }
 
-func (db *PolicyEngineDB) UpdateActions(policyStmt PolicyStmt, actionName string, op int) (err error) {
-	db.Logger.Println("updateActions for action ", actionName)
-	actionItem := db.PolicyActionsDB.Get(patriciaDB.Prefix(actionName))
-	if(actionItem != nil) {
-		action := actionItem.(PolicyAction)
-		if action.PolicyStmtList == nil {
-			action.PolicyStmtList = make([]string,0)
+func (db *PolicyEngineDB) UpdateActions(policyStmt PolicyStmt, action PolicyAction, op int) (err error) {
+	db.Logger.Println("updateActions for action ", action.Name)
+    var i int
+	if action.PolicyStmtList == nil {
+		if op == del {
+			db.Logger.Println("action.PolicyStmtList empty")
+			err = errors.New("action.PolicyStmtLisy Empty")
+			return err
 		}
-        action.PolicyStmtList = append(action.PolicyStmtList, policyStmt.Name)
-		db.PolicyActionsDB.Set(patriciaDB.Prefix(actionName), action)
-	} else {
-		db.Logger.Println("action name ", actionName, " not defined")
-		err = errors.New("action name not defined")
+		action.PolicyStmtList = make([]string,0)
 	}
+	if op == add {
+       action.PolicyStmtList = append(action.PolicyStmtList, policyStmt.Name)
+	}
+	found :=false
+	if op == del {
+		for i =0; i< len(action.PolicyStmtList);i++ {
+			if action.PolicyStmtList[i] == policyStmt.Name {
+				db.Logger.Println("Found the policyStmt in the action's list, deleting it")
+                 found = true
+				break
+			}
+		}
+		if found {
+		   action.PolicyStmtList = append(action.PolicyStmtList[:i], action.PolicyStmtList[i+1:]...)
+		}
+	}
+	
+	db.PolicyActionsDB.Set(patriciaDB.Prefix(action.Name), action)
 	return err
 }
 
@@ -343,11 +359,19 @@ func (db *PolicyEngineDB) CreatePolicyStatement(cfg PolicyStmtConfig) (err error
 			  err = errors.New("Cannot have more than 1 action in a policy")
 			  return err	
 		  }
+		  var action PolicyAction
 		  newPolicyStmt.Actions = make([] string, 0)
 		  for i=0;i<len(cfg.Actions);i++ {	
-			newPolicyStmt.ExportStmt,newPolicyStmt.ImportStmt,newPolicyStmt.GlobalStmt = db.PolicyActionType(cfg.Actions[i])
+	         actionItem := db.PolicyActionsDB.Get(patriciaDB.Prefix(cfg.Actions[i]))
+	         if(actionItem != nil) {
+		        action = actionItem.(PolicyAction)
+	         } else {
+		        db.Logger.Println("action name ", cfg.Actions[i], " not defined")
+		        err = errors.New("action name not defined")
+	         }
+			newPolicyStmt.ExportStmt,newPolicyStmt.ImportStmt,newPolicyStmt.GlobalStmt = db.PolicyActionType(action.ActionType)
 			newPolicyStmt.Actions = append(newPolicyStmt.Actions,cfg.Actions[i])
-			err = db.UpdateActions(newPolicyStmt, cfg.Actions[i], add)
+			err = db.UpdateActions(newPolicyStmt, action, add)
 			if err != nil {
 				db.Logger.Println("updateActions returned err ", err)
 				return err
@@ -397,8 +421,16 @@ func (db *PolicyEngineDB) DeletePolicyStatement(cfg PolicyStmtConfig) (err error
 		}	
 	   }
 	   if len(policyStmtInfo.Actions) > 0 {
+		  var action PolicyAction
 	      for i:=0;i<len(policyStmtInfo.Actions);i++ {
-			db.UpdateActions(policyStmtInfo, policyStmtInfo.Actions[i],del)
+	         actionItem := db.PolicyActionsDB.Get(patriciaDB.Prefix(policyStmtInfo.Actions[i]))
+	         if(actionItem != nil) {
+		        action = actionItem.(PolicyAction)
+	         } else {
+		        db.Logger.Println("action name ", policyStmtInfo.Actions[i], " not defined")
+		        err = errors.New("action name not defined")
+	         }
+			db.UpdateActions(policyStmtInfo, action,del)
 		}	
 	   }
 	} 
@@ -418,7 +450,7 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 	   db.Logger.Println("Policy has %d ", len(cfg.PolicyDefinitionStatements)," number of statements")
 	   newPolicy.PolicyStmtPrecedenceMap = make(map[int]string)	
 	   for i=0;i<len(cfg.PolicyDefinitionStatements);i++ {
-		  stmt := PolicyStmt
+		  var stmt  PolicyStmt
 		  db.Logger.Println("Adding statement ", cfg.PolicyDefinitionStatements[i].Statement, " at precedence id ", cfg.PolicyDefinitionStatements[i].Precedence)
           newPolicy.PolicyStmtPrecedenceMap[int(cfg.PolicyDefinitionStatements[i].Precedence)] = cfg.PolicyDefinitionStatements[i].Statement 
 	      Item := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.PolicyDefinitionStatements[i].Statement))
@@ -429,7 +461,7 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 		      err = errors.New("action name not defined")
 	      }
 		  err  = db.SetAndValidatePolicyType(&newPolicy, stmt)
-		  if err ! = nil {
+		  if err != nil {
 		      db.Logger.Println("Error in setting policy type")
 			  return err
 		  }
@@ -498,6 +530,7 @@ func (db *PolicyEngineDB) DeletePolicyDefinition(cfg PolicyDefinitionConfig) (er
 			db.Logger.Println(" return value not ok for delete PolicyDB")
 			return err
 		}
+		var stmt PolicyStmt
 		for _,v:=range policyInfo.PolicyStmtPrecedenceMap {
 		  err = db.UpdateGlobalStatementTable(policyInfo.Name, v, del)
 		  if err != nil {
@@ -506,7 +539,7 @@ func (db *PolicyEngineDB) DeletePolicyDefinition(cfg PolicyDefinitionConfig) (er
 		  }
 	      Item := db.PolicyStmtDB.Get(patriciaDB.Prefix(v))
 	      if(Item != nil) {
-		      stmt := Item.(PolicyStmt)
+		      stmt = Item.(PolicyStmt)
 	      } else {
 		      db.Logger.Println("action name ", v, " not defined")
 		      err = errors.New("action name not defined")

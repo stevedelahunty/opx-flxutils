@@ -266,7 +266,7 @@ func (db *PolicyEngineDB) SetAndValidatePolicyType(policy *Policy, stmt PolicySt
                return err
 	       }
 	   } else if policy.ExportPolicy && db.ExportPolicyPrecedenceMap != nil {
-	       _,ok:=db.ExportPolicyPrecedenceMap[int(cfg.Precedence)]
+	       _,ok:=db.ExportPolicyPrecedenceMap[int(policy.Precedence)]
 	       if ok {
 		     db.Logger.Println("There is already a export policy with this precedence.")
 		     err =  errors.New("There is already a export policy with this precedence.")
