@@ -7,6 +7,7 @@ import (
 	"os"
 	"log/syslog"
 	"log"
+	"errors"
 )
 const (
 	add = iota
@@ -229,4 +230,68 @@ func (db *PolicyEngineDB) DeletePolicyEntityMapEntry(entity PolicyEngineFilterEn
 	//PolicyRouteMap[policyRouteIndex].policyStmtMap=nil
 	delete(db.PolicyEntityMap,policyEntityMapIndex)
 }
+func (db *PolicyEngineDB) PolicyActionType(actionType int)(exportTypeAction bool, importTypeAction bool, globalTypeAction bool) {
+	db.Logger.Println("PolicyActionType for type ", actionType)
+	switch actionType {
+	  case policyCommonDefs.PoilcyActionTypeSetAdminDistance:
+	      globalTypeAction = true
+		  db.Logger.Println("PoilcyActionTypeSetAdminDistance, setting globalTypeAction true")
+		  break
+	  case policyCommonDefs.PolicyActionTypeAggregate:
+	      exportTypeAction = true
+		  db.Logger.Println("PolicyActionTypeAggregate: setting exportTypeAction true")
+		  break
+	  case policyCommonDefs.PolicyActionTypeRouteRedistribute:
+	      exportTypeAction = true
+		  db.Logger.Println("PolicyActionTypeRouteRedistribute: setting exportTypeAction true")
+		  break
+	  case policyCommonDefs.PolicyActionTypeNetworkStatementAdvertise:
+	      exportTypeAction = true
+		  db.Logger.Println("PolicyActionTypeNetworkStatementAdvertise: setting exportTypeAction true")
+		  break
+	  case policyCommonDefs.PolicyActionTypeRouteDisposition:
+	      importTypeAction = true
+		  db.Logger.Println("setting importTypeAction true")
+		  break
+	  default:
+	     db.Logger.Println("Unknown action type")
+		 break 
+	}
+	return exportTypeAction,importTypeAction, globalTypeAction
+}
+func (db *PolicyEngineDB) SetAndValidatePolicyType(policy *Policy, stmt PolicyStmt) (err error){
+	db.Logger.Println("SetPolicyTypeFromPolicyStmt")
+	if policy.ExportPolicy == false && policy.ImportPolicy == false && policy.GlobalPolicy == false {
+		db.Logger.Println("Policy is still not associated with a type, set it from stmt")
+	    policy.ExportPolicy = stmt.ExportStmt
+	    policy.ImportPolicy = stmt.ImportStmt
+	    policy.GlobalPolicy = stmt.GlobalStmt
 
+	    if policy.ImportPolicy && db.ImportPolicyPrecedenceMap != nil {
+	       _,ok:=db.ImportPolicyPrecedenceMap[int(policy.Precedence)]
+	       if ok {
+		       db.Logger.Println("There is already a import policy with this precedence.")
+		       err =  errors.New("There is already a import policy with this precedence.")
+               return err
+	       }
+	   } else if policy.ExportPolicy && db.ExportPolicyPrecedenceMap != nil {
+	       _,ok:=db.ExportPolicyPrecedenceMap[int(policy.Precedence)]
+	       if ok {
+		     db.Logger.Println("There is already a export policy with this precedence.")
+		     err =  errors.New("There is already a export policy with this precedence.")
+             return err
+	       }
+	   } else if policy.GlobalPolicy {
+		  db.Logger.Println("This is a global policy")
+	   }
+		return err
+	}
+	if policy.ExportPolicy != stmt.ExportStmt ||
+	   policy.ImportPolicy != stmt.ImportStmt ||
+	   policy.GlobalPolicy != stmt.GlobalStmt {
+		db.Logger.Println("Policy type settings, export/import/global :", policy.ExportPolicy, "/", policy.ImportPolicy, "/", policy.GlobalPolicy, " does not match the export/import/global settings on the stmt: ", stmt.ExportStmt, "/", stmt.ImportStmt, "/",stmt.GlobalStmt )
+		err = errors.New("Mismatch on policy type")
+		return err
+	}
+	return err
+}
