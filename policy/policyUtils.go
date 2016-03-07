@@ -231,18 +231,27 @@ func (db *PolicyEngineDB) DeletePolicyEntityMapEntry(entity PolicyEngineFilterEn
 	delete(db.PolicyEntityMap,policyEntityMapIndex)
 }
 func (db *PolicyEngineDB) PolicyActionType(actionType int)(exportTypeAction bool, importTypeAction bool, globalTypeAction bool) {
-	db.Logger.Println("PolicyType")
+	db.Logger.Println("PolicyActionType for type ", actionType)
 	switch actionType {
 	  case policyCommonDefs.PoilcyActionTypeSetAdminDistance:
 	      globalTypeAction = true
+		  db.Logger.Println("PoilcyActionTypeSetAdminDistance, setting globalTypeAction true")
 		  break
 	  case policyCommonDefs.PolicyActionTypeAggregate:
+	      exportTypeAction = true
+		  db.Logger.Println("PolicyActionTypeAggregate: setting exportTypeAction true")
+		  break
 	  case policyCommonDefs.PolicyActionTypeRouteRedistribute:
+	      exportTypeAction = true
+		  db.Logger.Println("PolicyActionTypeRouteRedistribute: setting exportTypeAction true")
+		  break
 	  case policyCommonDefs.PolicyActionTypeNetworkStatementAdvertise:
 	      exportTypeAction = true
+		  db.Logger.Println("PolicyActionTypeNetworkStatementAdvertise: setting exportTypeAction true")
 		  break
 	  case policyCommonDefs.PolicyActionTypeRouteDisposition:
 	      importTypeAction = true
+		  db.Logger.Println("setting importTypeAction true")
 		  break
 	  default:
 	     db.Logger.Println("Unknown action type")
