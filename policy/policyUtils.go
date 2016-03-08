@@ -7,6 +7,7 @@ import (
 	"os"
 	"log/syslog"
 	"log"
+	"bytes"
 	"errors"
 )
 const (
@@ -51,13 +52,32 @@ type LocalDB struct {
 }
 type LocalDBSlice []LocalDB
 
-func (slice *LocalDBSlice )updateLocalDB(prefix patriciaDB.Prefix) {
-	localDBRecord := LocalDB{Prefix:prefix, IsValid:true}
+func (slice *LocalDBSlice )updateLocalDB(prefix patriciaDB.Prefix, op int) {
 	if(slice == nil) {
 		return
-	} 
-	*slice = append(*slice, localDBRecord)
-
+	}
+	tempSlice := *slice
+	if op == add {
+	   localDBRecord := LocalDB{Prefix:prefix, IsValid:true}
+	   tempSlice = append(tempSlice, localDBRecord)
+	} else if op == del {
+		found := false
+		var i int
+		for i=0;i<len(tempSlice);i++ {
+			if bytes.Equal(tempSlice[i].Prefix, prefix) {
+				found = true
+				break
+			}
+		}
+		if found == true {
+			if len(tempSlice) <= i+1 {
+				tempSlice = tempSlice[:i]
+			} else {
+			   tempSlice = append(tempSlice[:i],tempSlice[i+1:]...)
+			}
+		} 
+	}
+	*slice = tempSlice
 }
 type	 Policyfunc func(actionInfo interface{}, conditionInfo interface {}, params interface{})
 type PolicyConditionCheckfunc func(entity PolicyEngineFilterEntityParams, condition PolicyCondition, policyStmt PolicyStmt) bool
