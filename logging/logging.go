@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	nanomsg "github.com/op/go-nanomsg"
@@ -45,20 +46,26 @@ type LoggingJson struct {
 }
 
 type Writer struct {
+	sysLogger       *syslog.Writer
 	GlobalLogging   bool
 	MyComponentName string
 	MyLogLevel      sysdCommonDefs.SRDebugLevel
 	initialized     bool
-	sysLogger       *syslog.Writer
 	subSocket       *nanomsg.SubSocket
 	socketCh        chan []byte
 }
 
-func NewLogger(paramsDir string, name string, tag string) (*Writer, error) {
-	var loggingConfig LoggingJson
+func NewLogger(paramsDir string, name string, tag string, dbHdl *sql.DB) (*Writer, error) {
 	var err error
 	srLogger := &Writer{}
 	srLogger.MyComponentName = name
+	srLogger.sysLogger, err = syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, tag)
+	if err == nil {
+		fmt.Println("Logging level ", srLogger.MyLogLevel, " set for ", srLogger.MyComponentName)
+	} else {
+		fmt.Println("Failed to initialize syslog - ", err)
+		return srLogger, err
+	}
 
 	fileName := paramsDir
 	if fileName[len(fileName)-1] != '/' {
@@ -66,33 +73,78 @@ func NewLogger(paramsDir string, name string, tag string) (*Writer, error) {
 	}
 	fileName = fileName + "logging.json"
 
+	err = srLogger.readLogLevelFromFile(fileName)
+	if err == nil {
+		err = srLogger.readLogLevelFromDb(dbHdl)
+		if err == nil {
+			srLogger.initialized = true
+		}
+	}
+	return srLogger, err
+}
+
+func (logger *Writer) readLogLevelFromFile(fileName string) error {
+	var loggingConfig LoggingJson
+	var err error
 	data, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		fmt.Println("Failed to read logging config file")
-		return nil, err
+		fmt.Println("Failed to read logging config file - ", fileName, " err - ", err)
+		return err
 	}
 	err = json.Unmarshal(data, &loggingConfig)
 	if err != nil {
 		fmt.Println("Failed to unmarshal logging config: ", err)
-		return nil, err
+		return err
 	}
 
 	if loggingConfig.SystemLogging == "on" {
-		srLogger.GlobalLogging = true
+		logger.GlobalLogging = true
 	}
 	for _, component := range loggingConfig.Components {
-		if component.Module == name {
-			srLogger.MyLogLevel = ConvertLevelStrToVal(component.Level)
+		if component.Module == logger.MyComponentName {
+			logger.MyLogLevel = ConvertLevelStrToVal(component.Level)
 			break
 		}
 	}
+	return nil
+}
 
-	srLogger.sysLogger, err = syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, tag)
-	if err == nil {
-		srLogger.initialized = true
-		fmt.Println("Logging level ", srLogger.MyLogLevel, " set for ", srLogger.MyComponentName)
+func (logger *Writer) readLogLevelFromDb(dbHdl *sql.DB) error {
+	gRows, err := dbHdl.Query("SELECT * FROM SystemLoggingConfig")
+	if err != nil {
+		fmt.Println("Unable to query DB - SystemLoggingConfig: ", err)
+		return err
 	}
-	return srLogger, err
+	defer gRows.Close()
+	for gRows.Next() {
+		var global string
+		var logging string
+		err := gRows.Scan(&global, &logging)
+		if err != nil {
+			fmt.Println("Failed to read SystemLogging from DB - ", err)
+		}
+		if logging == "on" {
+			logger.GlobalLogging = true
+		}
+	}
+
+	cRows, err := dbHdl.Query("SELECT Module FROM ComponentLoggingConfig WHERE Module = ?", logger.MyComponentName)
+	if err != nil {
+		fmt.Println("Unable to query DB - ComponentLoggingConfig: ", err)
+		return err
+	}
+	defer cRows.Close()
+	for cRows.Next() {
+		var module string
+		var level string
+		err := cRows.Scan(&module, &level)
+		if err != nil {
+			fmt.Println("Failed to read ComponentLogging from DB - ", err)
+		}
+		logger.MyLogLevel = ConvertLevelStrToVal(level)
+	}
+
+	return nil
 }
 
 func (logger *Writer) SetGlobal(Enable bool) error {
