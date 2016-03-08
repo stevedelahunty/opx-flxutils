@@ -60,9 +60,7 @@ func NewLogger(paramsDir string, name string, tag string, dbHdl *sql.DB) (*Write
 	srLogger := &Writer{}
 	srLogger.MyComponentName = name
 	srLogger.sysLogger, err = syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, tag)
-	if err == nil {
-		fmt.Println("Logging level ", srLogger.MyLogLevel, " set for ", srLogger.MyComponentName)
-	} else {
+	if err != nil {
 		fmt.Println("Failed to initialize syslog - ", err)
 		return srLogger, err
 	}
@@ -73,13 +71,10 @@ func NewLogger(paramsDir string, name string, tag string, dbHdl *sql.DB) (*Write
 	}
 	fileName = fileName + "logging.json"
 
-	err = srLogger.readLogLevelFromFile(fileName)
-	if err == nil {
-		err = srLogger.readLogLevelFromDb(dbHdl)
-		if err == nil {
-			srLogger.initialized = true
-		}
-	}
+	srLogger.readLogLevelFromFile(fileName)
+	srLogger.readLogLevelFromDb(dbHdl)
+	srLogger.initialized = true
+	fmt.Println("Logging level ", srLogger.MyLogLevel, " set for ", srLogger.MyComponentName)
 	return srLogger, err
 }
 
@@ -122,6 +117,7 @@ func (logger *Writer) readLogLevelFromDb(dbHdl *sql.DB) error {
 		err := gRows.Scan(&global, &logging)
 		if err != nil {
 			fmt.Println("Failed to read SystemLogging from DB - ", err)
+			return err
 		}
 		if logging == "on" {
 			logger.GlobalLogging = true
@@ -140,6 +136,7 @@ func (logger *Writer) readLogLevelFromDb(dbHdl *sql.DB) error {
 		err := cRows.Scan(&module, &level)
 		if err != nil {
 			fmt.Println("Failed to read ComponentLogging from DB - ", err)
+			return err
 		}
 		logger.MyLogLevel = ConvertLevelStrToVal(level)
 	}
