@@ -5,7 +5,6 @@ import (
 	"errors"
 	"utils/policy/policyCommonDefs"
 	"utils/patriciaDB"
-	"fmt"
 )
 type PolicyPrefix struct{
 	IpPrefix string //CIDR eg: 1.1.1.2/24
@@ -42,17 +41,17 @@ type PolicyCondition struct {
 }
 
 func (db * PolicyEngineDB) CreatePolicyDstIpMatchPrefixSetCondition(inCfg PolicyConditionConfig) (val bool, err error) {
-	fmt.Println("CreatePolicyDstIpMatchPrefixSetCondition")
+	db.Logger.Println("CreatePolicyDstIpMatchPrefixSetCondition")
 	cfg := inCfg.MatchDstIpPrefixConditionInfo
 	var conditionInfo MatchPrefixConditionInfo
 	var conditionGetBulkInfo string
     if len(cfg.PrefixSet) == 0 && len(cfg.Prefix.IpPrefix) == 0 {
-		fmt.Println("Empty prefix set")
+		db.Logger.Println("Empty prefix set")
 		err = errors.New("Empty prefix set")
 		return val, err
 	}
     if len(cfg.PrefixSet) != 0 && len(cfg.Prefix.IpPrefix) != 0 {
-		fmt.Println("Cannot provide both prefix set and individual prefix")
+		db.Logger.Println("Cannot provide both prefix set and individual prefix")
 		err = errors.New("Cannot provide both prefix set and individual prefix")
 		return val, err
 	}
@@ -69,16 +68,16 @@ func (db * PolicyEngineDB) CreatePolicyDstIpMatchPrefixSetCondition(inCfg Policy
 	conditionInfo.DstIpMatch = true
 	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(inCfg.Name))
 	if(policyCondition == nil) {
-	   fmt.Println("Defining a new policy condition with name ", inCfg.Name)
+	   db.Logger.Println("Defining a new policy condition with name ", inCfg.Name)
 	   newPolicyCondition := PolicyCondition{Name:inCfg.Name,ConditionType:policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch,ConditionInfo:conditionInfo ,LocalDBSliceIdx:(len(*db.LocalPolicyConditionsDB))}
        newPolicyCondition.ConditionGetBulkInfo = conditionGetBulkInfo 
 	   if ok := db.PolicyConditionsDB.Insert(patriciaDB.Prefix(inCfg.Name), newPolicyCondition); ok != true {
-	   fmt.Println(" return value not ok")
+	   db.Logger.Println(" return value not ok")
 	   return val, err
 	}
-	db.LocalPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(inCfg.Name))
+	db.LocalPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(inCfg.Name),add)
     } else {
-		fmt.Println("Duplicate Condition name")
+		db.Logger.Println("Duplicate Condition name")
 		err = errors.New("Duplicate policy condition definition")
 		return val, err
 	}	
@@ -86,28 +85,28 @@ func (db * PolicyEngineDB) CreatePolicyDstIpMatchPrefixSetCondition(inCfg Policy
 }
 
 func (db * PolicyEngineDB)CreatePolicyMatchProtocolCondition(cfg PolicyConditionConfig) (val bool, err error) {
-	fmt.Println("CreatePolicyMatchProtocolCondition")
+	db.Logger.Println("CreatePolicyMatchProtocolCondition")
 
 	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Name))
 	if(policyCondition == nil) {
-	   fmt.Println("Defining a new policy condition with name ", cfg.Name)
+	   db.Logger.Println("Defining a new policy condition with name ", cfg.Name)
 	   matchProto := cfg.MatchProtocolConditionInfo
 	   newPolicyCondition := PolicyCondition{Name:cfg.Name,ConditionType:policyCommonDefs.PolicyConditionTypeProtocolMatch,ConditionInfo:matchProto ,LocalDBSliceIdx:(len(*db.LocalPolicyConditionsDB))}
        newPolicyCondition.ConditionGetBulkInfo = "match Protocol " + matchProto
 		if ok := db.PolicyConditionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyCondition); ok != true {
-			fmt.Println(" return value not ok")
+			db.Logger.Println(" return value not ok")
 			return val, err
 		}
-	    db.LocalPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+	    db.LocalPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name),add)
 	} else {
-		fmt.Println("Duplicate Condition name")
+		db.Logger.Println("Duplicate Condition name")
 		err = errors.New("Duplicate policy condition definition")
 		return val, err
 	}
 	return val, err
 }
 func (db * PolicyEngineDB)CreatePolicyCondition(cfg PolicyConditionConfig) (err error) {
-	fmt.Println("CreatePolicyCondition")
+	db.Logger.Println("CreatePolicyCondition")
 	switch cfg.ConditionType {
 		case "MatchDstIpPrefix":
 		   db.CreatePolicyDstIpMatchPrefixSetCondition(cfg)
@@ -116,8 +115,29 @@ func (db * PolicyEngineDB)CreatePolicyCondition(cfg PolicyConditionConfig) (err 
 		   db.CreatePolicyMatchProtocolCondition(cfg)
 		   break
 		default:
-		   fmt.Println("Unknown condition type ", cfg.ConditionType)
+		   db.Logger.Println("Unknown condition type ", cfg.ConditionType)
 		   err = errors.New("Unknown condition type")
+	}
+	return err
+}
+func (db * PolicyEngineDB) DeletePolicyCondition(cfg PolicyConditionConfig) (err error) {
+	db.Logger.Println("DeletePolicyCondition")
+	conditionItem := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Name))
+	if conditionItem == nil {
+		db.Logger.Println("Condition ", cfg.Name, "not found in the DB")
+		err = errors.New("Condition not found")
+		return err
+	}
+	condition := conditionItem.(PolicyCondition)
+	if len(condition.PolicyStmtList) != 0 {
+		db.Logger.Println("This condition is currently being used by a policy statement. Try deleting the stmt before deleting the condition")
+		err = errors.New("This condition is currently being used by a policy statement. Try deleting the stmt before deleting the condition")
+		return err
+	}
+	deleted := db.PolicyConditionsDB.Delete(patriciaDB.Prefix(cfg.Name))
+	if deleted {
+		db.Logger.Println("Found and deleted condition ", cfg.Name)
+		db.LocalPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name),del)
 	}
 	return err
 }

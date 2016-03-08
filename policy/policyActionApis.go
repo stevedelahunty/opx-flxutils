@@ -52,7 +52,7 @@ func (db * PolicyEngineDB) CreatePolicyRouteDispositionAction(cfg PolicyActionCo
 			db.Logger.Println(" return value not ok")
 			return val, err
 		}
-	  db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+	  db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name),add)
 	} else {
 		db.Logger.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
@@ -72,7 +72,7 @@ func (db * PolicyEngineDB) CreatePolicyAdminDistanceAction(cfg PolicyActionConfi
 			db.Logger.Println(" return value not ok")
 			return val, err
 		}
-	  db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+	  db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name),add)
 	} else {
 		db.Logger.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
@@ -91,7 +91,7 @@ func (db * PolicyEngineDB) CreatePolicyNetworkStatementAdvertiseAction(cfg Polic
 			db.Logger.Println(" return value not ok")
 			return val, err
 		}
-	  db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+	  db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name),add)
 	} else {
 		db.Logger.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
@@ -121,7 +121,7 @@ func (db * PolicyEngineDB) CreatePolicyRedistributionAction(cfg PolicyActionConf
 			db.Logger.Println(" return value not ok")
 			return val, err
 		}
-	    db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+	    db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name),add)
 	} else {
 		db.Logger.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
@@ -150,21 +150,25 @@ func (db *PolicyEngineDB) CreatePolicyAction(cfg PolicyActionConfig) ( err error
 	}
 	return err
 }
-/*
-func GetPolicyActionsDB() (db *patriciaDB.Trie, err error) { 
-	if PolicyActionsDB == nil {
-		db.Logger.Println("policyActions nil")
-		err := errors.New("policyActions nil")
-		return nil,err
+
+func (db *PolicyEngineDB) DeletePolicyAction(cfg PolicyActionConfig) ( err error) {
+	db.Logger.Println("DeletePolicyAction")
+	actionItem := db.PolicyActionsDB.Get(patriciaDB.Prefix(cfg.Name))
+	if actionItem == nil {
+		db.Logger.Println("action ", cfg.Name, "not found in the DB")
+		err = errors.New("action not found")
+		return err
 	}
-	return PolicyActionsDB, err
-}
-func GetLocalPolicyActionsDB()(db []LocalDB, err error) { 
-	if LocalPolicyActionsDB == nil {
-		db.Logger.Println("local policyActions nil")
-		err := errors.New("local policyActions nil")
-		return nil,err
+	action := actionItem.(PolicyAction)
+	if len(action.PolicyStmtList) != 0 {
+		db.Logger.Println("This action is currently being used by one or more policy statements. Try deleting the stmt before deleting the action")
+		err = errors.New("This action is currently being used by one or more policy statements. Try deleting the stmt before deleting the action")
+		return err
 	}
-	return LocalPolicyActionsDB, err
+	deleted := db.PolicyActionsDB.Delete(patriciaDB.Prefix(cfg.Name))
+	if deleted {
+		db.Logger.Println("Found and deleted actions ", cfg.Name)
+		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name),del)
+	}
+	return err
 }
-*/

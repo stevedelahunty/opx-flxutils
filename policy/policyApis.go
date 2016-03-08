@@ -383,7 +383,7 @@ func (db *PolicyEngineDB) CreatePolicyStatement(cfg PolicyStmtConfig) (err error
 			db.Logger.Println(" return value not ok")
 			return err
 		}
-		db.LocalPolicyStmtDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+		db.LocalPolicyStmtDB.updateLocalDB(patriciaDB.Prefix(cfg.Name),add)
 	} else {
 		db.Logger.Println("Duplicate Policy definition name")
 		err = errors.New("Duplicate policy definition")
@@ -401,19 +401,25 @@ func (db *PolicyEngineDB) DeletePolicyStatement(cfg PolicyStmtConfig) (err error
 	}
 	policyStmtInfoGet := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.Name))
 	if(policyStmtInfoGet != nil) {
-       //invalidate localPolicyStmt 
 	   policyStmtInfo := policyStmtInfoGet.(PolicyStmt)
-	   if policyStmtInfo.LocalDBSliceIdx < int8(len(*db.LocalPolicyStmtDB)) {
+	   if len(policyStmtInfo.PolicyList) != 0 {
+	       db.Logger.Println("This policy stmt is being used by one or more policies. Delete the policies before deleting the stmt")	
+		   err = errors.New("This policy stmt is being used by one or more policies. Delete the policies before deleting the stmt")
+		   return err
+	   }
+       //invalidate localPolicyStmt 
+/*	   if policyStmtInfo.LocalDBSliceIdx < int8(len(*db.LocalPolicyStmtDB)) {
           db.Logger.Println("local DB slice index for this policy stmt is ", policyStmtInfo.LocalDBSliceIdx)
 		  LocalPolicyStmtDB := LocalDBSlice (*db.LocalPolicyStmtDB)
 		  LocalPolicyStmtDB[policyStmtInfo.LocalDBSliceIdx].IsValid = false		
-	   }
+	   }*/
 	  // PolicyEngineTraverseAndReverse(policyStmtInfo)
 	   db.Logger.Println("Deleting policy statement with name ", cfg.Name)
 		if ok := db.PolicyStmtDB.Delete(patriciaDB.Prefix(cfg.Name)); ok != true {
 			db.Logger.Println(" return value not ok for delete PolicyDB")
 			return err
 		}
+		db.LocalPolicyStmtDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), del)
 	   //update other tables
 	   if len(policyStmtInfo.Conditions) > 0 {
 	      for i:=0;i<len(policyStmtInfo.Conditions);i++ {
@@ -485,7 +491,7 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 			db.Logger.Println(" return value not ok")
 			return err
 		}
-		db.LocalPolicyDB.updateLocalDB(patriciaDB.Prefix(cfg.Name))
+		db.LocalPolicyDB.updateLocalDB(patriciaDB.Prefix(cfg.Name),add)
 		if newPolicy.ImportPolicy {
 		   db.Logger.Println("Adding ", newPolicy.Name, " as import policy")
 		   if db.ImportPolicyPrecedenceMap == nil {
@@ -517,19 +523,20 @@ func (db *PolicyEngineDB) DeletePolicyDefinition(cfg PolicyDefinitionConfig) (er
 	}
 	policyInfoGet := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
 	if(policyInfoGet != nil) {
-       //invalidate localPolicy 
 	   policyInfo := policyInfoGet.(Policy)
-	   if policyInfo.LocalDBSliceIdx < int8(len(*db.LocalPolicyDB)) {
+       //invalidate localPolicy 
+	 /*  if policyInfo.LocalDBSliceIdx < int8(len(*db.LocalPolicyDB)) {
           db.Logger.Println("local DB slice index for this policy is ", policyInfo.LocalDBSliceIdx)
 		  LocalPolicyDB := LocalDBSlice (*db.LocalPolicyDB)
 		  LocalPolicyDB[policyInfo.LocalDBSliceIdx].IsValid = false		
-	   }
+	   }*/
 	   db.PolicyEngineTraverseAndReversePolicy(policyInfo)
 	   db.Logger.Println("Deleting policy with name ", cfg.Name)
 		if ok := db.PolicyDB.Delete(patriciaDB.Prefix(cfg.Name)); ok != true {
 			db.Logger.Println(" return value not ok for delete PolicyDB")
 			return err
 		}
+		db.LocalPolicyDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), del)
 		var stmt PolicyStmt
 		for _,v:=range policyInfo.PolicyStmtPrecedenceMap {
 		  err = db.UpdateGlobalStatementTable(policyInfo.Name, v, del)
