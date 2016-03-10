@@ -348,6 +348,7 @@ func (db *PolicyEngineDB) CreatePolicyStatement(cfg PolicyStmtConfig) (err error
 				err = db.UpdateConditions(newPolicyStmt, cfg.Conditions[i], add)
 				if err != nil {
 					db.Logger.Println("updateConditions returned err ", err)
+					err = errors.New("Error with updateConditions")
 					return err
 				}
 			}
@@ -374,6 +375,7 @@ func (db *PolicyEngineDB) CreatePolicyStatement(cfg PolicyStmtConfig) (err error
 				err = db.UpdateActions(newPolicyStmt, action, add)
 				if err != nil {
 					db.Logger.Println("updateActions returned err ", err)
+					err = errors.New("Update actions returned err")
 					return err
 				}
 			}
@@ -381,6 +383,7 @@ func (db *PolicyEngineDB) CreatePolicyStatement(cfg PolicyStmtConfig) (err error
 		newPolicyStmt.LocalDBSliceIdx = int8(len(*db.LocalPolicyStmtDB))
 		if ok := db.PolicyStmtDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyStmt); ok != true {
 			db.Logger.Println(" return value not ok")
+			err = errors.New("error inserting into policy stmt DB")
 			return err
 		}
 		db.LocalPolicyStmtDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
@@ -416,7 +419,8 @@ func (db *PolicyEngineDB) DeletePolicyStatement(cfg PolicyStmtConfig) (err error
 		// PolicyEngineTraverseAndReverse(policyStmtInfo)
 		db.Logger.Println("Deleting policy statement with name ", cfg.Name)
 		if ok := db.PolicyStmtDB.Delete(patriciaDB.Prefix(cfg.Name)); ok != true {
-			db.Logger.Println(" return value not ok for delete PolicyDB")
+			db.Logger.Println(" return value not ok for delete PolicyStmtDB")
+			err = errors.New("error with delteing policy stmt")
 			return err
 		}
 		db.LocalPolicyStmtDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), del)
@@ -469,16 +473,19 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 			err = db.SetAndValidatePolicyType(&newPolicy, stmt)
 			if err != nil {
 				db.Logger.Println("Error in setting policy type")
+				err = errors.New("Error setting policy type")
 				return err
 			}
 			err = db.UpdateGlobalStatementTable(newPolicy.Name, cfg.PolicyDefinitionStatements[i].Statement, add)
 			if err != nil {
 				db.Logger.Println("UpdateGlobalStatementTable returned err ", err)
+				err = errors.New("Error with UpdateGlobalStatementTable")
 				return err
 			}
 			err = db.UpdateStatements(newPolicy, stmt, add)
 			if err != nil {
 				db.Logger.Println("updateStatements returned err ", err)
+				err = errors.New("error with updateStatements")
 				return err
 			}
 		}
@@ -489,6 +496,7 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 		newPolicy.Extensions = cfg.Extensions
 		if ok := db.PolicyDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicy); ok != true {
 			db.Logger.Println(" return value not ok")
+			err = errors.New("error inserting into policyDB")
 			return err
 		}
 		db.LocalPolicyDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
@@ -534,6 +542,7 @@ func (db *PolicyEngineDB) DeletePolicyDefinition(cfg PolicyDefinitionConfig) (er
 		db.Logger.Println("Deleting policy with name ", cfg.Name)
 		if ok := db.PolicyDB.Delete(patriciaDB.Prefix(cfg.Name)); ok != true {
 			db.Logger.Println(" return value not ok for delete PolicyDB")
+			err = errors.New("error deleting from policyDB")
 			return err
 		}
 		db.LocalPolicyDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), del)
@@ -542,6 +551,7 @@ func (db *PolicyEngineDB) DeletePolicyDefinition(cfg PolicyDefinitionConfig) (er
 			err = db.UpdateGlobalStatementTable(policyInfo.Name, v, del)
 			if err != nil {
 				db.Logger.Println("UpdateGlobalStatementTable returned err ", err)
+				err = errors.New("UpdateGlobalStatementTable returned err")
 				return err
 			}
 			Item := db.PolicyStmtDB.Get(patriciaDB.Prefix(v))
@@ -554,6 +564,7 @@ func (db *PolicyEngineDB) DeletePolicyDefinition(cfg PolicyDefinitionConfig) (er
 			err = db.UpdateStatements(policyInfo, stmt, del)
 			if err != nil {
 				db.Logger.Println("updateStatements returned err ", err)
+				err = errors.New("UpdateStatements returned err")
 				return err
 			}
 		}

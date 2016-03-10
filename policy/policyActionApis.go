@@ -59,6 +59,7 @@ func (db *PolicyEngineDB) CreatePolicyRouteDispositionAction(cfg PolicyActionCon
 		newPolicyAction.ActionGetBulkInfo = routeDispositionAction
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			db.Logger.Println(" return value not ok")
+			err = errors.New("Error inserting action in DB")
 			return val, err
 		}
 		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
@@ -79,6 +80,7 @@ func (db *PolicyEngineDB) CreatePolicyAdminDistanceAction(cfg PolicyActionConfig
 		newPolicyAction.ActionGetBulkInfo = "Set admin distance to value " + strconv.Itoa(int(cfg.SetAdminDistanceValue))
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			db.Logger.Println(" return value not ok")
+			err = errors.New("Error inserting action in DB")
 			return val, err
 		}
 		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
@@ -98,6 +100,7 @@ func (db *PolicyEngineDB) CreatePolicyNetworkStatementAdvertiseAction(cfg Policy
 		newPolicyAction.ActionGetBulkInfo = "Advertise network statement to " + cfg.NetworkStatementTargetProtocol
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			db.Logger.Println(" return value not ok")
+			err = errors.New("Error inserting action in DB")
 			return val, err
 		}
 		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
@@ -128,6 +131,7 @@ func (db *PolicyEngineDB) CreatePolicyRedistributionAction(cfg PolicyActionConfi
 		newPolicyAction.ActionGetBulkInfo = cfg.RedistributeAction + " Redistribute to Target Protocol " + cfg.RedistributeTargetProtocol
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			db.Logger.Println(" return value not ok")
+			err = errors.New("Error inserting action in DB")
 			return val, err
 		}
 		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
@@ -151,6 +155,7 @@ func (db *PolicyEngineDB) CreatePolicyAggregateAction(cfg PolicyActionConfig) (v
 			strconv.FormatBool(cfg.GenerateASSet) + " set SendSummaryOnly to " + strconv.FormatBool(cfg.SendSummaryOnly)
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			db.Logger.Println(" return value not ok")
+			err = errors.New("Error inserting action in DB")
 			return val, err
 		}
 		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
@@ -166,19 +171,19 @@ func (db *PolicyEngineDB) CreatePolicyAction(cfg PolicyActionConfig) (err error)
 	db.Logger.Println("CreatePolicyAction")
 	switch cfg.ActionType {
 	case "RouteDisposition":
-		db.CreatePolicyRouteDispositionAction(cfg)
+		_,err = db.CreatePolicyRouteDispositionAction(cfg)
 		break
 	case "Redistribution":
-		db.CreatePolicyRedistributionAction(cfg)
+		_,err = db.CreatePolicyRedistributionAction(cfg)
 		break
 	case "SetAdminDistance":
-		db.CreatePolicyAdminDistanceAction(cfg)
+		_,err = db.CreatePolicyAdminDistanceAction(cfg)
 		break
 	case "NetworkStatementAdvertise":
-		db.CreatePolicyNetworkStatementAdvertiseAction(cfg)
+		_,err = db.CreatePolicyNetworkStatementAdvertiseAction(cfg)
 		break
 	case "Aggregate":
-		db.CreatePolicyAggregateAction(cfg)
+		_,err = db.CreatePolicyAggregateAction(cfg)
 		break
 	default:
 		db.Logger.Println("Unknown action type ", cfg.ActionType)
