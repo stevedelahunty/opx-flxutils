@@ -47,7 +47,7 @@ type Writer struct {
 
 func NewLogger(paramsDir string, name string, tag string) (*Writer, error) {
 	var err error
-	srLogger := &Writer{}
+	srLogger := new(Writer)
 	srLogger.MyComponentName = name
 	srLogger.sysLogger, err = syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, tag)
 	if err != nil {
