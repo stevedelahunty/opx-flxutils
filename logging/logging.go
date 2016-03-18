@@ -74,9 +74,9 @@ func (logger *Writer) readLogLevelFromDb(paramsDir string) error {
 	}
 	defer dbHdl.Close()
 
-	gRows, err := dbHdl.Query("SELECT * FROM SystemLoggingConfig")
+	gRows, err := dbHdl.Query("SELECT * FROM SystemLogging")
 	if err != nil {
-		fmt.Println("Unable to query DB - SystemLoggingConfig: ", err)
+		fmt.Println("Unable to query DB - SystemLogging: ", err)
 		return err
 	}
 	defer gRows.Close()
@@ -93,9 +93,9 @@ func (logger *Writer) readLogLevelFromDb(paramsDir string) error {
 		}
 	}
 
-	cRows, err := dbHdl.Query("SELECT Module FROM ComponentLoggingConfig WHERE Module = ?", logger.MyComponentName)
+	cRows, err := dbHdl.Query("SELECT Module FROM ComponentLogging WHERE Module = ?", logger.MyComponentName)
 	if err != nil {
-		fmt.Println("Unable to query DB - ComponentLoggingConfig: ", err)
+		fmt.Println("Unable to query DB - ComponentLogging: ", err)
 		return err
 	}
 	defer cRows.Close()
