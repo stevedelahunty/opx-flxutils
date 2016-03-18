@@ -180,11 +180,19 @@ func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilter
 		*/
 		case policyCommonDefs.PolicyActionTypeRouteDisposition, policyCommonDefs.PolicyActionTypeRouteRedistribute,
 			policyCommonDefs.PolicyActionTypeNetworkStatementAdvertise, policyCommonDefs.PolicyActionTypeAggregate:
-			db.Logger.Println("action to be applied", action.ActionType)
-			if db.ActionfuncMap[action.ActionType] != nil {
-				db.ActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params)
+			if entity.CreatePath == true {
+				db.Logger.Println("action to be applied", action.ActionType)
+				if db.ActionfuncMap[action.ActionType] != nil {
+					db.ActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params)
+				}
+				addActionToList = true
+			} else if entity.DeletePath == true {
+				db.Logger.Println("action to be reversed", action.ActionType)
+				if db.UndoActionfuncMap[action.ActionType] != nil {
+					db.UndoActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params, policyStmt)
+				}
+				addActionToList = true
 			}
-			addActionToList = true
 		default:
 			db.Logger.Println("UnknownInvalid type of action")
 			break
