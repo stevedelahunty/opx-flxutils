@@ -263,7 +263,7 @@ func (db *PolicyEngineDB) DstIpPrefixMatchConditionfunc(entity PolicyEngineFilte
 	return match
 }
 func (db *PolicyEngineDB) ProtocolMatchConditionfunc(entity PolicyEngineFilterEntityParams, condition PolicyCondition, policyStmt PolicyStmt) (match bool) {
-	db.Logger.Println("protocolMatchConditionfunc")
+	db.Logger.Println("protocolMatchConditionfunc: check if policy protocol: ", condition.ConditionInfo.(string), " matches entity protocol: ", entity.RouteProtocol)
 	matchProto := condition.ConditionInfo.(string)
 	if matchProto == entity.RouteProtocol {
 		db.Logger.Println("Protocol condition matches")

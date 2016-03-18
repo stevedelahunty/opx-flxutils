@@ -90,7 +90,7 @@ func (db * PolicyEngineDB)CreatePolicyMatchProtocolCondition(cfg PolicyCondition
 
 	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Name))
 	if(policyCondition == nil) {
-	   db.Logger.Println("Defining a new policy condition with name ", cfg.Name)
+	   db.Logger.Println("Defining a new policy condition with name ", cfg.Name, " to match on protocol ", cfg.MatchProtocolConditionInfo)
 	   matchProto := cfg.MatchProtocolConditionInfo
 	   newPolicyCondition := PolicyCondition{Name:cfg.Name,ConditionType:policyCommonDefs.PolicyConditionTypeProtocolMatch,ConditionInfo:matchProto ,LocalDBSliceIdx:(len(*db.LocalPolicyConditionsDB))}
        newPolicyCondition.ConditionGetBulkInfo = "match Protocol " + matchProto
