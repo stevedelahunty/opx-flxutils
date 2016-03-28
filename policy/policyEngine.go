@@ -626,7 +626,7 @@ func (db *PolicyEngineDB) PolicyEngineFilter(entity PolicyEngineFilterEntityPara
 		}
 		if policyInfo == nil {
 			db.Logger.Println("Nil policy")
-			continue
+			break
 		}
 		policy := policyInfo.(Policy)
 		localPolicyDB := *db.LocalPolicyDB
