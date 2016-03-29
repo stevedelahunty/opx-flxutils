@@ -92,10 +92,10 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 	var root *Trie 
 	var inpPrefix = prefix
 	var leftover, prefixLeftover Prefix
-    trie.dump();
+    //trie.dump();
 	root = trie
 	var prefixlen, lastNonNilPrefix int
-	logger.Println("get longest prefixnode")
+	//logger.Println("get longest prefixnode")
 	for {
 		// Compute what part of prefix matches.
 	    //logger.Println("prefix  = ", prefix, " root.prefix= ",  root.prefix)
@@ -113,7 +113,7 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 
 		// We used up the whole prefix, subtree found.
 		if len(prefix) == 0 {
-			logger.Println("len(prefix) == 0?")
+			//logger.Println("len(prefix) == 0?")
 		//	found = true
 			leftover = root.prefix[common:]
 			break
@@ -122,7 +122,7 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 		// Partial match means that there is no subtree matching prefix.
 		if common < len(root.prefix) {
 			if common == 0 && prefixlen == 0{
-				logger.Println("common:0, prefixlen=0, no match")
+				//logger.Println("common:0, prefixlen=0, no match")
 				break
 			}
            //prefixlen = prefixlen - common

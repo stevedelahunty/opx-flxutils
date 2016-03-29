@@ -53,22 +53,22 @@ func (db *PolicyEngineDB) CreatePolicyRouteDispositionAction(cfg PolicyActionCon
 		} else {
 			db.Logger.Println("User should set either one of accept/reject to true for this action type")
 			err = errors.New("User should set either one of accept/reject to true for this action type")
-			return val, err
+			return false, err
 		}
 		newPolicyAction := PolicyAction{Name: cfg.Name, ActionType: policyCommonDefs.PolicyActionTypeRouteDisposition, ActionInfo: routeDispositionAction, LocalDBSliceIdx: (len(*db.LocalPolicyActionsDB))}
 		newPolicyAction.ActionGetBulkInfo = routeDispositionAction
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			db.Logger.Println(" return value not ok")
 			err = errors.New("Error inserting action in DB")
-			return val, err
+			return false, err
 		}
 		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
 	} else {
 		db.Logger.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
-		return val, err
+		return false, err
 	}
-	return val, err
+	return true, err
 }
 
 func (db *PolicyEngineDB) CreatePolicyAdminDistanceAction(cfg PolicyActionConfig) (val bool, err error) {
@@ -81,15 +81,15 @@ func (db *PolicyEngineDB) CreatePolicyAdminDistanceAction(cfg PolicyActionConfig
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			db.Logger.Println(" return value not ok")
 			err = errors.New("Error inserting action in DB")
-			return val, err
+			return false, err
 		}
 		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
 	} else {
 		db.Logger.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
-		return val, err
+		return false, err
 	}
-	return val, err
+	return true, err
 }
 func (db *PolicyEngineDB) CreatePolicyNetworkStatementAdvertiseAction(cfg PolicyActionConfig) (val bool, err error) {
 	db.Logger.Println("CreatePolicyNetworkStatementAdvertiseAction")
@@ -101,15 +101,15 @@ func (db *PolicyEngineDB) CreatePolicyNetworkStatementAdvertiseAction(cfg Policy
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			db.Logger.Println(" return value not ok")
 			err = errors.New("Error inserting action in DB")
-			return val, err
+			return false, err
 		}
 		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
 	} else {
 		db.Logger.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
-		return val, err
+		return false, err
 	}
-	return val, err
+	return true, err
 }
 func (db *PolicyEngineDB) CreatePolicyRedistributionAction(cfg PolicyActionConfig) (val bool, err error) {
 	db.Logger.Println("CreatePolicyRedistributionAction")
@@ -125,22 +125,22 @@ func (db *PolicyEngineDB) CreatePolicyRedistributionAction(cfg PolicyActionConfi
 		} else {
 			db.Logger.Println("Invalid redistribute option ", cfg.RedistributeAction, " - should be either Allow/Block")
 			err = errors.New("Invalid redistribute option")
-			return val, err
+			return false, err
 		}
 		newPolicyAction := PolicyAction{Name: cfg.Name, ActionType: policyCommonDefs.PolicyActionTypeRouteRedistribute, ActionInfo: redistributeActionInfo, LocalDBSliceIdx: (len(*db.LocalPolicyActionsDB))}
 		newPolicyAction.ActionGetBulkInfo = cfg.RedistributeAction + " Redistribute to Target Protocol " + cfg.RedistributeTargetProtocol
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			db.Logger.Println(" return value not ok")
 			err = errors.New("Error inserting action in DB")
-			return val, err
+			return false, err
 		}
 		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
 	} else {
 		db.Logger.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
-		return val, err
+		return false, err
 	}
-	return val, err
+	return true, err
 }
 
 func (db *PolicyEngineDB) CreatePolicyAggregateAction(cfg PolicyActionConfig) (val bool, err error) {
@@ -156,60 +156,61 @@ func (db *PolicyEngineDB) CreatePolicyAggregateAction(cfg PolicyActionConfig) (v
 		if ok := db.PolicyActionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyAction); ok != true {
 			db.Logger.Println(" return value not ok")
 			err = errors.New("Error inserting action in DB")
-			return val, err
+			return false, err
 		}
 		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
 	} else {
 		db.Logger.Println("Duplicate action name")
 		err = errors.New("Duplicate policy action definition")
-		return val, err
+		return false, err
 	}
-	return val, err
+	return true, err
 }
 
-func (db *PolicyEngineDB) CreatePolicyAction(cfg PolicyActionConfig) (err error) {
+func (db *PolicyEngineDB) CreatePolicyAction(cfg PolicyActionConfig) (val bool, err error) {
 	db.Logger.Println("CreatePolicyAction")
 	switch cfg.ActionType {
 	case "RouteDisposition":
-		_,err = db.CreatePolicyRouteDispositionAction(cfg)
+		val,err = db.CreatePolicyRouteDispositionAction(cfg)
 		break
 	case "Redistribution":
-		_,err = db.CreatePolicyRedistributionAction(cfg)
+		val,err = db.CreatePolicyRedistributionAction(cfg)
 		break
 	case "SetAdminDistance":
-		_,err = db.CreatePolicyAdminDistanceAction(cfg)
+		val,err = db.CreatePolicyAdminDistanceAction(cfg)
 		break
 	case "NetworkStatementAdvertise":
-		_,err = db.CreatePolicyNetworkStatementAdvertiseAction(cfg)
+		val,err = db.CreatePolicyNetworkStatementAdvertiseAction(cfg)
 		break
 	case "Aggregate":
-		_,err = db.CreatePolicyAggregateAction(cfg)
+		val,err = db.CreatePolicyAggregateAction(cfg)
 		break
 	default:
 		db.Logger.Println("Unknown action type ", cfg.ActionType)
 		err = errors.New("Unknown action type")
+		return false,err
 	}
-	return err
+	return val,err
 }
 
-func (db *PolicyEngineDB) DeletePolicyAction(cfg PolicyActionConfig) (err error) {
+func (db *PolicyEngineDB) DeletePolicyAction(cfg PolicyActionConfig) (val bool, err error) {
 	db.Logger.Println("DeletePolicyAction")
 	actionItem := db.PolicyActionsDB.Get(patriciaDB.Prefix(cfg.Name))
 	if actionItem == nil {
 		db.Logger.Println("action ", cfg.Name, "not found in the DB")
 		err = errors.New("action not found")
-		return err
+		return false,err
 	}
 	action := actionItem.(PolicyAction)
 	if len(action.PolicyStmtList) != 0 {
 		db.Logger.Println("This action is currently being used by one or more policy statements. Try deleting the stmt before deleting the action")
 		err = errors.New("This action is currently being used by one or more policy statements. Try deleting the stmt before deleting the action")
-		return err
+		return false,err
 	}
 	deleted := db.PolicyActionsDB.Delete(patriciaDB.Prefix(cfg.Name))
 	if deleted {
 		db.Logger.Println("Found and deleted actions ", cfg.Name)
 		db.LocalPolicyActionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), del)
 	}
-	return err
+	return true,err
 }

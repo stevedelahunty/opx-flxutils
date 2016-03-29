@@ -88,7 +88,7 @@ func (list *sparseChildList) remove(child *Trie) {
 }
 
 func (list *sparseChildList) nextWithLongestPrefixMatch(b byte) (trie *Trie, exact bool) {
-	logger.Println("Looking for byte ", b)
+	//logger.Println("Looking for byte ", b)
 	var longestPrefixChild *Trie = nil
 	for _, child := range list.children {
 		//logger.Println("Scanning child ", child.prefix, " child.prefix[0] = ", child.prefix[0])
