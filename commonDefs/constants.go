@@ -12,3 +12,16 @@ const (
 	IfTypeVirtual
 	IfTypeNull
 )
+
+func GetIfTypeName(ifType int) string {
+	switch ifType {
+	case L2RefTypePort:
+		return "Port"
+	case L2RefTypeLag:
+		return "Lag"
+	case L2RefTypeVlan:
+		return "Vlan"
+	default:
+		return "Unknown"
+	}
+}
