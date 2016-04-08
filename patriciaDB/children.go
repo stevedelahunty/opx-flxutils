@@ -88,16 +88,16 @@ func (list *sparseChildList) remove(child *Trie) {
 }
 
 func (list *sparseChildList) nextWithLongestPrefixMatch(b byte) (trie *Trie, exact bool) {
-	logger.Println("Looking for byte ", b)
+	//logger.Println("Looking for byte ", b)
 	var longestPrefixChild *Trie = nil
 	for _, child := range list.children {
-		logger.Println("Scanning child ", child.prefix, " child.prefix[0] = ", child.prefix[0])
+		//logger.Println("Scanning child ", child.prefix, " child.prefix[0] = ", child.prefix[0])
 		if child.prefix[0] == b {
-			logger.Println("returning child ", child.prefix, "exact byte match")
+			//logger.Println("returning child ", child.prefix, "exact byte match")
 			return child,true
 		}
 		if uint(child.prefix[0]) < uint(b) {
-			logger.Println("potential child ", child.prefix, " a potential match")
+			//logger.Println("potential child ", child.prefix, " a potential match")
              if longestPrefixChild == nil || (uint(longestPrefixChild.prefix[0]) < uint(child.prefix[0])) {
 			   longestPrefixChild = child
 			}

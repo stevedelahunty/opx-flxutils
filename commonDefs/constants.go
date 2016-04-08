@@ -5,8 +5,23 @@ const (
 	L2RefTypePort = iota
 	L2RefTypeLag
 	L2RefTypeVlan
-	IfTypeP2P      
-	IfTypeBcast   
+	IfTypeP2P
+	IfTypeBcast
 	IfTypeLoopback
-	IfTypeNull 
+	IfTypeSecondary
+	IfTypeVirtual
+	IfTypeNull
 )
+
+func GetIfTypeName(ifType int) string {
+	switch ifType {
+	case L2RefTypePort:
+		return "Port"
+	case L2RefTypeLag:
+		return "Lag"
+	case L2RefTypeVlan:
+		return "Vlan"
+	default:
+		return "Unknown"
+	}
+}

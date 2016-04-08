@@ -92,19 +92,19 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 	var root *Trie 
 	var inpPrefix = prefix
 	var leftover, prefixLeftover Prefix
-    trie.dump();
+    //trie.dump();
 	root = trie
 	var prefixlen, lastNonNilPrefix int
 	//logger.Println("get longest prefixnode")
 	for {
 		// Compute what part of prefix matches.
-	    logger.Println("prefix  = ", prefix, " root.prefix= ",  root.prefix)
+	    //logger.Println("prefix  = ", prefix, " root.prefix= ",  root.prefix)
         if(len(prefix) < len(root.prefix)) {
 			break
 		}
 		common := root.longestCommonPrefixLength(prefix)
         prefixlen = prefixlen + common
-		logger.Println("common: ", common, "  prefixLen : ",prefixlen)
+		//logger.Println("common: ", common, "  prefixLen : ",prefixlen)
 	    node := trie.Get(inpPrefix[:prefixlen])
         if(node != nil) {
 	      lastNonNilPrefix = prefixlen
@@ -113,7 +113,7 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 
 		// We used up the whole prefix, subtree found.
 		if len(prefix) == 0 {
-			logger.Println("len(prefix) == 0?")
+			//logger.Println("len(prefix) == 0?")
 		//	found = true
 			leftover = root.prefix[common:]
 			break
@@ -122,13 +122,13 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 		// Partial match means that there is no subtree matching prefix.
 		if common < len(root.prefix) {
 			if common == 0 && prefixlen == 0{
-				logger.Println("common:0, prefixlen=0, no match")
+				//logger.Println("common:0, prefixlen=0, no match")
 				break
 			}
            //prefixlen = prefixlen - common
  			leftover = root.prefix[common:]
 			prefixLeftover = inpPrefix[prefixlen:]
-			logger.Println("leftover = ", leftover, " len(leftover) = ", len(leftover), " prefixLeftover = ", prefixLeftover," len(prefixleftover) = ", len(prefixLeftover))
+			//logger.Println("leftover = ", leftover, " len(leftover) = ", len(leftover), " prefixLeftover = ", prefixLeftover," len(prefixleftover) = ", len(prefixLeftover))
 	        if len(prefixLeftover) != len(leftover) {
 				break
 			} else {
@@ -137,13 +137,13 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 					lti := uint(leftover[i])
 					prti := uint(prefixLeftover[i])
 					if lti > prti {
-						logger.Println("lti ", lti, " > ", prti)
+						//logger.Println("lti ", lti, " > ", prti)
 						found = false
 						break
 					} 
 				}
 				if found {
-					logger.Println("found == true, get node with prefix ", root.prefix)
+					//logger.Println("found == true, get node with prefix ", root.prefix)
 				   node = root.Item()
 			       return node
 				}

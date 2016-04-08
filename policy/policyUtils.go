@@ -4,10 +4,12 @@ package policy
 import (
 	"bytes"
 	"errors"
-	"log"
-	"log/syslog"
-	"os"
+//	"log"
+//	"log/syslog"
+//	"os"
+	"utils/logging"
 	"utils/patriciaDB"
+	"fmt"
 	"utils/policy/policyCommonDefs"
 )
 
@@ -97,7 +99,7 @@ type PolicyEntityMapIndex interface{}
 type GetPolicyEnityMapIndexFunc func(entity PolicyEngineFilterEntityParams, policy string) PolicyEntityMapIndex
 
 type PolicyEngineDB struct {
-	Logger                        *log.Logger
+	Logger                        *logging.Writer//*log.Logger
 	PolicyConditionsDB            *patriciaDB.Trie
 	LocalPolicyConditionsDB       *LocalDBSlice
 	PolicyActionsDB               *patriciaDB.Trie
@@ -125,13 +127,13 @@ type PolicyEngineDB struct {
 }
 
 func (db *PolicyEngineDB) buildPolicyConditionCheckfuncMap() {
-	db.Logger.Println("buildPolicyConditionCheckfuncMap")
+	db.Logger.Info(fmt.Sprintln("buildPolicyConditionCheckfuncMap"))
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch] = db.DstIpPrefixMatchConditionfunc
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeProtocolMatch] = db.ProtocolMatchConditionfunc
 }
-func NewPolicyEngineDB() (policyEngineDB *PolicyEngineDB) {
+func NewPolicyEngineDB(logger *logging.Writer) (policyEngineDB *PolicyEngineDB) {
 	policyEngineDB = &PolicyEngineDB{}
-	if policyEngineDB.Logger == nil {
+/*	if policyEngineDB.Logger == nil {
 		policyEngineDB.Logger = log.New(os.Stdout, "PolicyEngine :", log.Ldate|log.Ltime|log.Lshortfile)
 
 		syslogger, err := syslog.New(syslog.LOG_NOTICE|syslog.LOG_INFO|syslog.LOG_DAEMON, "PolicyEngine")
@@ -139,7 +141,8 @@ func NewPolicyEngineDB() (policyEngineDB *PolicyEngineDB) {
 			syslogger.Info("### PolicyEngineDB initailized")
 			policyEngineDB.Logger.SetOutput(syslogger)
 		}
-	}
+	}*/
+	policyEngineDB.Logger = logger
 	policyEngineDB.PolicyActionsDB = patriciaDB.NewTrie()
 	LocalPolicyActionsDB := make([]LocalDB, 0)
 	localActionSlice := LocalDBSlice(LocalPolicyActionsDB)
@@ -208,7 +211,7 @@ func isPolicyTypeSame(oldPolicy Policy, policy Policy) (same bool) {
 }
 func (db *PolicyEngineDB) AddPolicyEntityMapEntry(entity PolicyEngineFilterEntityParams, policy string,
 	policyStmt string, conditionList []PolicyCondition, actionList []PolicyAction) {
-	db.Logger.Println("AddPolicyEntityMapEntry")
+	db.Logger.Info(fmt.Sprintln("AddPolicyEntityMapEntry"))
 	var policyStmtMap PolicyStmtMap
 	var conditionsAndActionsList ConditionsAndActionsList
 	if db.PolicyEntityMap == nil {
@@ -219,7 +222,7 @@ func (db *PolicyEngineDB) AddPolicyEntityMapEntry(entity PolicyEngineFilterEntit
 	}
 	policyEntityMapIndex := db.GetPolicyEntityMapIndex(entity, policy)
 	if policyEntityMapIndex == nil {
-		db.Logger.Println("policyEntityMapKey nil")
+		db.Logger.Err(fmt.Sprintln("policyEntityMapKey nil"))
 		return
 	}
 	policyStmtMap, ok := db.PolicyEntityMap[policyEntityMapIndex]
@@ -228,7 +231,7 @@ func (db *PolicyEngineDB) AddPolicyEntityMapEntry(entity PolicyEngineFilterEntit
 	}
 	_, ok = policyStmtMap.PolicyStmtMap[policyStmt]
 	if ok {
-		db.Logger.Println("policy statement map for statement ", policyStmt, " already in place for policy ", policy)
+		db.Logger.Err(fmt.Sprintln("policy statement map for statement ", policyStmt, " already in place for policy ", policy))
 		return
 	}
 	conditionsAndActionsList.ConditionList = make([]PolicyCondition, 0)
@@ -243,9 +246,9 @@ func (db *PolicyEngineDB) AddPolicyEntityMapEntry(entity PolicyEngineFilterEntit
 	db.PolicyEntityMap[policyEntityMapIndex] = policyStmtMap
 }
 func (db *PolicyEngineDB) DeletePolicyEntityMapEntry(entity PolicyEngineFilterEntityParams, policy string) {
-	db.Logger.Println("DeletePolicyEntityMapEntry for policy ", policy)
+	db.Logger.Info(fmt.Sprintln("DeletePolicyEntityMapEntry for policy ", policy))
 	if db.PolicyEntityMap == nil {
-		db.Logger.Println("PolicyEntityMap empty")
+		db.Logger.Err(fmt.Sprintln("PolicyEntityMap empty"))
 		return
 	}
 	if db.GetPolicyEntityMapIndex == nil {
@@ -253,45 +256,45 @@ func (db *PolicyEngineDB) DeletePolicyEntityMapEntry(entity PolicyEngineFilterEn
 	}
 	policyEntityMapIndex := db.GetPolicyEntityMapIndex(entity, policy)
 	if policyEntityMapIndex == nil {
-		db.Logger.Println("policyEntityMapIndex nil")
+		db.Logger.Err(fmt.Sprintln("policyEntityMapIndex nil"))
 		return
 	}
 	//PolicyRouteMap[policyRouteIndex].policyStmtMap=nil
 	delete(db.PolicyEntityMap, policyEntityMapIndex)
 }
 func (db *PolicyEngineDB) PolicyActionType(actionType int) (exportTypeAction bool, importTypeAction bool, globalTypeAction bool) {
-	db.Logger.Println("PolicyActionType for type ", actionType)
+	db.Logger.Info(fmt.Sprintln("PolicyActionType for type ", actionType))
 	switch actionType {
 	case policyCommonDefs.PoilcyActionTypeSetAdminDistance:
 		globalTypeAction = true
-		db.Logger.Println("PoilcyActionTypeSetAdminDistance, setting globalTypeAction true")
+		db.Logger.Info(fmt.Sprintln("PoilcyActionTypeSetAdminDistance, setting globalTypeAction true"))
 		break
 	case policyCommonDefs.PolicyActionTypeAggregate:
 		exportTypeAction = true
-		db.Logger.Println("PolicyActionTypeAggregate: setting exportTypeAction true")
+		db.Logger.Info(fmt.Sprintln("PolicyActionTypeAggregate: setting exportTypeAction true"))
 		break
 	case policyCommonDefs.PolicyActionTypeRouteRedistribute:
 		exportTypeAction = true
-		db.Logger.Println("PolicyActionTypeRouteRedistribute: setting exportTypeAction true")
+		db.Logger.Info(fmt.Sprintln("PolicyActionTypeRouteRedistribute: setting exportTypeAction true"))
 		break
 	case policyCommonDefs.PolicyActionTypeNetworkStatementAdvertise:
 		exportTypeAction = true
-		db.Logger.Println("PolicyActionTypeNetworkStatementAdvertise: setting exportTypeAction true")
+		db.Logger.Info(fmt.Sprintln("PolicyActionTypeNetworkStatementAdvertise: setting exportTypeAction true"))
 		break
 	case policyCommonDefs.PolicyActionTypeRouteDisposition:
 		importTypeAction = true
-		db.Logger.Println("setting importTypeAction true")
+		db.Logger.Info(fmt.Sprintln("setting importTypeAction true"))
 		break
 	default:
-		db.Logger.Println("Unknown action type")
+		db.Logger.Err(fmt.Sprintln("Unknown action type"))
 		break
 	}
 	return exportTypeAction, importTypeAction, globalTypeAction
 }
 func (db *PolicyEngineDB) SetAndValidatePolicyType(policy *Policy, stmt PolicyStmt) (err error) {
-	db.Logger.Println("SetPolicyTypeFromPolicyStmt")
+	db.Logger.Info(fmt.Sprintln("SetPolicyTypeFromPolicyStmt"))
 	if policy.ExportPolicy == false && policy.ImportPolicy == false && policy.GlobalPolicy == false {
-		db.Logger.Println("Policy is still not associated with a type, set it from stmt")
+		db.Logger.Info(fmt.Sprintln("Policy is still not associated with a type, set it from stmt"))
 		policy.ExportPolicy = stmt.ExportStmt
 		policy.ImportPolicy = stmt.ImportStmt
 		policy.GlobalPolicy = stmt.GlobalStmt
@@ -299,26 +302,26 @@ func (db *PolicyEngineDB) SetAndValidatePolicyType(policy *Policy, stmt PolicySt
 		if policy.ImportPolicy && db.ImportPolicyPrecedenceMap != nil {
 			_, ok := db.ImportPolicyPrecedenceMap[int(policy.Precedence)]
 			if ok {
-				db.Logger.Println("There is already a import policy with this precedence.")
+				db.Logger.Err(fmt.Sprintln("There is already a import policy with this precedence."))
 				err = errors.New("There is already a import policy with this precedence.")
 				return err
 			}
 		} else if policy.ExportPolicy && db.ExportPolicyPrecedenceMap != nil {
 			_, ok := db.ExportPolicyPrecedenceMap[int(policy.Precedence)]
 			if ok {
-				db.Logger.Println("There is already a export policy with this precedence.")
+				db.Logger.Err(fmt.Sprintln("There is already a export policy with this precedence."))
 				err = errors.New("There is already a export policy with this precedence.")
 				return err
 			}
 		} else if policy.GlobalPolicy {
-			db.Logger.Println("This is a global policy")
+			db.Logger.Info(fmt.Sprintln("This is a global policy"))
 		}
 		return err
 	}
 	if policy.ExportPolicy != stmt.ExportStmt ||
 		policy.ImportPolicy != stmt.ImportStmt ||
 		policy.GlobalPolicy != stmt.GlobalStmt {
-		db.Logger.Println("Policy type settings, export/import/global :", policy.ExportPolicy, "/", policy.ImportPolicy, "/", policy.GlobalPolicy, " does not match the export/import/global settings on the stmt: ", stmt.ExportStmt, "/", stmt.ImportStmt, "/", stmt.GlobalStmt)
+		db.Logger.Err(fmt.Sprintln("Policy type settings, export/import/global :", policy.ExportPolicy, "/", policy.ImportPolicy, "/", policy.GlobalPolicy, " does not match the export/import/global settings on the stmt: ", stmt.ExportStmt, "/", stmt.ImportStmt, "/", stmt.GlobalStmt))
 		err = errors.New("Mismatch on policy type")
 		return err
 	}
