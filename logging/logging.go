@@ -133,28 +133,28 @@ func (logger *Writer) Crit(message string) error {
 }
 
 func (logger *Writer) Err(message string) error {
-	if logger.initialized {
+	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.ERR {
 		return logger.sysLogger.Err(message)
 	}
 	return nil
 }
 
 func (logger *Writer) Warning(message string) error {
-	if logger.initialized {
+	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.WARN {
 		return logger.sysLogger.Warning(message)
 	}
 	return nil
 }
 
 func (logger *Writer) Alert(message string) error {
-	if logger.initialized {
+	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.ALERT {
 		return logger.sysLogger.Alert(message)
 	}
 	return nil
 }
 
 func (logger *Writer) Emerg(message string) error {
-	if logger.initialized {
+	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.EMERG {
 		return logger.sysLogger.Emerg(message)
 	}
 	return nil
