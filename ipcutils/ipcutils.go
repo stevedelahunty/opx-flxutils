@@ -7,10 +7,11 @@ import (
 )
 
 type IPCClientBase struct {
-	Address               string
-	TTransport            thrift.TTransport
-	PtrProtocolFactory   *thrift.TBinaryProtocolFactory
-	IsConnected           bool
+	Name               string
+	Address            string
+	TTransport         thrift.TTransport
+	PtrProtocolFactory *thrift.TBinaryProtocolFactory
+	IsConnected        bool
 }
 
 func (clnt *IPCClientBase) IsConnectedToServer() bool {
