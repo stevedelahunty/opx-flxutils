@@ -5,11 +5,13 @@ const (
 	L2RefTypePort = iota
 	L2RefTypeLag
 	L2RefTypeVlan
+	L2RefTypeVtep
 	IfTypeP2P
 	IfTypeBcast
 	IfTypeLoopback
 	IfTypeSecondary
 	IfTypeVirtual
+	IfTypeVxlan
 	IfTypeNull
 )
 
