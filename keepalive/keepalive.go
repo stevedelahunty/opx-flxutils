@@ -33,10 +33,6 @@ const (
 func InitKeepAlive(name string, paramsFile string) {
 	var clientsList []ClientJson
 
-	ka := new(KeepAlive)
-	ka.name = name
-	ka.status = KA_ACTIVE
-
 	bytes, err := ioutil.ReadFile(paramsFile)
 	if err != nil {
 		fmt.Println("Error in reading configuration file")
@@ -48,6 +44,10 @@ func InitKeepAlive(name string, paramsFile string) {
 		fmt.Println("Error in Unmarshalling Json")
 		return
 	}
+
+	ka := new(KeepAlive)
+	ka.name = name
+	ka.status = KA_ACTIVE
 
 	for _, client := range clientsList {
 		if client.Name == "sysd" {
@@ -71,6 +71,11 @@ func InitKeepAlive(name string, paramsFile string) {
 				}
 			}
 		}
+	}
+	if ka.sysdClient.TTransport != nil && ka.sysdClient.PtrProtocolFactory != nil {
+		ka.sysdClient.ClientHdl = sysd.NewSYSDServicesClientFactory(ka.sysdClient.TTransport, ka.sysdClient.PtrProtocolFactory)
+		ka.sysdClient.IsConnected = true
+		fmt.Println(ka.name, " connected to sysd")
 	}
 	fmt.Println("Initialized KA for ", ka.name, " status ", ka.status)
 	retryTimer := time.NewTicker(time.Second * 5)
