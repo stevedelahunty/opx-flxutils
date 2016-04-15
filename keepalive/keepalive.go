@@ -27,12 +27,14 @@ type KeepAlive struct {
 }
 
 const (
-	KA_ACTIVE = 1
+	KA_ACTIVE   = 1 // Default status of a daemon
+	KA_INTERVAL = 1 // KA message will be sent every 1 second
 )
 
-func InitKeepAlive(name string, paramsFile string) {
+func InitKeepAlive(name string, paramsDir string) {
 	var clientsList []ClientJson
 
+	paramsFile := paramsDir + "clients.json"
 	bytes, err := ioutil.ReadFile(paramsFile)
 	if err != nil {
 		fmt.Println("Error in reading configuration file")
@@ -78,20 +80,10 @@ func InitKeepAlive(name string, paramsFile string) {
 		fmt.Println(ka.name, " connected to sysd")
 	}
 	fmt.Println("Initialized KA for ", ka.name, " status ", ka.status)
-	retryTimer := time.NewTicker(time.Second * 5)
+	retryTimer := time.NewTicker(time.Second * KA_INTERVAL)
 	for t := range retryTimer.C {
 		_ = t
 		ka.sysdClient.ClientHdl.PeriodicKeepAlive(ka.name)
 	}
 	return
-}
-
-func (ka *KeepAlive) SendPeriodicKeepAlive() error {
-	fmt.Println("SendPeriodicKeepAlive ", ka.name, ka.status)
-
-	return nil
-}
-
-func (ka *KeepAlive) SetMyStatus(status int32) error {
-	return nil
 }
