@@ -126,7 +126,7 @@ func (logger *Writer) SetLevel(level sysdCommonDefs.SRDebugLevel) error {
 }
 
 func (logger *Writer) Crit(message string) error {
-	if logger.initialized {
+	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.CRIT {
 		return logger.sysLogger.Crit(message)
 	}
 	return nil
