@@ -233,18 +233,18 @@ func (logger *Writer) SetupSubSocket() error {
 	return nil
 }
 
-func (logger *Writer) ProcessSysdNotification(rxBuf []byte) error {
+func (logger *Writer) ProcessLoggingNotification(rxBuf []byte) error {
 	var msg sysdCommonDefs.Notification
 	err := json.Unmarshal(rxBuf, &msg)
 	if err != nil {
-		logger.Err(fmt.Sprintln("Unable to unmarshal sysd notification: ", rxBuf))
+		logger.Err(fmt.Sprintln("Unable to unmarshal logging notification: ", rxBuf))
 		return err
 	}
 	if msg.Type == sysdCommonDefs.G_LOG {
 		var gLog sysdCommonDefs.GlobalLogging
 		err = json.Unmarshal(msg.Payload, &gLog)
 		if err != nil {
-			logger.Err(fmt.Sprintln("Unable to unmarshal sysd global logging notification: ", msg.Payload))
+			logger.Err(fmt.Sprintln("Unable to unmarshal global logging notification: ", msg.Payload))
 			return err
 		}
 		logger.SetGlobal(gLog.Enable)
@@ -253,7 +253,7 @@ func (logger *Writer) ProcessSysdNotification(rxBuf []byte) error {
 		var cLog sysdCommonDefs.ComponentLogging
 		err = json.Unmarshal(msg.Payload, &cLog)
 		if err != nil {
-			logger.Err(fmt.Sprintln("Unable to unmarshal sysd component logging notification: ", msg.Payload))
+			logger.Err(fmt.Sprintln("Unable to unmarshal component logging notification: ", msg.Payload))
 			return err
 		}
 		if cLog.Name == logger.MyComponentName {
@@ -263,29 +263,29 @@ func (logger *Writer) ProcessSysdNotification(rxBuf []byte) error {
 	return nil
 }
 
-func (logger *Writer) ProcessSysdNotifications() error {
+func (logger *Writer) ProcessLogNotifications() error {
 	for {
 		select {
 		case rxBuf := <-logger.socketCh:
 			if rxBuf != nil {
-				logger.ProcessSysdNotification(rxBuf)
+				logger.ProcessLoggingNotification(rxBuf)
 			}
 		}
 	}
 	return nil
 }
 
-func (logger *Writer) ListenForSysdNotifications() error {
+func (logger *Writer) ListenForLoggingNotifications() error {
 	err := logger.SetupSubSocket()
 	if err != nil {
-		logger.Err(fmt.Sprintln("Failed to subscribe to sysd notifications"))
+		logger.Err(fmt.Sprintln("Failed to subscribe to logging notifications"))
 		return err
 	}
-	go logger.ProcessSysdNotifications()
+	go logger.ProcessLogNotifications()
 	for {
 		rxBuf, err := logger.subSocket.Recv(0)
 		if err != nil {
-			logger.Err(fmt.Sprintln("Recv on BFD subscriber socket failed with error:", err))
+			logger.Err(fmt.Sprintln("Recv on logging subscriber socket failed with error:", err))
 			continue
 		}
 		logger.socketCh <- rxBuf
