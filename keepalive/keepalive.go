@@ -87,3 +87,7 @@ func InitKeepAlive(name string, paramsDir string) {
 	}
 	return
 }
+
+func ListenForKeepAliveNotifications() error {
+	return nil
+}
