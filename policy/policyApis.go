@@ -513,7 +513,7 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 			}
 			db.ExportPolicyPrecedenceMap[int(cfg.Precedence)] = cfg.Name
 		}
-		db.PolicyEngineTraverseAndApplyPolicy(newPolicy)
+		//db.PolicyEngineTraverseAndApplyPolicy(newPolicy)
 	} else {
 		db.Logger.Err(fmt.Sprintln("Duplicate Policy definition name"))
 		err = errors.New("Duplicate policy definition")

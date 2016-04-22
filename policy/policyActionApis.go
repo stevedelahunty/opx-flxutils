@@ -48,12 +48,12 @@ func (db *PolicyEngineDB) CreatePolicyRouteDispositionAction(cfg PolicyActionCon
 		db.Logger.Info(fmt.Sprintln("Defining a new policy action with name ", cfg.Name))
 		routeDispositionAction := ""
 		if cfg.Accept == true {
-			routeDispositionAction = "Accept"
+			routeDispositionAction = "permit"
 		} else if cfg.Reject == true {
-			routeDispositionAction = "Reject"
+			routeDispositionAction = "deny"
 		} else {
-			db.Logger.Err(fmt.Sprintln("User should set either one of accept/reject to true for this action type"))
-			err = errors.New("User should set either one of accept/reject to true for this action type")
+			db.Logger.Err(fmt.Sprintln("User should set either one of permit/deny to true for this action type"))
+			err = errors.New("User should set either one of permit/deny to true for this action type")
 			return false, err
 		}
 		newPolicyAction := PolicyAction{Name: cfg.Name, ActionType: policyCommonDefs.PolicyActionTypeRouteDisposition, ActionInfo: routeDispositionAction, LocalDBSliceIdx: (len(*db.LocalPolicyActionsDB))}
