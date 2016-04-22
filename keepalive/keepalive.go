@@ -96,29 +96,6 @@ func InitKeepAlive(name string, paramsDir string) {
 	return
 }
 
-func (statusNotifier *DaemonStatusNotifier) SetupDaemonStatusSub() error {
-	var err error
-	var socket *nanomsg.SubSocket
-	if socket, err = nanomsg.NewSubSocket(); err != nil {
-		return err
-	}
-
-	if err = socket.Subscribe(""); err != nil {
-		return err
-	}
-
-	if _, err = socket.Connect(sysdCommonDefs.PUB_SOCKET_ADDR); err != nil {
-		return err
-	}
-
-	if err = socket.SetRecvBuffer(1024 * 1024); err != nil {
-		return err
-	}
-	statusNotifier.subSocket = socket
-	statusNotifier.socketCh = make(chan []byte)
-	return nil
-}
-
 func (statusNotifier *DaemonStatusNotifier) ProcessStatusNotifications(rxBuf []byte) error {
 	var msg sysdCommonDefs.Notification
 	err := json.Unmarshal(rxBuf, &msg)
@@ -149,18 +126,46 @@ func (statusNotifier *DaemonStatusNotifier) ReceiveStatusNotifications() error {
 	return nil
 }
 
-func InitDaemonStatusListner() error {
+func (statusNotifier *DaemonStatusNotifier) StartDaemonStatusListner() error {
+	statusNotifier.DaemonStatusCh = make(chan sysdCommonDefs.DaemonStatus, sysdCommonDefs.SYSD_TOTAL_KA_DAEMONS)
+	go statusNotifier.ReceiveStatusNotifications()
+	for {
+		rxBuf, err := statusNotifier.subSocket.Recv(0)
+		if err == nil {
+			statusNotifier.socketCh <- rxBuf
+		}
+	}
+	return nil
+}
+
+func (statusNotifier *DaemonStatusNotifier) SetupDaemonStatusSub() error {
+	var err error
+	var socket *nanomsg.SubSocket
+	if socket, err = nanomsg.NewSubSocket(); err != nil {
+		return err
+	}
+
+	if err = socket.Subscribe(""); err != nil {
+		return err
+	}
+
+	if _, err = socket.Connect(sysdCommonDefs.PUB_SOCKET_ADDR); err != nil {
+		return err
+	}
+
+	if err = socket.SetRecvBuffer(1024 * 1024); err != nil {
+		return err
+	}
+	statusNotifier.subSocket = socket
+	statusNotifier.socketCh = make(chan []byte)
+	return nil
+}
+
+func InitDaemonStatusListner() *DaemonStatusNotifier {
 	statusNotifier := new(DaemonStatusNotifier)
 	err := statusNotifier.SetupDaemonStatusSub()
 	if err == nil {
-		statusNotifier.DaemonStatusCh = make(chan sysdCommonDefs.DaemonStatus, sysdCommonDefs.SYSD_TOTAL_KA_DAEMONS)
-		go statusNotifier.ReceiveStatusNotifications()
-		for {
-			rxBuf, err := statusNotifier.subSocket.Recv(0)
-			if err == nil {
-				statusNotifier.socketCh <- rxBuf
-			}
-		}
+		return statusNotifier
 	}
 	return nil
 }
