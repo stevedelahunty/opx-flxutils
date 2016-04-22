@@ -3,6 +3,8 @@ package keepalive
 import (
 	"encoding/json"
 	"fmt"
+	nanomsg "github.com/op/go-nanomsg"
+	"infra/sysd/sysdCommonDefs"
 	"io/ioutil"
 	"strconv"
 	"sysd"
@@ -30,6 +32,12 @@ const (
 	KA_ACTIVE   = 1 // Default status of a daemon
 	KA_INTERVAL = 1 // KA message will be sent every 1 second
 )
+
+type DaemonStatusNotifier struct {
+	DaemonStatusCh chan sysdCommonDefs.DaemonStatus
+	subSocket      *nanomsg.SubSocket
+	socketCh       chan []byte
+}
 
 func InitKeepAlive(name string, paramsDir string) {
 	var clientsList []ClientJson
@@ -86,4 +94,78 @@ func InitKeepAlive(name string, paramsDir string) {
 		ka.sysdClient.ClientHdl.PeriodicKeepAlive(ka.name)
 	}
 	return
+}
+
+func (statusNotifier *DaemonStatusNotifier) ProcessStatusNotifications(rxBuf []byte) error {
+	var msg sysdCommonDefs.Notification
+	err := json.Unmarshal(rxBuf, &msg)
+	if err != nil {
+		return err
+	}
+	if msg.Type == sysdCommonDefs.KA_DAEMON {
+		var dStatus sysdCommonDefs.DaemonStatus
+		err = json.Unmarshal(msg.Payload, &dStatus)
+		if err == nil {
+			statusNotifier.DaemonStatusCh <- dStatus
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
+func (statusNotifier *DaemonStatusNotifier) ReceiveStatusNotifications() error {
+	for {
+		select {
+		case rxBuf := <-statusNotifier.socketCh:
+			if rxBuf != nil {
+				statusNotifier.ProcessStatusNotifications(rxBuf)
+			}
+		}
+	}
+	return nil
+}
+
+func (statusNotifier *DaemonStatusNotifier) StartDaemonStatusListner() error {
+	statusNotifier.DaemonStatusCh = make(chan sysdCommonDefs.DaemonStatus, sysdCommonDefs.SYSD_TOTAL_KA_DAEMONS)
+	go statusNotifier.ReceiveStatusNotifications()
+	for {
+		rxBuf, err := statusNotifier.subSocket.Recv(0)
+		if err == nil {
+			statusNotifier.socketCh <- rxBuf
+		}
+	}
+	return nil
+}
+
+func (statusNotifier *DaemonStatusNotifier) SetupDaemonStatusSub() error {
+	var err error
+	var socket *nanomsg.SubSocket
+	if socket, err = nanomsg.NewSubSocket(); err != nil {
+		return err
+	}
+
+	if err = socket.Subscribe(""); err != nil {
+		return err
+	}
+
+	if _, err = socket.Connect(sysdCommonDefs.PUB_SOCKET_ADDR); err != nil {
+		return err
+	}
+
+	if err = socket.SetRecvBuffer(1024 * 1024); err != nil {
+		return err
+	}
+	statusNotifier.subSocket = socket
+	statusNotifier.socketCh = make(chan []byte)
+	return nil
+}
+
+func InitDaemonStatusListner() *DaemonStatusNotifier {
+	statusNotifier := new(DaemonStatusNotifier)
+	err := statusNotifier.SetupDaemonStatusSub()
+	if err == nil {
+		return statusNotifier
+	}
+	return nil
 }
