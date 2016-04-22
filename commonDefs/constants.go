@@ -22,6 +22,8 @@ func GetIfTypeName(ifType int) string {
 		return "Lag"
 	case IfTypeVlan:
 		return "Vlan"
+	case IfTypeVxlan:
+		return "Vtep"
 	default:
 		return "Unknown"
 	}
