@@ -2,9 +2,9 @@ package commonDefs
 
 //L2 types
 const (
-	L2RefTypePort = iota
-	L2RefTypeLag
-	L2RefTypeVlan
+	IfTypePort = iota
+	IfTypeLag
+	IfTypeVlan
 	IfTypeP2P
 	IfTypeBcast
 	IfTypeLoopback
@@ -12,3 +12,16 @@ const (
 	IfTypeVirtual
 	IfTypeNull
 )
+
+func GetIfTypeName(ifType int) string {
+	switch ifType {
+	case IfTypePort:
+		return "Port"
+	case IfTypeLag:
+		return "Lag"
+	case IfTypeVlan:
+		return "Vlan"
+	default:
+		return "Unknown"
+	}
+}
