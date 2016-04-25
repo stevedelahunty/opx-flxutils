@@ -2,7 +2,7 @@
 package policy
 
 import (
-	"reflect"
+	//"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -128,83 +128,37 @@ func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFil
 		}
 	}
 }
-func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilterEntityParams, policyStmt PolicyStmt,
-	conditionInfoList []interface{}, params interface{}) (policActionList []PolicyAction) {
+func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilterEntityParams, action PolicyAction,
+	conditionInfoList []interface{}, params interface{}) (policyActionList []PolicyAction) {
 	db.Logger.Info(fmt.Sprintln("policyEngineImplementActions"))
-	policActionList = make([]PolicyAction, 0)
-	if policyStmt.Actions == nil {
-		db.Logger.Info(fmt.Sprintln("No actions"))
-		return policActionList
-	}
-	var i int
+	policyActionList = make([]PolicyAction, 0)
 	addActionToList := false
-	for i = 0; i < len(policyStmt.Actions); i++ {
-		addActionToList = false
-		db.Logger.Info(fmt.Sprintln("Find policy action number %d name %s in the action database\n", i, policyStmt.Actions[i]))
-		actionItem := db.PolicyActionsDB.Get(patriciaDB.Prefix(policyStmt.Actions[i]))
-		if actionItem == nil {
-			db.Logger.Info(fmt.Sprintln("Did not find action ", policyStmt.Actions[i], " in the action database"))
-			continue
+	switch action.ActionType {
+	case policyCommonDefs.PolicyActionTypeRouteDisposition, policyCommonDefs.PolicyActionTypeRouteRedistribute,
+		policyCommonDefs.PolicyActionTypeNetworkStatementAdvertise, policyCommonDefs.PolicyActionTypeAggregate:
+		if entity.DeletePath == true {
+			db.Logger.Info(fmt.Sprintln("action to be reversed", action.ActionType))
+			if db.UndoActionfuncMap[action.ActionType] != nil {
+				//db.UndoActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params, policyStmt)
+			}
+			addActionToList = true
+		} else { //if entity.CreatePath == true or neither create/delete is valid - in case this function is called a a part of policy create{
+			db.Logger.Info(fmt.Sprintln("action to be applied", action.ActionType))
+			if db.ActionfuncMap[action.ActionType] != nil {
+				db.ActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params)
+			}
+			addActionToList = true
 		}
-		action := actionItem.(PolicyAction)
-		db.Logger.Info(fmt.Sprintln("policy action number %d type %d\n", i, action.ActionType))
-		switch action.ActionType {
-		/*
-			case policyCommonDefs.PolicyActionTypeRouteDisposition:
-				db.Logger.Info(fmt.Sprintln("PolicyActionTypeRouteDisposition action to be applied")
-				addActionToList = true
-				if db.ActionfuncMap[policyCommonDefs.PolicyActionTypeRouteDisposition] != nil {
-					db.ActionfuncMap[policyCommonDefs.PolicyActionTypeRouteDisposition](action.ActionInfo, conditionList, params)
-				}
-				break
-			case policyCommonDefs.PolicyActionTypeRouteRedistribute:
-				db.Logger.Info(fmt.Sprintln("PolicyActionTypeRouteRedistribute action to be applied")
-				if db.ActionfuncMap[policyCommonDefs.PolicyActionTypeRouteRedistribute] != nil {
-					db.ActionfuncMap[policyCommonDefs.PolicyActionTypeRouteRedistribute](action.ActionInfo, conditionList, params)
-				}
-				addActionToList = true
-				break
-			case policyCommonDefs.PolicyActionTypeNetworkStatementAdvertise:
-				db.Logger.Info(fmt.Sprintln("PolicyActionTypeNetworkStatementAdvertise action to be applied")
-				if db.ActionfuncMap[policyCommonDefs.PolicyActionTypeNetworkStatementAdvertise] != nil {
-					db.ActionfuncMap[policyCommonDefs.PolicyActionTypeNetworkStatementAdvertise](action.ActionInfo, conditionList, params)
-				}
-				addActionToList = true
-				break
-			case policyCommonDefs.PolicyActionTypeAggregate:
-				db.Logger.Info(fmt.Sprintln("PolicyActionTypeAggregate action to be applied")
-				if db.ActionfuncMap[policyCommonDefs.PolicyActionTypeAggregate] != nil {
-					db.ActionfuncMap[policyCommonDefs.PolicyActionTypeAggregate](action.ActionInfo, conditionList, params)
-				}
-				addActionToList = true
-				break
-		*/
-		case policyCommonDefs.PolicyActionTypeRouteDisposition, policyCommonDefs.PolicyActionTypeRouteRedistribute,
-			policyCommonDefs.PolicyActionTypeNetworkStatementAdvertise, policyCommonDefs.PolicyActionTypeAggregate:
-            if entity.DeletePath == true {
-				db.Logger.Info(fmt.Sprintln("action to be reversed", action.ActionType))
-				if db.UndoActionfuncMap[action.ActionType] != nil {
-					db.UndoActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params, policyStmt)
-				}
-				addActionToList = true
-			} else	{ //if entity.CreatePath == true or neither create/delete is valid - in case this function is called a a part of policy create{
-				db.Logger.Info(fmt.Sprintln("action to be applied", action.ActionType))
-				if db.ActionfuncMap[action.ActionType] != nil {
-					db.ActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params)
-				}
-				addActionToList = true
-			}		
 		default:
 			db.Logger.Err(fmt.Sprintln("UnknownInvalid type of action"))
 			break
 		}
 		if addActionToList == true {
-			policActionList = append(policActionList, action)
+			policyActionList = append(policyActionList, action)
 		}
-	}
-	return policActionList
+	return policyActionList
 }
-
+/*
 func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Prefix, policyName string) (match bool) {
 	db.Logger.Info(fmt.Sprintln("Prefix match policy ", policyName))
 	policyListItem := db.PrefixPolicyListDB.GetLongestPrefixNode(ipPrefix)
@@ -249,21 +203,49 @@ func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Pre
 		}
 	}
 	return match
+}*/
+func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Prefix, condition PolicyCondition) (match bool) {
+	conditionInfo := condition.ConditionInfo.(MatchPrefixConditionInfo)
+	if conditionInfo.LowRange == -1 && conditionInfo.HighRange == -1 {
+		db.Logger.Info(fmt.Sprintln("Looking for exact match condition for prefix ", conditionInfo.IpPrefix))
+		if bytes.Equal(ipPrefix, conditionInfo.IpPrefix) {
+			db.Logger.Info(fmt.Sprintln(" Matched the prefix"))
+			return true
+		} else {
+			db.Logger.Info(fmt.Sprintln(" Did not match the exact prefix"))
+			return false
+		}
+	}
+	tempSlice := strings.Split(ipAddr, "/")
+	maskLen, err := strconv.Atoi(tempSlice[1])
+	if err != nil {
+		db.Logger.Err(fmt.Sprintln("err getting maskLen"))
+		return false
+	}
+	db.Logger.Info(fmt.Sprintln("Mask len = ", maskLen))
+	if maskLen < conditionInfo.LowRange || maskLen > conditionInfo.HighRange {
+		db.Logger.Info(fmt.Sprintln("Mask range of the route ", maskLen, " not within the required mask range:", conditionInfo.LowRange, "-", conditionInfo.HighRange))
+		return false
+	} else {
+		db.Logger.Info(fmt.Sprintln("Mask range of the route ", maskLen, " within the required mask range:", conditionInfo.LowRange, "-", conditionInfo.HighRange))
+		return true
+	}
+	return match
 }
-func (db *PolicyEngineDB) DstIpPrefixMatchConditionfunc(entity PolicyEngineFilterEntityParams, condition PolicyCondition, policyStmt PolicyStmt) (match bool) {
+func (db *PolicyEngineDB) DstIpPrefixMatchConditionfunc(entity PolicyEngineFilterEntityParams, condition PolicyCondition) (match bool) {
 	db.Logger.Info(fmt.Sprintln("dstIpPrefixMatchConditionfunc"))
 	ipPrefix, err := netUtils.GetNetworkPrefixFromCIDR(entity.DestNetIp)
 	if err != nil {
 		db.Logger.Info(fmt.Sprintln("Invalid ipPrefix for the route ", entity.DestNetIp))
 		return false
 	}
-	match = db.FindPrefixMatch(entity.DestNetIp, ipPrefix, policyStmt.Name)
+	match = db.FindPrefixMatch(entity.DestNetIp, ipPrefix,condition)
 	if match {
 		db.Logger.Info(fmt.Sprintln("Found a match for this prefix"))
 	}
 	return match
 }
-func (db *PolicyEngineDB) ProtocolMatchConditionfunc(entity PolicyEngineFilterEntityParams, condition PolicyCondition, policyStmt PolicyStmt) (match bool) {
+func (db *PolicyEngineDB) ProtocolMatchConditionfunc(entity PolicyEngineFilterEntityParams, condition PolicyCondition) (match bool) {
 	db.Logger.Info(fmt.Sprintln("protocolMatchConditionfunc: check if policy protocol: ", condition.ConditionInfo.(string), " matches entity protocol: ", entity.RouteProtocol))
 	matchProto := condition.ConditionInfo.(string)
 	if matchProto == entity.RouteProtocol {
@@ -280,16 +262,16 @@ func (db *PolicyEngineDB) ConditionCheckValid(entity PolicyEngineFilterEntityPar
 		return true
 	}
 	for i := 0; i < len(conditionsList); i++ {
-		db.Logger.Info(fmt.Sprintln("Find policy condition number ",i,  " name ",  policyStmt.Conditions[i], " in the condition database"))
+		db.Logger.Info(fmt.Sprintln("Find policy condition number ", i, " name ", policyStmt.Conditions[i], " in the condition database"))
 		conditionItem := db.PolicyConditionsDB.Get(patriciaDB.Prefix(conditionsList[i]))
 		if conditionItem == nil {
 			db.Logger.Info(fmt.Sprintln("Did not find condition ", conditionsList[i], " in the condition database"))
 			continue
 		}
 		condition := conditionItem.(PolicyCondition)
-		db.Logger.Info(fmt.Sprintln("policy condition number ", i ," type ", condition.ConditionType))
+		db.Logger.Info(fmt.Sprintln("policy condition number ", i, " type ", condition.ConditionType))
 		if db.ConditionCheckfuncMap[condition.ConditionType] != nil {
-			match := db.ConditionCheckfuncMap[condition.ConditionType](entity, condition, policyStmt)
+			match := db.ConditionCheckfuncMap[condition.ConditionType](entity, condition)
 			if !match {
 				db.Logger.Info(fmt.Sprintln("Condition does not match"))
 				return false
@@ -299,25 +281,25 @@ func (db *PolicyEngineDB) ConditionCheckValid(entity PolicyEngineFilterEntityPar
 	db.Logger.Info(fmt.Sprintln("returning valid= ", valid))
 	return valid
 }
-func (db *PolicyEngineDB) PolicyEngineMatchConditions(entity PolicyEngineFilterEntityParams, policyStmt PolicyStmt) (match bool, conditionsList []PolicyCondition) {
+func (db *PolicyEngineDB) PolicyEngineMatchConditions(entity PolicyEngineFilterEntityParams, conditions []string, matchConditions string) (match bool, conditionsList []PolicyCondition) {
 	db.Logger.Info(fmt.Sprintln("policyEngineMatchConditions"))
 	var i int
 	allConditionsMatch := true
 	anyConditionsMatch := false
 	addConditiontoList := false
 	conditionsList = make([]PolicyCondition, 0)
-	for i = 0; i < len(policyStmt.Conditions); i++ {
+	for i = 0; i < len(conditions); i++ {
 		addConditiontoList = false
-		db.Logger.Info(fmt.Sprintln("Find policy condition number ", i, " name ", policyStmt.Conditions[i],  " in the condition database"))
-		conditionItem := db.PolicyConditionsDB.Get(patriciaDB.Prefix(policyStmt.Conditions[i]))
+		db.Logger.Info(fmt.Sprintln("Find policy condition number ", i, " name ", conditions[i], " in the condition database"))
+		conditionItem := db.PolicyConditionsDB.Get(patriciaDB.Prefix(conditions[i]))
 		if conditionItem == nil {
-			db.Logger.Info(fmt.Sprintln("Did not find condition ", policyStmt.Conditions[i], " in the condition database"))
+			db.Logger.Info(fmt.Sprintln("Did not find condition ", conditions[i], " in the condition database"))
 			continue
 		}
 		condition := conditionItem.(PolicyCondition)
-		db.Logger.Info(fmt.Sprintln("policy condition number ",i,"  type ", condition.ConditionType))
+		db.Logger.Info(fmt.Sprintln("policy condition number ", i, "  type ", condition.ConditionType))
 		if db.ConditionCheckfuncMap[condition.ConditionType] != nil {
-			match = db.ConditionCheckfuncMap[condition.ConditionType](entity, condition, policyStmt)
+			match = db.ConditionCheckfuncMap[condition.ConditionType](entity, condition)
 			if match {
 				db.Logger.Info(fmt.Sprintln("Condition match found"))
 				anyConditionsMatch = true
@@ -330,37 +312,48 @@ func (db *PolicyEngineDB) PolicyEngineMatchConditions(entity PolicyEngineFilterE
 			conditionsList = append(conditionsList, condition)
 		}
 	}
-	if policyStmt.MatchConditions == "all" && allConditionsMatch == true {
+	if matchConditions == "all" && allConditionsMatch == true {
 		return true, conditionsList
 	}
-	if policyStmt.MatchConditions == "any" && anyConditionsMatch == true {
+	if matchConditions == "any" && anyConditionsMatch == true {
 		return true, conditionsList
 	}
 	return match, conditionsList
 }
-func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilterEntityParams, policy Policy,
+func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilterEntityParams, info ApplyPolicyInfo,
 	policyStmt PolicyStmt, policyPath int, params interface{}, hit *bool, deleted *bool) {
+	policy := info.ApplyPolicy
 	db.Logger.Info(fmt.Sprintln("policyEngineApplyPolicyStmt - ", policyStmt.Name))
 	var conditionList []PolicyCondition
 	conditionInfoList := make([]interface{}, 0)
 	var match bool
-	if policyStmt.Conditions == nil {
+	if policyStmt.Conditions == nil && info.Conditions == nil {
 		db.Logger.Info(fmt.Sprintln("No policy conditions"))
 		*hit = true
 	} else {
 		//match, ret_conditionList := db.PolicyEngineMatchConditions(*entity, policyStmt)
-		match, conditionList = db.PolicyEngineMatchConditions(*entity, policyStmt)
+		match, conditionList = db.PolicyEngineMatchConditions(*entity, policyStmt.Conditions,policyStmt.MatchConditions)
 		db.Logger.Info(fmt.Sprintln("match = ", match))
 		*hit = match
 		if !match {
-			db.Logger.Info(fmt.Sprintln("Conditions do not match"))
+			db.Logger.Info(fmt.Sprintln("Stmt Conditions do not match"))
+			return
+		}
+		for j := 0; j < len(conditionList); j++ {
+			conditionInfoList = append(conditionInfoList, conditionList[j].ConditionInfo)
+		}
+		match, conditionList = db.PolicyEngineMatchConditions(*entity, info.Conditions,"all")
+		db.Logger.Info(fmt.Sprintln("match = ", match))
+		*hit = match
+		if !match {
+			db.Logger.Info(fmt.Sprintln("Extra Conditions do not match"))
 			return
 		}
 		for j := 0; j < len(conditionList); j++ {
 			conditionInfoList = append(conditionInfoList, conditionList[j].ConditionInfo)
 		}
 	}
-	actionList := db.PolicyEngineImplementActions(*entity, policyStmt, conditionInfoList, params)
+	actionList := db.PolicyEngineImplementActions(*entity, info.Action, conditionInfoList, params)
 	if db.ActionListHasAction(actionList, policyCommonDefs.PolicyActionTypeRouteDisposition, "Reject") {
 		db.Logger.Info(fmt.Sprintln("Reject action was applied for this entity"))
 		*deleted = true
@@ -376,8 +369,9 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 	db.AddPolicyEntityMapEntry(*entity, policy.Name, policyStmt.Name, conditionList, actionList)
 }
 
-func (db *PolicyEngineDB) PolicyEngineApplyPolicy(entity *PolicyEngineFilterEntityParams, policy Policy, policyPath int, params interface{}, hit *bool) {
-	db.Logger.Info(fmt.Sprintln("policyEngineApplyPolicy - ", policy.Name))
+func (db *PolicyEngineDB) PolicyEngineApplyPolicy(entity *PolicyEngineFilterEntityParams, info ApplyPolicyInfo, policyPath int, params interface{}, hit *bool) {
+	db.Logger.Info(fmt.Sprintln("policyEngineApplyPolicy - ", info.ApplyPolicy.Name))
+	policy := info.ApplyPolicy
 	var policyStmtKeys []int
 	deleted := false
 	for k := range policy.PolicyStmtPrecedenceMap {
@@ -392,7 +386,7 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicy(entity *PolicyEngineFilterEnti
 			db.Logger.Info(fmt.Sprintln("Invalid policyStmt"))
 			continue
 		}
-		db.PolicyEngineApplyPolicyStmt(entity, policy, policyStmt.(PolicyStmt), policyPath, params, hit, &deleted)
+		db.PolicyEngineApplyPolicyStmt(entity, info, policyStmt.(PolicyStmt), policyPath, params, hit, &deleted)
 		if deleted == true {
 			db.Logger.Info(fmt.Sprintln("Entity was deleted as a part of the policyStmt ", policy.PolicyStmtPrecedenceMap[policyStmtKeys[i]]))
 			break
@@ -407,11 +401,12 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicy(entity *PolicyEngineFilterEnti
 }
 func (db *PolicyEngineDB) PolicyEngineApplyForEntity(entity PolicyEngineFilterEntityParams, policyData interface{}, params interface{}) {
 	db.Logger.Info(fmt.Sprintln("policyEngineApplyForEntity"))
-	policy := policyData.(Policy)
+	info := policyData.(ApplyPolicyInfo)
+	policy := info.ApplyPolicy
 	policyHit := false
 	if len(entity.PolicyList) == 0 {
 		db.Logger.Info(fmt.Sprintln("This route has no policy applied to it so far, just apply the new policy"))
-		db.PolicyEngineApplyPolicy(&entity, policy, policyCommonDefs.PolicyPath_All, params, &policyHit)
+		db.PolicyEngineApplyPolicy(&entity, info, policyCommonDefs.PolicyPath_All, params, &policyHit)
 	} else {
 		db.Logger.Info(fmt.Sprintln("This route already has policy applied to it - len(route.PolicyList) - ", len(entity.PolicyList)))
 
@@ -424,14 +419,14 @@ func (db *PolicyEngineDB) PolicyEngineApplyForEntity(entity PolicyEngineFilterEn
 				oldPolicy := policyInfo.(Policy)
 				if !isPolicyTypeSame(oldPolicy, policy) {
 					db.Logger.Info(fmt.Sprintln("The policy type applied currently is not the same as new policy, so apply new policy"))
-					db.PolicyEngineApplyPolicy(&entity, policy, policyCommonDefs.PolicyPath_All, params, &policyHit)
+					db.PolicyEngineApplyPolicy(&entity, info, policyCommonDefs.PolicyPath_All, params, &policyHit)
 				} else if oldPolicy.Precedence < policy.Precedence {
 					db.Logger.Info(fmt.Sprintln("The policy types are same and precedence of the policy applied currently is lower than the new policy, so do nothing"))
 					return
 				} else {
 					db.Logger.Info(fmt.Sprintln("The new policy's precedence is lower, so undo old policy's actions and apply the new policy"))
-					db.PolicyEngineUndoPolicyForEntity(entity, oldPolicy, params)
-					db.PolicyEngineApplyPolicy(&entity, policy, policyCommonDefs.PolicyPath_All, params, &policyHit)
+					//db.PolicyEngineUndoPolicyForEntity(entity, oldPolicy, params)
+					db.PolicyEngineApplyPolicy(&entity, info, policyCommonDefs.PolicyPath_All, params, &policyHit)
 				}
 			}
 		}
@@ -541,9 +536,13 @@ func (db *PolicyEngineDB) PolicyEngineApplyGlobalPolicy(policy Policy) {
 	}
 }
 
-func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(policy Policy) {
-	db.Logger.Info(fmt.Sprintln("PolicyEngineTraverseAndApplyPolicy -  apply policy ", policy.Name))
-	if policy.ExportPolicy || policy.ImportPolicy {
+func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(info ApplyPolicyInfo) {
+	db.Logger.Info(fmt.Sprintln("PolicyEngineTraverseAndApplyPolicy -  apply policy ",info.ApplyPolicy.Name))
+	if db.TraverseAndApplyPolicyFunc != nil {
+		db.Logger.Info(fmt.Sprintln("Calling TraverseAndApplyPolicyFunc function"))
+		db.TraverseAndApplyPolicyFunc(info, db.PolicyEngineApplyForEntity)
+	}
+/*	if policy.ExportPolicy || policy.ImportPolicy {
 		db.Logger.Info(fmt.Sprintln("Applying import/export policy to all routes"))
 		if db.TraverseAndApplyPolicyFunc != nil {
 			db.Logger.Info(fmt.Sprintln("Calling TraverseAndApplyPolicyFunc function"))
@@ -552,7 +551,7 @@ func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(policy Policy) {
 	} else if policy.GlobalPolicy {
 		db.Logger.Info(fmt.Sprintln("Need to apply global policy"))
 		db.PolicyEngineApplyGlobalPolicy(policy)
-	}
+	}*/
 }
 
 func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicy(policy Policy) {
@@ -635,10 +634,17 @@ func (db *PolicyEngineDB) PolicyEngineFilter(entity PolicyEngineFilterEntityPara
 			db.Logger.Info(fmt.Sprintln("Invalid policy at localDB slice idx ", policy.LocalDBSliceIdx))
 			continue
 		}
-		db.PolicyEngineApplyPolicy(&entity, policy, policyPath, params, &policyHit)
-		if policyHit {
-			db.Logger.Info(fmt.Sprintln("Policy ", policy.Name, " applied to the route"))
-			break
+		applyList := db.ApplyPolicyMap[policy.Name]
+		if applyList == nil {
+			db.Logger.Info(fmt.Sprintln("no application for this policy ", policy.Name))
+			continue
+		}
+		for j :=0;j<len(applyList);j++ {
+		    db.PolicyEngineApplyPolicy(&entity, applyList[j], policyPath, params, &policyHit)
+		    if policyHit {
+			    db.Logger.Info(fmt.Sprintln("Policy ", policy.Name, " applied to the route"))
+			    break
+		    }
 		}
 	}
 	if entity.PolicyHitCounter == 0 {
