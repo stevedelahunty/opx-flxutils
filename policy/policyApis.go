@@ -328,11 +328,11 @@ func (db *PolicyEngineDB) UpdateActions(policyStmt PolicyStmt, action PolicyActi
 func (db *PolicyEngineDB) ValidatePolicyStatementCreate(cfg PolicyStmtConfig) (err error) {
 	db.Logger.Println("ValidatePolicyStatementCreate")
 	policyStmt := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.Name))
-    if policyStmt != nil {
+	if policyStmt != nil {
 		db.Logger.Println("Duplicate Policy definition name")
 		err = errors.New("Duplicate policy definition")
 		return err
-	}	
+	}
 	if !validMatchConditions(cfg.MatchConditions) {
 		db.Logger.Println("Invalid match conditions - try any/all")
 		err = errors.New("Invalid match conditions - try any/all")
@@ -464,7 +464,7 @@ func (db *PolicyEngineDB) ApplyPolicy(info ApplyPolicyInfo) {
 		conditions = append(conditions, info.Conditions[i])
 	}
 	exportType, importType, _ := db.PolicyActionType(action.ActionType)
-	db.Logger.Info(fmt.Sprintln("exportType:",exportType," importType:",importType))
+	db.Logger.Info(fmt.Sprintln("exportType:", exportType, " importType:", importType))
 	if importType {
 		db.Logger.Info(fmt.Sprintln("Adding ", applyPolicy.Name, " as import policy"))
 		if db.ImportPolicyPrecedenceMap == nil {
@@ -479,23 +479,23 @@ func (db *PolicyEngineDB) ApplyPolicy(info ApplyPolicyInfo) {
 		db.ExportPolicyPrecedenceMap[int(applyPolicy.Precedence)] = applyPolicy.Name
 	}
 	if db.ApplyPolicyMap[applyPolicy.Name] == nil {
-		db.ApplyPolicyMap[applyPolicy.Name] = make([]ApplyPolicyInfo,0)
+		db.ApplyPolicyMap[applyPolicy.Name] = make([]ApplyPolicyInfo, 0)
 	}
-	if HasActionInfo(db.ApplyPolicyMap[applyPolicy.Name],action) {
+	if HasActionInfo(db.ApplyPolicyMap[applyPolicy.Name], action) {
 		//for now do nothing, need to handle on update of conditions/stmt/policy
 	} else {
-		db.ApplyPolicyMap[applyPolicy.Name] = append(db.ApplyPolicyMap[applyPolicy.Name],ApplyPolicyInfo{applyPolicy,action,conditions})
+		db.ApplyPolicyMap[applyPolicy.Name] = append(db.ApplyPolicyMap[applyPolicy.Name], ApplyPolicyInfo{applyPolicy, action, conditions})
 	}
 	db.PolicyEngineTraverseAndApplyPolicy(info)
 }
 func (db *PolicyEngineDB) ValidatePolicyDefinitionCreate(cfg PolicyDefinitionConfig) (err error) {
 	db.Logger.Println("ValidatePolicyDefinitionCreate")
 	policy := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
-    if policy != nil {
+	if policy != nil {
 		db.Logger.Println("Duplicate Policy definition name")
 		err = errors.New("Duplicate policy definition")
 		return err
-	}	
+	}
 	var newPolicy Policy
 	newPolicy.Name = cfg.Name
 	newPolicy.Precedence = cfg.Precedence

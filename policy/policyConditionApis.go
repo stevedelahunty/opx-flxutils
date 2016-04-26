@@ -26,7 +26,7 @@ type MatchPrefixConditionInfo struct {
 	DstIpMatch   bool
 	SrcIpMatch   bool
 	Prefix       PolicyPrefix
-	IpPrefix     patriciaDB.Prefix   //network prefix
+	IpPrefix     patriciaDB.Prefix //network prefix
 	LowRange     int
 	HighRange    int
 }
@@ -66,34 +66,34 @@ func (db *PolicyEngineDB) CreatePolicyDstIpMatchPrefixSetCondition(inCfg PolicyC
 		return false, err
 	}
 	if len(cfg.Prefix.IpPrefix) != 0 {
-	    conditionGetBulkInfo = "match destination Prefix " + cfg.Prefix.IpPrefix + "MasklengthRange " + cfg.Prefix.MasklengthRange
+		conditionGetBulkInfo = "match destination Prefix " + cfg.Prefix.IpPrefix + "MasklengthRange " + cfg.Prefix.MasklengthRange
 		conditionInfo.UsePrefixSet = false
 		conditionInfo.Prefix.IpPrefix = cfg.Prefix.IpPrefix
 		conditionInfo.Prefix.MasklengthRange = cfg.Prefix.MasklengthRange
 		conditionInfo.IpPrefix, err = netUtils.GetNetworkPrefixFromCIDR(conditionInfo.Prefix.IpPrefix)
-	    if err != nil {
-		    db.Logger.Err(fmt.Sprintln("ipPrefix invalid "))
-		    return
-	    }
+		if err != nil {
+			db.Logger.Err(fmt.Sprintln("ipPrefix invalid "))
+			return
+		}
 		if cfg.Prefix.MasklengthRange == "exact" {
 		} else {
-	        maskList := strings.Split(conditionInfo.Prefix.MasklengthRange, "-")
-	        if len(maskList) != 2 {
-		        db.Logger.Err(fmt.Sprintln("Invalid masklength range"))
-		        return
-	        }
-	        conditionInfo.LowRange, err = strconv.Atoi(maskList[0])
-	        if err != nil {
-		        db.Logger.Err(fmt.Sprintln("lowRange mask not valid"))
-		        return
-	        }
-	        conditionInfo.HighRange, err = strconv.Atoi(maskList[1])
-	        if err != nil {
-		        db.Logger.Err(fmt.Sprintln("highRange mask not valid"))
-		        return
-	        }
-	        db.Logger.Info(fmt.Sprintln("lowRange = ", conditionInfo.LowRange, " highrange = ", conditionInfo.HighRange))
-	    }
+			maskList := strings.Split(conditionInfo.Prefix.MasklengthRange, "-")
+			if len(maskList) != 2 {
+				db.Logger.Err(fmt.Sprintln("Invalid masklength range"))
+				return
+			}
+			conditionInfo.LowRange, err = strconv.Atoi(maskList[0])
+			if err != nil {
+				db.Logger.Err(fmt.Sprintln("lowRange mask not valid"))
+				return
+			}
+			conditionInfo.HighRange, err = strconv.Atoi(maskList[1])
+			if err != nil {
+				db.Logger.Err(fmt.Sprintln("highRange mask not valid"))
+				return
+			}
+			db.Logger.Info(fmt.Sprintln("lowRange = ", conditionInfo.LowRange, " highrange = ", conditionInfo.HighRange))
+		}
 	} else if len(cfg.PrefixSet) != 0 {
 		conditionInfo.UsePrefixSet = true
 		conditionInfo.PrefixSet = cfg.PrefixSet

@@ -149,15 +149,16 @@ func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilter
 			}
 			addActionToList = true
 		}
-		default:
-			db.Logger.Err(fmt.Sprintln("UnknownInvalid type of action"))
-			break
-		}
-		if addActionToList == true {
-			policyActionList = append(policyActionList, action)
-		}
+	default:
+		db.Logger.Err(fmt.Sprintln("UnknownInvalid type of action"))
+		break
+	}
+	if addActionToList == true {
+		policyActionList = append(policyActionList, action)
+	}
 	return policyActionList
 }
+
 /*
 func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Prefix, policyName string) (match bool) {
 	db.Logger.Info(fmt.Sprintln("Prefix match policy ", policyName))
@@ -239,7 +240,7 @@ func (db *PolicyEngineDB) DstIpPrefixMatchConditionfunc(entity PolicyEngineFilte
 		db.Logger.Info(fmt.Sprintln("Invalid ipPrefix for the route ", entity.DestNetIp))
 		return false
 	}
-	match = db.FindPrefixMatch(entity.DestNetIp, ipPrefix,condition)
+	match = db.FindPrefixMatch(entity.DestNetIp, ipPrefix, condition)
 	if match {
 		db.Logger.Info(fmt.Sprintln("Found a match for this prefix"))
 	}
@@ -332,7 +333,7 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 		*hit = true
 	} else {
 		//match, ret_conditionList := db.PolicyEngineMatchConditions(*entity, policyStmt)
-		match, conditionList = db.PolicyEngineMatchConditions(*entity, policyStmt.Conditions,policyStmt.MatchConditions)
+		match, conditionList = db.PolicyEngineMatchConditions(*entity, policyStmt.Conditions, policyStmt.MatchConditions)
 		db.Logger.Info(fmt.Sprintln("match = ", match))
 		*hit = match
 		if !match {
@@ -342,7 +343,7 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 		for j := 0; j < len(conditionList); j++ {
 			conditionInfoList = append(conditionInfoList, conditionList[j].ConditionInfo)
 		}
-		match, conditionList = db.PolicyEngineMatchConditions(*entity, info.Conditions,"all")
+		match, conditionList = db.PolicyEngineMatchConditions(*entity, info.Conditions, "all")
 		db.Logger.Info(fmt.Sprintln("match = ", match))
 		*hit = match
 		if !match {
@@ -537,21 +538,21 @@ func (db *PolicyEngineDB) PolicyEngineApplyGlobalPolicy(policy Policy) {
 }
 
 func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(info ApplyPolicyInfo) {
-	db.Logger.Info(fmt.Sprintln("PolicyEngineTraverseAndApplyPolicy -  apply policy ",info.ApplyPolicy.Name))
+	db.Logger.Info(fmt.Sprintln("PolicyEngineTraverseAndApplyPolicy -  apply policy ", info.ApplyPolicy.Name))
 	if db.TraverseAndApplyPolicyFunc != nil {
 		db.Logger.Info(fmt.Sprintln("Calling TraverseAndApplyPolicyFunc function"))
 		db.TraverseAndApplyPolicyFunc(info, db.PolicyEngineApplyForEntity)
 	}
-/*	if policy.ExportPolicy || policy.ImportPolicy {
-		db.Logger.Info(fmt.Sprintln("Applying import/export policy to all routes"))
-		if db.TraverseAndApplyPolicyFunc != nil {
-			db.Logger.Info(fmt.Sprintln("Calling TraverseAndApplyPolicyFunc function"))
-			db.TraverseAndApplyPolicyFunc(policy, db.PolicyEngineApplyForEntity)
-		}
-	} else if policy.GlobalPolicy {
-		db.Logger.Info(fmt.Sprintln("Need to apply global policy"))
-		db.PolicyEngineApplyGlobalPolicy(policy)
-	}*/
+	/*	if policy.ExportPolicy || policy.ImportPolicy {
+			db.Logger.Info(fmt.Sprintln("Applying import/export policy to all routes"))
+			if db.TraverseAndApplyPolicyFunc != nil {
+				db.Logger.Info(fmt.Sprintln("Calling TraverseAndApplyPolicyFunc function"))
+				db.TraverseAndApplyPolicyFunc(policy, db.PolicyEngineApplyForEntity)
+			}
+		} else if policy.GlobalPolicy {
+			db.Logger.Info(fmt.Sprintln("Need to apply global policy"))
+			db.PolicyEngineApplyGlobalPolicy(policy)
+		}*/
 }
 
 func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicy(policy Policy) {
@@ -639,12 +640,12 @@ func (db *PolicyEngineDB) PolicyEngineFilter(entity PolicyEngineFilterEntityPara
 			db.Logger.Info(fmt.Sprintln("no application for this policy ", policy.Name))
 			continue
 		}
-		for j :=0;j<len(applyList);j++ {
-		    db.PolicyEngineApplyPolicy(&entity, applyList[j], policyPath, params, &policyHit)
-		    if policyHit {
-			    db.Logger.Info(fmt.Sprintln("Policy ", policy.Name, " applied to the route"))
-			    break
-		    }
+		for j := 0; j < len(applyList); j++ {
+			db.PolicyEngineApplyPolicy(&entity, applyList[j], policyPath, params, &policyHit)
+			if policyHit {
+				db.Logger.Info(fmt.Sprintln("Policy ", policy.Name, " applied to the route"))
+				break
+			}
 		}
 	}
 	if entity.PolicyHitCounter == 0 {

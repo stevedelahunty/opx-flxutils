@@ -114,9 +114,9 @@ type PolicyEngineDB struct {
 	LocalPolicyDB                 *LocalDBSlice
 	PolicyStmtPolicyMapDB         map[string][]string //policies using this statement
 	PrefixPolicyListDB            *patriciaDB.Trie
-	ProtocolPolicyListDB          map[string][]string     //policystmt names assoociated with every protocol type
-	ImportPolicyPrecedenceMap     map[int] string
-	ExportPolicyPrecedenceMap     map[int] string
+	ProtocolPolicyListDB          map[string][]string //policystmt names assoociated with every protocol type
+	ImportPolicyPrecedenceMap     map[int]string
+	ExportPolicyPrecedenceMap     map[int]string
 	ApplyPolicyMap                map[string][]ApplyPolicyInfo
 	PolicyEntityMap               map[PolicyEntityMapIndex]PolicyStmtMap
 	DefaultImportPolicyActionFunc Policyfunc
@@ -317,16 +317,17 @@ func PolicyActionStrToIntType(action string) (actionType int, err error) {
 	default:
 		return -1, errors.New("Unknown ActionType")
 	}
-	return actionType,nil
+	return actionType, nil
 }
-func HasActionInfo( infoLIst []ApplyPolicyInfo, action PolicyAction) bool {
-	for i := 0;i<len(infoLIst);i++ {
+func HasActionInfo(infoLIst []ApplyPolicyInfo, action PolicyAction) bool {
+	for i := 0; i < len(infoLIst); i++ {
 		if infoLIst[i].Action.ActionType == action.ActionType && infoLIst[i].Action.ActionInfo == action.ActionInfo {
 			return true
 		}
 	}
 	return false
 }
+
 /*func (db *PolicyEngineDB) SetAndValidatePolicyType(policy *Policy, stmt PolicyStmt) (err error) {
 	db.Logger.Info(fmt.Sprintln("SetPolicyTypeFromPolicyStmt"))
 	if policy.ExportPolicy == false && policy.ImportPolicy == false && policy.GlobalPolicy == false {
