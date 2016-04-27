@@ -79,7 +79,7 @@ func (logger *Writer) readSystemLoggingFromDb(dbHdl redis.Conn) error {
 	obj := sysd.NewSystemLogging()
 	dbObject := objList[0].(models.SystemLogging)
 	models.ConvertsysdSystemLoggingObjToThrift(&dbObject, obj)
-	if obj.SystemLogging == "on" {
+	if obj.Logging == "on" {
 		logger.GlobalLogging = true
 	}
 	return nil
