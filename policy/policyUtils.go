@@ -32,7 +32,6 @@ type ConditionsAndActionsList struct {
 type PolicyStmtMap struct {
 	PolicyStmtMap map[string]ConditionsAndActionsList
 }
-
 type PolicyEngineFilterEntityParams struct {
 	DestNetIp        string //CIDR format
 	NextHopIp        string
@@ -129,12 +128,23 @@ type PolicyEngineDB struct {
 	UndoActionfuncMap             map[int]UndoActionfunc
 	TraverseAndApplyPolicyFunc    EntityTraverseAndApplyPolicyfunc
 	TraverseAndReversePolicyFunc  EntityTraverseAndReversePolicyfunc
+    ValidConditionsForPolicyTypeMap  map[string][]int 		//map of policyType to list of valid conditions
+    ValidActionsForPolicyTypeMap     map[string][]int 		//map of policyType to list of valid actions
 }
 
 func (db *PolicyEngineDB) buildPolicyConditionCheckfuncMap() {
 	db.Logger.Info(fmt.Sprintln("buildPolicyConditionCheckfuncMap"))
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch] = db.DstIpPrefixMatchConditionfunc
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeProtocolMatch] = db.ProtocolMatchConditionfunc
+}
+func (db *PolicyEngineDB) buildPolicyValidConditionsForPolicyTypeMap() {
+	db.Logger.Info(fmt.Sprintln("buildPolicyValidConditionsForPolicyTypeMap"))
+	db.ValidConditionsForPolicyTypeMap["ALL"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch, policyCommonDefs.PolicyConditionTypeProtocolMatch}
+}
+func (db *PolicyEngineDB) buildPolicyValidActionsForPolicyTypeMap() {
+	db.Logger.Info(fmt.Sprintln("buildPolicyValidActionsForPolicyTypeMap"))
+	db.ValidActionsForPolicyTypeMap["ALL"] = []int{policyCommonDefs.PolicyActionTypeRouteDisposition, policyCommonDefs.PolicyActionTypeRouteRedistribute}
+	db.ValidActionsForPolicyTypeMap["BGP"] = []int{policyCommonDefs.PolicyActionTypeAggregate}
 }
 func NewPolicyEngineDB(logger *logging.Writer) (policyEngineDB *PolicyEngineDB) {
 	policyEngineDB = &PolicyEngineDB{}
@@ -177,6 +187,8 @@ func NewPolicyEngineDB(logger *logging.Writer) (policyEngineDB *PolicyEngineDB) 
 	policyEngineDB.ApplyPolicyMap = make(map[string][]ApplyPolicyInfo)
 	policyEngineDB.ConditionCheckfuncMap = make(map[int]PolicyConditionCheckfunc)
 	policyEngineDB.buildPolicyConditionCheckfuncMap()
+	policyEngineDB.buildPolicyValidConditionsForPolicyTypeMap()
+	policyEngineDB.buildPolicyValidActionsForPolicyTypeMap()
 	policyEngineDB.ActionfuncMap = make(map[int]Policyfunc)
 	policyEngineDB.UndoActionfuncMap = make(map[int]UndoActionfunc)
 	return policyEngineDB
@@ -365,3 +377,20 @@ func HasActionInfo(infoLIst []ApplyPolicyInfo, action PolicyAction) bool {
 	return err
 }
 */
+func (db *PolicyEngineDB) ConditionCheckForPolicyType(conditionName string,policyType string ) bool {
+    validList := db.ValidConditionsForPolicyTypeMap[policyType]
+	if validList == nil || len(validList) == 0 {
+		return false
+	}
+	item := db.PolicyConditionsDB.Get(patriciaDB.Prefix(conditionName))
+	if item == nil {
+		return false
+	}
+	condition := item.(PolicyCondition)
+	for j := 0;j<len(validList);j++ {
+		if validList[j] == condition.ConditionType {
+			return true
+		}
+	}
+	return false
+}

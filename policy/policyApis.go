@@ -41,6 +41,7 @@ type Policy struct {
 	ImportPolicy            bool
 	ExportPolicy            bool
 	GlobalPolicy            bool
+	PolicyType              string
 	Extensions              interface{}
 }
 
@@ -56,6 +57,7 @@ type PolicyDefinitionConfig struct {
 	Export                     bool
 	Import                     bool
 	Global                     bool
+	PolicyType                 string
 	Extensions                 interface{}
 }
 
@@ -507,6 +509,14 @@ func (db *PolicyEngineDB) ValidatePolicyDefinitionCreate(cfg PolicyDefinitionCon
 			err = errors.New("stmt name not defined")
 			return err
 		}
+		stmt := Item.(PolicyStmt)
+		for cds := 0; cds < len(stmt.Actions);cds ++ {
+		    if !db.ConditionCheckForPolicyType(stmt.Conditions[cds],cfg.PolicyType) {
+			    db.Logger.Err(fmt.Sprintln("Trying to add statement with incompatible condition ", stmt.Conditions[cds]," to this policy of policyType: ", cfg.PolicyType))
+			    return errors.New("Incompatible condition type ")
+		    }
+		}
+		//TO_DO: similar validation for actions/sub-actions
 	}
 	return err
 }
