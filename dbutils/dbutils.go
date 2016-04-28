@@ -1,55 +1,72 @@
 package dbutils
 
 import (
-	"database/sql"
-	"database/sql/driver"
-	"fmt"
+	"models"
+	"utils/logging"
+
+	"github.com/garyburd/redigo/redis"
 )
 
-func ConvertBoolToInt(val bool) int {
-	if val {
-		return 1
-	}
-	return 0
+type DBUtil struct {
+	dbHdl   redis.Conn
+	logger  *logging.Writer
+	network string
+	address string
 }
-func ConvertIntToBool(val int) bool {
-	if val == 1 {
-		return true
+
+func NewDBUtil(logger *logging.Writer) *DBUtil {
+	return &DBUtil{
+		logger:  logger,
+		network: "tcp",
+		address: ":6379",
 	}
-	return false
 }
-func ConvertStringToBool(val string) bool {
-	if val == "true" {
-		return true
-	}
-	return false
-}
-func ConvertStrBoolIntToBool(val string) bool {
-	if val == "true" {
-		return true
-	} else if val == "True" {
-		return true
-	} else if val == "1" {
-		return true
-	}
-	return false
-}
-func ExecuteSQLStmt(dbCmd string, dbHdl *sql.DB) (driver.Result, error) {
-	var result driver.Result
-	txn, err := dbHdl.Begin()
+
+func (db *DBUtil) Connect() error {
+	dbHdl, err := redis.Dial(db.network, db.address)
 	if err != nil {
-		fmt.Println("### Failed to strart db transaction for command", dbCmd)
-		return result, err
+		db.logger.Err("Failed to dial out to Redis server")
+	} else {
+		db.dbHdl = dbHdl
 	}
-	result, err = dbHdl.Exec(dbCmd)
-	if err != nil {
-		fmt.Println("### Failed to execute command ", dbCmd, err)
-		return result, err
-	}
-	err = txn.Commit()
-	if err != nil {
-		fmt.Println("### Failed to Commit transaction for command", dbCmd, err)
-		return result, err
-	}
-	return result, err
+
+	return err
+}
+
+func (db *DBUtil) StoreObjectInDb(obj models.ConfigObj) error {
+	return obj.StoreObjectInDb(db.dbHdl)
+}
+
+func (db *DBUtil) DeleteObjectFromDb(obj models.ConfigObj) error {
+	return obj.DeleteObjectFromDb(db.dbHdl)
+}
+
+func (db *DBUtil) GetObjectFromDb(obj models.ConfigObj, objKey string) (models.ConfigObj, error) {
+	return obj.GetObjectFromDb(objKey, db.dbHdl)
+}
+
+func (db *DBUtil) GetKey(obj models.ConfigObj) string {
+	return obj.GetKey()
+}
+
+func (db *DBUtil) GetAllObjFromDb(obj models.ConfigObj) ([]models.ConfigObj, error) {
+	return obj.GetAllObjFromDb(db.dbHdl)
+}
+
+func (db *DBUtil) CompareObjectsAndDiff(obj models.ConfigObj, updateKeys map[string]bool, inObj models.ConfigObj) (
+	[]bool, error) {
+	return obj.CompareObjectsAndDiff(updateKeys, inObj)
+}
+
+func (db *DBUtil) UpdateObjectInDb(obj, inObj models.ConfigObj, attrSet []bool) error {
+	return obj.UpdateObjectInDb(inObj, attrSet, db.dbHdl)
+}
+
+func (db *DBUtil) MergeDbAndConfigObj(obj, dbObj models.ConfigObj, attrSet []bool) (models.ConfigObj, error) {
+	return obj.MergeDbAndConfigObj(dbObj, attrSet)
+}
+
+func (db *DBUtil) GetBulkObjFromDb(obj models.ConfigObj, startIndex, count int64) (error, int64, int64, bool,
+	[]models.ConfigObj) {
+	return obj.GetBulkObjFromDb(startIndex, count, db.dbHdl)
 }
