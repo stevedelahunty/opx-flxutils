@@ -6,14 +6,18 @@ import (
 	"github.com/garyburd/redigo/redis"
 	nanomsg "github.com/op/go-nanomsg"
 	"infra/sysd/sysdCommonDefs"
+	"log"
 	"log/syslog"
 	"models"
+	"os"
 	"sysd"
 )
 
 func ConvertLevelStrToVal(str string) sysdCommonDefs.SRDebugLevel {
 	var val sysdCommonDefs.SRDebugLevel
 	switch str {
+	case "off":
+		val = sysdCommonDefs.OFF
 	case "crit":
 		val = sysdCommonDefs.CRIT
 	case "err":
@@ -38,6 +42,7 @@ func ConvertLevelStrToVal(str string) sysdCommonDefs.SRDebugLevel {
 
 type Writer struct {
 	sysLogger       *syslog.Writer
+	nullLogger      *log.Logger
 	GlobalLogging   bool
 	MyComponentName string
 	MyLogLevel      sysdCommonDefs.SRDebugLevel
@@ -50,10 +55,17 @@ func NewLogger(name string, tag string, listenToConfig bool) (*Writer, error) {
 	var err error
 	srLogger := new(Writer)
 	srLogger.MyComponentName = name
+	srLogger.initialized = false
+
 	srLogger.sysLogger, err = syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, tag)
 	if err != nil {
 		fmt.Println("Failed to initialize syslog - ", err)
 		return srLogger, err
+	}
+	// if sysLogger can't be initialized then send all logs to /dev/null
+	devNull, err := os.Open(os.DevNull)
+	if err == nil {
+		srLogger.nullLogger = log.New(devNull, tag, log.Ldate|log.Ltime|log.Lshortfile)
 	}
 
 	srLogger.GlobalLogging = true
@@ -132,72 +144,112 @@ func (logger *Writer) SetLevel(level sysdCommonDefs.SRDebugLevel) error {
 }
 
 func (logger *Writer) Crit(message string) error {
-	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.CRIT {
-		return logger.sysLogger.Crit(message)
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.CRIT {
+			return logger.sysLogger.Crit(message)
+		}
+	} else if logger.nullLogger != nil {
+		logger.nullLogger.Println(message)
 	}
 	return nil
 }
 
 func (logger *Writer) Err(message string) error {
-	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.ERR {
-		return logger.sysLogger.Err(message)
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.ERR {
+			return logger.sysLogger.Err(message)
+		} else if logger.nullLogger != nil {
+			logger.nullLogger.Println(message)
+		}
 	}
 	return nil
 }
 
 func (logger *Writer) Warning(message string) error {
-	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.WARN {
-		return logger.sysLogger.Warning(message)
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.WARN {
+			return logger.sysLogger.Warning(message)
+		} else if logger.nullLogger != nil {
+			logger.nullLogger.Println(message)
+		}
 	}
 	return nil
 }
 
 func (logger *Writer) Alert(message string) error {
-	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.ALERT {
-		return logger.sysLogger.Alert(message)
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.ALERT {
+			return logger.sysLogger.Alert(message)
+		} else if logger.nullLogger != nil {
+			logger.nullLogger.Println(message)
+		}
 	}
 	return nil
 }
 
 func (logger *Writer) Emerg(message string) error {
-	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.EMERG {
-		return logger.sysLogger.Emerg(message)
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.EMERG {
+			return logger.sysLogger.Emerg(message)
+		} else if logger.nullLogger != nil {
+			logger.nullLogger.Println(message)
+		}
 	}
 	return nil
 }
 
 func (logger *Writer) Notice(message string) error {
-	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.NOTICE {
-		return logger.sysLogger.Notice(message)
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.NOTICE {
+			return logger.sysLogger.Notice(message)
+		} else if logger.nullLogger != nil {
+			logger.nullLogger.Println(message)
+		}
 	}
 	return nil
 }
 
 func (logger *Writer) Info(message string) error {
-	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.INFO {
-		return logger.sysLogger.Info(message)
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.INFO {
+			return logger.sysLogger.Info(message)
+		} else if logger.nullLogger != nil {
+			logger.nullLogger.Println(message)
+		}
 	}
 	return nil
 }
 
 func (logger *Writer) Println(message string) error {
-	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.INFO {
-		return logger.sysLogger.Info(message)
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.INFO {
+			return logger.sysLogger.Info(message)
+		} else if logger.nullLogger != nil {
+			logger.nullLogger.Println(message)
+		}
 	}
 	return nil
 }
 
 func (logger *Writer) Debug(message string) error {
-	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.DEBUG {
-		return logger.sysLogger.Debug(message)
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.DEBUG {
+			return logger.sysLogger.Debug(message)
+		} else if logger.nullLogger != nil {
+			logger.nullLogger.Println(message)
+		}
 	}
 	return nil
 }
 
 func (logger *Writer) Write(message string) (int, error) {
-	if logger.initialized && logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.TRACE {
-		n, err := logger.sysLogger.Write([]byte(message))
-		return n, err
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.TRACE {
+			n, err := logger.sysLogger.Write([]byte(message))
+			return n, err
+		} else if logger.nullLogger != nil {
+			logger.nullLogger.Println(message)
+		}
 	}
 	return 0, nil
 }
@@ -229,7 +281,7 @@ func (logger *Writer) SetupSubSocket() error {
 		return err
 	}
 
-	logger.Info(fmt.Sprintf("Connected to publisher socker %s", sysdCommonDefs.PUB_SOCKET_ADDR))
+	logger.Info(fmt.Sprintf("Connected to publisher socket %s", sysdCommonDefs.PUB_SOCKET_ADDR))
 	if err = socket.SetRecvBuffer(1024 * 1024); err != nil {
 		logger.Err(fmt.Sprintln("Failed to set the buffer size for subsriber socket %s, error:", sysdCommonDefs.PUB_SOCKET_ADDR, err))
 		return err
