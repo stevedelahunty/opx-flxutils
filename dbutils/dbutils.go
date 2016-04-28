@@ -1,11 +1,21 @@
 package dbutils
 
 import (
+	"fmt"
 	"models"
 	"utils/logging"
 
 	"github.com/garyburd/redigo/redis"
 )
+
+type DBNotConnectedError struct {
+	network string
+	address string
+}
+
+func (e DBNotConnectedError) Error() string {
+	return fmt.Sprintf("Not connected to DB at %s%s", e.network, e.address)
+}
 
 type DBUtil struct {
 	dbHdl   redis.Conn
@@ -33,15 +43,27 @@ func (db *DBUtil) Connect() error {
 	return err
 }
 
+func (db *DBUtil) Disconnect() {
+	if db.dbHdl != nil {
+		db.dbHdl.Close()
+	}
+}
+
 func (db *DBUtil) StoreObjectInDb(obj models.ConfigObj) error {
 	return obj.StoreObjectInDb(db.dbHdl)
 }
 
 func (db *DBUtil) DeleteObjectFromDb(obj models.ConfigObj) error {
+	if db.dbHdl == nil {
+		return DBNotConnectedError{db.network, db.address}
+	}
 	return obj.DeleteObjectFromDb(db.dbHdl)
 }
 
 func (db *DBUtil) GetObjectFromDb(obj models.ConfigObj, objKey string) (models.ConfigObj, error) {
+	if db.dbHdl == nil {
+		return obj, DBNotConnectedError{db.network, db.address}
+	}
 	return obj.GetObjectFromDb(objKey, db.dbHdl)
 }
 
@@ -50,15 +72,24 @@ func (db *DBUtil) GetKey(obj models.ConfigObj) string {
 }
 
 func (db *DBUtil) GetAllObjFromDb(obj models.ConfigObj) ([]models.ConfigObj, error) {
+	if db.dbHdl == nil {
+		return make([]models.ConfigObj, 0), DBNotConnectedError{db.network, db.address}
+	}
 	return obj.GetAllObjFromDb(db.dbHdl)
 }
 
 func (db *DBUtil) CompareObjectsAndDiff(obj models.ConfigObj, updateKeys map[string]bool, inObj models.ConfigObj) (
 	[]bool, error) {
+	if db.dbHdl == nil {
+		return make([]bool, 0), DBNotConnectedError{db.network, db.address}
+	}
 	return obj.CompareObjectsAndDiff(updateKeys, inObj)
 }
 
 func (db *DBUtil) UpdateObjectInDb(obj, inObj models.ConfigObj, attrSet []bool) error {
+	if db.dbHdl == nil {
+		return DBNotConnectedError{db.network, db.address}
+	}
 	return obj.UpdateObjectInDb(inObj, attrSet, db.dbHdl)
 }
 
@@ -68,5 +99,8 @@ func (db *DBUtil) MergeDbAndConfigObj(obj, dbObj models.ConfigObj, attrSet []boo
 
 func (db *DBUtil) GetBulkObjFromDb(obj models.ConfigObj, startIndex, count int64) (error, int64, int64, bool,
 	[]models.ConfigObj) {
+	if db.dbHdl == nil {
+		return DBNotConnectedError{db.network, db.address}, 0, 0, false, make([]models.ConfigObj, 0)
+	}
 	return obj.GetBulkObjFromDb(startIndex, count, db.dbHdl)
 }
