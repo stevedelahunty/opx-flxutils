@@ -141,6 +141,59 @@ func (db *PolicyEngineDB) CreatePolicyMatchProtocolCondition(cfg PolicyCondition
 	}
 	return true, err
 }
+func (db *PolicyEngineDB) ValidateConditionConfigCreate(inCfg PolicyConditionConfig) (err error) {
+	db.Logger.Info(fmt.Sprintln("ValidateConditionConfigCreate"))
+	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(inCfg.Name))
+	if policyCondition != nil {
+		db.Logger.Err(fmt.Sprintln("Duplicate Condition name"))
+		err = errors.New("Duplicate policy condition definition")
+		return err
+	}
+	switch inCfg.ConditionType {
+	case "MatchDstIpPrefix":
+	    cfg := inCfg.MatchDstIpPrefixConditionInfo
+	    if len(cfg.PrefixSet) == 0 && len(cfg.Prefix.IpPrefix) == 0 {
+		    db.Logger.Err(fmt.Sprintln("Empty prefix set/nil prefix"))
+		    err = errors.New("Empty prefix set/nil prefix")
+		    return err
+	    }
+	    if len(cfg.PrefixSet) != 0 && len(cfg.Prefix.IpPrefix) != 0 {
+		    db.Logger.Err(fmt.Sprintln("Cannot provide both prefix set and individual prefix"))
+		    err = errors.New("Cannot provide both prefix set and individual prefix")
+		    return err
+	    }
+	    if len(cfg.Prefix.IpPrefix) != 0 {
+		_, err = netUtils.GetNetworkPrefixFromCIDR(cfg.Prefix.IpPrefix)
+		if err != nil {
+			db.Logger.Err(fmt.Sprintln("ipPrefix invalid "))
+			return errors.New("ipPrefix invalid") 
+		}
+		if cfg.Prefix.MasklengthRange == "exact" {
+		} else {
+			maskList := strings.Split(cfg.Prefix.MasklengthRange, "-")
+			if len(maskList) != 2 {
+				db.Logger.Err(fmt.Sprintln("Invalid masklength range"))
+				return errors.New("Invalid masklength range")
+			}
+			_, err = strconv.Atoi(maskList[0])
+			if err != nil {
+				db.Logger.Err(fmt.Sprintln("lowRange mask not valid"))
+				return errors.New("lowRange mask not valid")
+			}
+			_, err = strconv.Atoi(maskList[1])
+			if err != nil {
+				db.Logger.Err(fmt.Sprintln("highRange mask not valid"))
+				return errors.New("highRange mask not valid")
+			}
+		}
+	}		
+	default:
+		db.Logger.Err(fmt.Sprintln("Unknown condition type ", inCfg.ConditionType))
+		err = errors.New("Unknown condition type")
+		return err
+	}
+	return err
+}
 func (db *PolicyEngineDB) CreatePolicyCondition(cfg PolicyConditionConfig) (val bool, err error) {
 	db.Logger.Info(fmt.Sprintln("CreatePolicyCondition"))
 	switch cfg.ConditionType {

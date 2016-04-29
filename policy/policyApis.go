@@ -457,7 +457,7 @@ func (db *PolicyEngineDB) DeletePolicyStatement(cfg PolicyStmtConfig) (err error
 	}
 	return err
 }
-func (db *PolicyEngineDB) ApplyPolicy(info ApplyPolicyInfo) {
+func (db *PolicyEngineDB) UpdateApplyPolicy(info ApplyPolicyInfo, apply bool) {
 	db.Logger.Info("ApplyPolicy")
 	applyPolicy := info.ApplyPolicy
 	action := info.Action
@@ -488,7 +488,9 @@ func (db *PolicyEngineDB) ApplyPolicy(info ApplyPolicyInfo) {
 	} else {
 		db.ApplyPolicyMap[applyPolicy.Name] = append(db.ApplyPolicyMap[applyPolicy.Name], ApplyPolicyInfo{applyPolicy, action, conditions})
 	}
-	db.PolicyEngineTraverseAndApplyPolicy(info)
+	if apply {
+	    db.PolicyEngineTraverseAndApplyPolicy(info)
+	}
 }
 func (db *PolicyEngineDB) ValidatePolicyDefinitionCreate(cfg PolicyDefinitionConfig) (err error) {
 	db.Logger.Println("ValidatePolicyDefinitionCreate")
@@ -571,7 +573,22 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 	}
 	return err
 }
-
+func (db *PolicyEngineDB) ValidatePolicyDefinitionDelete(cfg PolicyDefinitionConfig) (err error) {
+	db.Logger.Println("ValidatePolicyDefinitionDelete")
+	policyItem := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
+	if policyItem == nil {
+		db.Logger.Println("Policy not defined")
+		err = errors.New("Policy not defined")
+		return err
+	}
+	policy := policyItem.(Policy)
+	if db.ApplyPolicyMap[policy.Name] != nil {
+		db.Logger.Println(" Policy being applied, cannot delete it")
+		err = errors.New(fmt.Sprintln("Policy being used, cannot delete"))
+		return err
+	}
+	return err
+}
 func (db *PolicyEngineDB) DeletePolicyDefinition(cfg PolicyDefinitionConfig) (err error) {
 	db.Logger.Info(fmt.Sprintln("DeletePolicyDefinition for name ", cfg.Name))
 	ok := db.PolicyDB.Match(patriciaDB.Prefix(cfg.Name))

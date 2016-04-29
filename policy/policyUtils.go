@@ -186,6 +186,8 @@ func NewPolicyEngineDB(logger *logging.Writer) (policyEngineDB *PolicyEngineDB) 
 	policyEngineDB.ExportPolicyPrecedenceMap = make(map[int]string)
 	policyEngineDB.ApplyPolicyMap = make(map[string][]ApplyPolicyInfo)
 	policyEngineDB.ConditionCheckfuncMap = make(map[int]PolicyConditionCheckfunc)
+	policyEngineDB.ValidConditionsForPolicyTypeMap = make(map[string][]int)
+	policyEngineDB.ValidActionsForPolicyTypeMap = make(map[string][]int)
 	policyEngineDB.buildPolicyConditionCheckfuncMap()
 	policyEngineDB.buildPolicyValidConditionsForPolicyTypeMap()
 	policyEngineDB.buildPolicyValidActionsForPolicyTypeMap()
@@ -380,17 +382,21 @@ func HasActionInfo(infoLIst []ApplyPolicyInfo, action PolicyAction) bool {
 func (db *PolicyEngineDB) ConditionCheckForPolicyType(conditionName string,policyType string ) bool {
     validList := db.ValidConditionsForPolicyTypeMap[policyType]
 	if validList == nil || len(validList) == 0 {
+		db.Logger.Err(fmt.Sprintln("Valid Conditions not defined for policyType: ", policyType))
 		return false
 	}
 	item := db.PolicyConditionsDB.Get(patriciaDB.Prefix(conditionName))
 	if item == nil {
+		db.Logger.Err(fmt.Sprintln("Condtition with conditionName ", conditionName, " not defined"))
 		return false
 	}
 	condition := item.(PolicyCondition)
 	for j := 0;j<len(validList);j++ {
 		if validList[j] == condition.ConditionType {
+	         db.Logger.Info(fmt.Sprintln("Condition ", conditionName, " valid for policyType: ", policyType))
 			return true
 		}
 	}
+	db.Logger.Info(fmt.Sprintln("Condition ", conditionName, " not valid for policyType: ", policyType))
 	return false
 }

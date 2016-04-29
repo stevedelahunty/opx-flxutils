@@ -129,7 +129,7 @@ func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFil
 	}
 }
 func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilterEntityParams, action PolicyAction,
-	conditionInfoList []interface{}, params interface{}) (policyActionList []PolicyAction) {
+	conditionInfoList []interface{}, params interface{}, policyStmt PolicyStmt) (policyActionList []PolicyAction) {
 	db.Logger.Info(fmt.Sprintln("policyEngineImplementActions"))
 	policyActionList = make([]PolicyAction, 0)
 	addActionToList := false
@@ -139,7 +139,7 @@ func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilter
 		if entity.DeletePath == true {
 			db.Logger.Info(fmt.Sprintln("action to be reversed", action.ActionType))
 			if db.UndoActionfuncMap[action.ActionType] != nil {
-				//db.UndoActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params, policyStmt)
+				db.UndoActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params, policyStmt)
 			}
 			addActionToList = true
 		} else { //if entity.CreatePath == true or neither create/delete is valid - in case this function is called a a part of policy create{
@@ -354,7 +354,7 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 			conditionInfoList = append(conditionInfoList, conditionList[j].ConditionInfo)
 		}
 	}
-	actionList := db.PolicyEngineImplementActions(*entity, info.Action, conditionInfoList, params)
+	actionList := db.PolicyEngineImplementActions(*entity, info.Action, conditionInfoList, params,policyStmt)
 	if db.ActionListHasAction(actionList, policyCommonDefs.PolicyActionTypeRouteDisposition, "Reject") {
 		db.Logger.Info(fmt.Sprintln("Reject action was applied for this entity"))
 		*deleted = true
