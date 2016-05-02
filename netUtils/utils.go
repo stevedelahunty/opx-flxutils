@@ -89,6 +89,11 @@ func GetNetworkPrefix(destNetIp net.IP, networkMask net.IP) (destNet patriciaDB.
 	return destNet, err
 }
 func GetCIDR(ipAddr string, mask string) (addr string, err error) {
+	destNetIpAddr, err := GetIP(ipAddr)
+	if err != nil {
+		fmt.Println("destNetIpAddr invalid")
+		return addr, err
+	}
 	maskIP,err:=GetIP(mask)
 	if err != nil {
        fmt.Println("err in getting mask IP for mask string", mask)
@@ -99,6 +104,6 @@ func GetCIDR(ipAddr string, mask string) (addr string, err error) {
 	   fmt.Println("err in getting prefix len for mask string", mask)
 	   return addr, err
 	}
-	addr = ipAddr + "/"+strconv.Itoa(prefixLen)
+	addr = (destNetIpAddr.Mask(net.IPMask(maskIP))).String() + "/" + strconv.Itoa(prefixLen)
 	return addr, err
 }
