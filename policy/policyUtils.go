@@ -264,6 +264,7 @@ func (db *PolicyEngineDB) AddPolicyEntityMapEntry(entity PolicyEngineFilterEntit
 	}
 	policyStmtMap.PolicyStmtMap[policyStmt] = conditionsAndActionsList
 	db.PolicyEntityMap[policyEntityMapIndex] = policyStmtMap
+	db.Logger.Info(fmt.Sprintln("Adding entry for index ", policyEntityMapIndex))
 }
 func (db *PolicyEngineDB) DeletePolicyEntityMapEntry(entity PolicyEngineFilterEntityParams, policy string) {
 	db.Logger.Info(fmt.Sprintln("DeletePolicyEntityMapEntry for policy ", policy))

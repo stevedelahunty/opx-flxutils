@@ -363,11 +363,11 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 	if db.IsEntityPresentFunc != nil {
 		*deleted = !(db.IsEntityPresentFunc(params))
 	}
+	db.AddPolicyEntityMapEntry(*entity, policy.Name, policyStmt.Name, conditionList, actionList)
 	if db.UpdateEntityDB != nil {
 		policyDetails := PolicyDetails{Policy: policy.Name, PolicyStmt: policyStmt.Name, ConditionList: conditionList, ActionList: actionList, EntityDeleted: *deleted}
 		db.UpdateEntityDB(policyDetails, params)
 	}
-	db.AddPolicyEntityMapEntry(*entity, policy.Name, policyStmt.Name, conditionList, actionList)
 }
 
 func (db *PolicyEngineDB) PolicyEngineApplyPolicy(entity *PolicyEngineFilterEntityParams, info ApplyPolicyInfo, policyPath int, params interface{}, hit *bool) {

@@ -406,6 +406,24 @@ func (db *PolicyEngineDB) CreatePolicyStatement(cfg PolicyStmtConfig) (err error
 	return err
 }
 
+func (db *PolicyEngineDB) ValidatePolicyStatementDelete(cfg PolicyStmtConfig) (err error) {
+	db.Logger.Println("ValidatePolicyStatementCreate")
+	ok := db.PolicyStmtDB.Match(patriciaDB.Prefix(cfg.Name))
+	if !ok {
+		err = errors.New("No policy statement with this name found")
+		return err
+	}
+	policyStmtInfoGet := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.Name))
+	if policyStmtInfoGet != nil {
+		policyStmtInfo := policyStmtInfoGet.(PolicyStmt)
+		if len(policyStmtInfo.PolicyList) != 0 {
+			db.Logger.Err(fmt.Sprintln("This policy stmt is being used by one or more policies. Delete the policies before deleting the stmt"))
+			err = errors.New("This policy stmt is being used by one or more policies. Delete the policies before deleting the stmt")
+			return err
+		}
+	}
+	return nil
+}
 func (db *PolicyEngineDB) DeletePolicyStatement(cfg PolicyStmtConfig) (err error) {
 	db.Logger.Info(fmt.Sprintln("DeletePolicyStatement for name ", cfg.Name))
 	ok := db.PolicyStmtDB.Match(patriciaDB.Prefix(cfg.Name))

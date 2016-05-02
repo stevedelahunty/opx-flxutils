@@ -210,6 +210,21 @@ func (db *PolicyEngineDB) CreatePolicyCondition(cfg PolicyConditionConfig) (val 
 	}
 	return val, err
 }
+func (db *PolicyEngineDB) ValidateConditionConfigDelete(cfg PolicyConditionConfig) (err error) {
+	conditionItem := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Name))
+	if conditionItem == nil {
+		db.Logger.Err(fmt.Sprintln("Condition ", cfg.Name, "not found in the DB"))
+		err = errors.New("Condition not found")
+		return  err
+	}
+	condition := conditionItem.(PolicyCondition)
+	if len(condition.PolicyStmtList) != 0 {
+		db.Logger.Err(fmt.Sprintln("This condition is currently being used by a policy statement. Try deleting the stmt before deleting the condition"))
+		err = errors.New("This condition is currently being used by a policy statement. Try deleting the stmt before deleting the condition")
+		return err
+	}
+	return nil
+}
 func (db *PolicyEngineDB) DeletePolicyCondition(cfg PolicyConditionConfig) (val bool, err error) {
 	db.Logger.Info(fmt.Sprintln("DeletePolicyCondition"))
 	conditionItem := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Name))
