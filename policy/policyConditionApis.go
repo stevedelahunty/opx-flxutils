@@ -150,6 +150,8 @@ func (db *PolicyEngineDB) ValidateConditionConfigCreate(inCfg PolicyConditionCon
 		return err
 	}
 	switch inCfg.ConditionType {
+	case "MatchProtocol":
+	   break
 	case "MatchDstIpPrefix":
 	    cfg := inCfg.MatchDstIpPrefixConditionInfo
 	    if len(cfg.PrefixSet) == 0 && len(cfg.Prefix.IpPrefix) == 0 {
