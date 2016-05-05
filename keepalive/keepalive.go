@@ -65,7 +65,7 @@ func InitKeepAlive(name string, paramsDir string) {
 			ka.sysdClient.Address = "localhost:" + strconv.Itoa(client.Port)
 			ka.sysdClient.TTransport, ka.sysdClient.PtrProtocolFactory, err = ipcutils.CreateIPCHandles(ka.sysdClient.Address)
 			if err != nil {
-				fmt.Println("Failed to connect to sysd, retrying until connection is successful")
+				fmt.Println(ka.name, " Failed to connect to sysd, retrying until connection is successful")
 				count := 0
 				ticker := time.NewTicker(time.Duration(1000) * time.Millisecond)
 				for _ = range ticker.C {
@@ -75,8 +75,8 @@ func InitKeepAlive(name string, paramsDir string) {
 						break
 					}
 					count++
-					if (count % 10) == 0 {
-						fmt.Println("Still can't connect to sysd, retrying...")
+					if (count % 100) == 0 {
+						fmt.Println(ka.name, " Still can't connect to sysd, retrying...")
 					}
 				}
 			}
