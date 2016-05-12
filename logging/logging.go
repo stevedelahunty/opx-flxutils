@@ -11,6 +11,12 @@ import (
 	"models"
 	"os"
 	"sysd"
+	"time"
+)
+
+const (
+	DB_CONNECT_TIME_INTERVAL   = 2
+	DB_CONNECT_RETRY_LOG_COUNT = 100
 )
 
 func ConvertLevelStrToVal(str string) sysdCommonDefs.SRDebugLevel {
@@ -118,11 +124,22 @@ func (logger *Writer) readComponentLoggingFromDb(dbHdl redis.Conn) error {
 }
 
 func (logger *Writer) readLogLevelFromDb() error {
-	dbHdl, err := redis.Dial("tcp", "6379")
-	if err != nil {
-		logger.Err("Failed to dial out to Redis server")
-		return err
+	var dbHdl redis.Conn
+	var err error
+	retryCount := 0
+	ticker := time.NewTicker(DB_CONNECT_TIME_INTERVAL * time.Second)
+	for _ = range ticker.C {
+		retryCount += 1
+		dbHdl, err = redis.Dial("tcp", ":6379")
+		if err != nil {
+			if retryCount%DB_CONNECT_RETRY_LOG_COUNT == 0 {
+				logger.Err(fmt.Sprintln("Failed to dial out to Redis server. Ret    rying connection. Num retries = ", retryCount))
+			}
+		} else {
+			break
+		}
 	}
+
 	if dbHdl != nil {
 		logger.readSystemLoggingFromDb(dbHdl)
 		logger.readComponentLoggingFromDb(dbHdl)
@@ -133,13 +150,13 @@ func (logger *Writer) readLogLevelFromDb() error {
 
 func (logger *Writer) SetGlobal(Enable bool) error {
 	logger.GlobalLogging = Enable
-	fmt.Println("Changed global logging to: ", logger.GlobalLogging, " for ", logger.MyComponentName)
+	logger.Debug(fmt.Sprintln("Changed global logging to: ", logger.GlobalLogging, " for ", logger.MyComponentName))
 	return nil
 }
 
 func (logger *Writer) SetLevel(level sysdCommonDefs.SRDebugLevel) error {
 	logger.MyLogLevel = level
-	fmt.Println("Changed logging level to: ", logger.MyLogLevel, " for ", logger.MyComponentName)
+	logger.Debug(fmt.Sprintln("Changed logging level to: ", logger.MyLogLevel, " for ", logger.MyComponentName))
 	return nil
 }
 
