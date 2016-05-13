@@ -94,11 +94,13 @@ func (logger *Writer) readSystemLoggingFromDb(dbHdl redis.Conn) error {
 		logger.Err("DB query failed for SystemLogging config")
 		return err
 	}
-	obj := sysd.NewSystemLogging()
-	dbObject := objList[0].(models.SystemLogging)
-	models.ConvertsysdSystemLoggingObjToThrift(&dbObject, obj)
-	if obj.Logging == "on" {
-		logger.GlobalLogging = true
+	if objList != nil {
+		obj := sysd.NewSystemLogging()
+		dbObject := objList[0].(models.SystemLogging)
+		models.ConvertsysdSystemLoggingObjToThrift(&dbObject, obj)
+		if obj.Logging == "on" {
+			logger.GlobalLogging = true
+		}
 	}
 	return nil
 }
@@ -111,13 +113,15 @@ func (logger *Writer) readComponentLoggingFromDb(dbHdl redis.Conn) error {
 		logger.Err("DB query failed for ComponentLogging config")
 		return err
 	}
-	for idx := 0; idx < len(objList); idx++ {
-		obj := sysd.NewComponentLogging()
-		dbObject := objList[idx].(models.ComponentLogging)
-		models.ConvertsysdComponentLoggingObjToThrift(&dbObject, obj)
-		if obj.Module == logger.MyComponentName {
-			logger.MyLogLevel = ConvertLevelStrToVal(obj.Level)
-			return nil
+	if objList != nil {
+		for idx := 0; idx < len(objList); idx++ {
+			obj := sysd.NewComponentLogging()
+			dbObject := objList[idx].(models.ComponentLogging)
+			models.ConvertsysdComponentLoggingObjToThrift(&dbObject, obj)
+			if obj.Module == logger.MyComponentName {
+				logger.MyLogLevel = ConvertLevelStrToVal(obj.Level)
+				return nil
+			}
 		}
 	}
 	return nil
