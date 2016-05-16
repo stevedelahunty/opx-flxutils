@@ -55,6 +55,7 @@ func (asicdClientMgr *FSAsicdClientMgr) GetBulkIPv4IntfState(curMark, count int)
 	ipv4Info.EndIdx = int32(bulkInfo.EndIdx)
 	ipv4Info.Count = int32(bulkInfo.Count)
 	ipv4Info.More = bulkInfo.More
+	ipv4Info.IPv4IntfStateList = make([]IPv4IntfState, int(ipv4Info.Count))
 	for idx := 0; idx < int(ipv4Info.Count); idx++ {
 		ipv4Info.IPv4IntfStateList[idx].IntfRef = bulkInfo.IPv4IntfStateList[idx].IntfRef
 		ipv4Info.IPv4IntfStateList[idx].IfIndex = bulkInfo.IPv4IntfStateList[idx].IfIndex
