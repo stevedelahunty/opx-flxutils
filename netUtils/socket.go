@@ -86,37 +86,51 @@ func Socket(family, sotype, proto int) (int, error) {
 	return s, nil
 }
 
-func ConnectSocket(network, address string) (int, error) {
-	var localAddress net.Addr
+func ConnectSocket(network, remote, local string) (int, error) {
+	fmt.Println("ConnectSocket: network=", network, "remote =", remote, "local =", local)
+	var localAddr net.Addr
 	var socketType, proto int
-	netAddr, err := resolveAddress(network, address)
+	netAddr, err := resolveAddress(network, remote)
 	if err != nil {
+		fmt.Println("ConnectSocket: resolveAddress for remote failed with error", err)
 		return -1, err
 	}
 
-	family, ipv6only := favoriteAddrFamily(network, localAddress, netAddr, "dial")
+	if local != "" {
+		localAddr, err = resolveAddress(network, local)
+		if err != nil {
+			fmt.Println("ConnectSocket: resolveAddress for local failed with error", err)
+			return -1, err
+		}
+	}
+
+	family, ipv6only := favoriteAddrFamily(network, localAddr, netAddr, "dial")
 	proto = 0
 
 	switch netAddr := netAddr.(type) {
 	case *net.TCPAddr:
-		localAddress, _ = localAddress.(*net.TCPAddr)
+		localAddr, _ = localAddr.(*net.TCPAddr)
 		socketType = syscall.SOCK_STREAM
 	case *net.UDPAddr:
-		localAddress, _ = localAddress.(*net.UDPAddr)
+		localAddr, _ = localAddr.(*net.UDPAddr)
 		socketType = syscall.SOCK_DGRAM
 	default:
-		return -1, &net.OpError{Op: "dial", Net: network, Source: localAddress, Addr: netAddr,
-			Err: &net.AddrError{Err: "unexpected address type", Addr: address}}
+		fmt.Println("ConnectSocket: remote is not TCPAddr or UDPAddr")
+		return -1, &net.OpError{Op: "dial", Net: network, Source: localAddr, Addr: netAddr,
+			Err: &net.AddrError{Err: "unexpected address type", Addr: remote}}
 	}
 
 	socket, err := Socket(family, socketType, proto)
 	if err != nil {
+		fmt.Println("ConnectSocket: Socket call failed")
 		return -1, err
 	}
 	if err = SetDefaultConnectSockopts(socket); err != nil {
+		fmt.Println("ConnectSocket: SetDefaultConnectSockopts failed")
 		return -1, err
 	}
 	if err = SetSockoptIPv6Only(socket, family, socketType, ipv6only); err != nil {
+		fmt.Println("ConnectSocket: SetSockoptIPv6Only failed")
 		return -1, err
 	}
 
@@ -152,22 +166,41 @@ func SetDefaultListenerSockopts(s int) error {
 	return os.NewSyscallError("setsockopt", syscall.SetsockoptInt(s, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1))
 }
 
-func Connect(socket int, network, address string, timeout time.Duration) error {
-	var localAddress net.Addr
-	var ra syscall.Sockaddr
+func Connect(socket int, network, remote, local string, timeout time.Duration) error {
+	var lAddr net.Addr
+	var rsa, lsa syscall.Sockaddr
 	var deadline time.Time
 
 	if timeout != 0 {
 		deadline = time.Now().Add(timeout)
 	}
 
-	rAddr, err := resolveAddress(network, address)
+	rAddr, err := resolveAddress(network, remote)
 	if err != nil {
 		return err
 	}
 
-	family, _ := favoriteAddrFamily(network, localAddress, rAddr, "dial")
-	ra, err = sockaddr(rAddr, family)
+	if local != "" {
+		lAddr, err = resolveAddress(network, local)
+		if err != nil {
+			return err
+		}
+	}
+
+	family, _ := favoriteAddrFamily(network, lAddr, rAddr, "dial")
+
+	if lAddr != nil {
+		lsa, err = sockaddr(lAddr, family)
+		if err != nil {
+			return err
+		}
+
+		if err := syscall.Bind(socket, lsa); err != nil {
+			return os.NewSyscallError("bind", err)
+		}
+	}
+
+	rsa, err = sockaddr(rAddr, family)
 	if err != nil {
 		return err
 	}
@@ -175,7 +208,7 @@ func Connect(socket int, network, address string, timeout time.Duration) error {
 	// Do not need to call fd.writeLock here,
 	// because fd is not yet accessible to user,
 	// so no concurrent operations are possible.
-	switch err := syscall.Connect(socket, ra); err {
+	switch err := syscall.Connect(socket, rsa); err {
 	case syscall.EINPROGRESS, syscall.EALREADY, syscall.EINTR:
 	case nil, syscall.EISCONN:
 		if !deadline.IsZero() && deadline.Before(time.Now()) {
