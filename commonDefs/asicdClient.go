@@ -49,7 +49,8 @@ type IPv4IntfStateGetInfo struct {
 }
 
 type Port struct {
-	PortNum     int32
+	IntfRef     string
+	IfIndex     int32
 	Description string
 	PhyIntfType string
 	AdminState  string
@@ -70,7 +71,7 @@ type PortGetInfo struct {
 }
 
 type PortState struct {
-	PortNum           int32
+	IntfRef           string
 	IfIndex           int32
 	Name              string
 	OperState         string
