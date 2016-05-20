@@ -107,7 +107,8 @@ func (asicdClientMgr *FSAsicdClientMgr) GetBulkPort(curMark, count int) (*common
 	portInfo.More = bulkInfo.More
 	portInfo.PortList = make([]commonDefs.Port, int(portInfo.Count))
 	for idx := 0; idx < int(portInfo.Count); idx++ {
-		portInfo.PortList[idx].PortNum = bulkInfo.PortList[idx].PortNum
+		portInfo.PortList[idx].IntfRef = bulkInfo.PortList[idx].IntfRef
+		portInfo.PortList[idx].IfIndex = bulkInfo.PortList[idx].IfIndex
 		portInfo.PortList[idx].Description = bulkInfo.PortList[idx].Description
 		portInfo.PortList[idx].PhyIntfType = bulkInfo.PortList[idx].PhyIntfType
 		portInfo.PortList[idx].AdminState = bulkInfo.PortList[idx].AdminState
@@ -133,7 +134,7 @@ func (asicdClientMgr *FSAsicdClientMgr) GetBulkPortState(curMark, count int) (*c
 	portStateInfo.More = bulkInfo.More
 	portStateInfo.PortStateList = make([]commonDefs.PortState, int(portStateInfo.Count))
 	for idx := 0; idx < int(portStateInfo.Count); idx++ {
-		portStateInfo.PortStateList[idx].PortNum = bulkInfo.PortStateList[idx].PortNum
+		portStateInfo.PortStateList[idx].IntfRef = bulkInfo.PortStateList[idx].IntfRef
 		portStateInfo.PortStateList[idx].IfIndex = bulkInfo.PortStateList[idx].IfIndex
 		portStateInfo.PortStateList[idx].Name = bulkInfo.PortStateList[idx].Name
 		portStateInfo.PortStateList[idx].OperState = bulkInfo.PortStateList[idx].OperState
