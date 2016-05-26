@@ -1,55 +1,143 @@
+//
+//Copyright [2016] [SnapRoute Inc]
+//
+//Licensed under the Apache License, Version 2.0 (the "License");
+//you may not use this file except in compliance with the License.
+//You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//	 Unless required by applicable law or agreed to in writing, software
+//	 distributed under the License is distributed on an "AS IS" BASIS,
+//	 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//	 See the License for the specific language governing permissions and
+//	 limitations under the License.
+//
+// _______  __       __________   ___      _______.____    __    ____  __  .___________.  ______  __    __  
+// |   ____||  |     |   ____\  \ /  /     /       |\   \  /  \  /   / |  | |           | /      ||  |  |  | 
+// |  |__   |  |     |  |__   \  V  /     |   (----` \   \/    \/   /  |  | `---|  |----`|  ,----'|  |__|  | 
+// |   __|  |  |     |   __|   >   <       \   \      \            /   |  |     |  |     |  |     |   __   | 
+// |  |     |  `----.|  |____ /  .  \  .----)   |      \    /\    /    |  |     |  |     |  `----.|  |  |  | 
+// |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__| 
+//                                                                                                           
+
 package dbutils
 
 import (
-	"database/sql"
-	"database/sql/driver"
 	"fmt"
+	"github.com/garyburd/redigo/redis"
+	"models"
+	"time"
+	"utils/logging"
 )
 
-func ConvertBoolToInt(val bool) int {
-	if val {
-		return 1
-	}
-	return 0
+const (
+	DB_CONNECT_TIME_INTERVAL   = 2
+	DB_CONNECT_RETRY_LOG_COUNT = 100
+)
+
+type DBNotConnectedError struct {
+	network string
+	address string
 }
-func ConvertIntToBool(val int) bool {
-	if val == 1 {
-		return true
-	}
-	return false
+
+func (e DBNotConnectedError) Error() string {
+	return fmt.Sprintf("Not connected to DB at %s%s", e.network, e.address)
 }
-func ConvertStringToBool(val string) bool {
-	if val == "true" {
-		return true
-	}
-	return false
+
+type DBUtil struct {
+	redis.Conn
+	logger  *logging.Writer
+	network string
+	address string
 }
-func ConvertStrBoolIntToBool(val string) bool {
-	if val == "true" {
-		return true
-	} else if val == "True" {
-		return true
-	} else if val == "1" {
-		return true
+
+func NewDBUtil(logger *logging.Writer) *DBUtil {
+	return &DBUtil{
+		logger:  logger,
+		network: "tcp",
+		address: ":6379",
 	}
-	return false
 }
-func ExecuteSQLStmt(dbCmd string, dbHdl *sql.DB) (driver.Result, error) {
-	var result driver.Result
-	txn, err := dbHdl.Begin()
-	if err != nil {
-		fmt.Println("### Failed to strart db transaction for command", dbCmd)
-		return result, err
+
+func (db *DBUtil) Connect() error {
+	retryCount := 0
+	ticker := time.NewTicker(DB_CONNECT_TIME_INTERVAL * time.Second)
+	for _ = range ticker.C {
+		retryCount += 1
+		dbHdl, err := redis.Dial(db.network, db.address)
+		if err != nil {
+			if retryCount%DB_CONNECT_RETRY_LOG_COUNT == 0 {
+				if db.logger != nil {
+					db.logger.Err(fmt.Sprintln("Failed to dial out to Redis server. Retrying connection. Num retries = ", retryCount))
+				}
+			}
+		} else {
+			db.Conn = dbHdl
+			break
+		}
 	}
-	result, err = dbHdl.Exec(dbCmd)
-	if err != nil {
-		fmt.Println("### Failed to execute command ", dbCmd, err)
-		return result, err
+	return nil
+}
+
+func (db *DBUtil) Disconnect() {
+	if db.Conn != nil {
+		db.Close()
 	}
-	err = txn.Commit()
-	if err != nil {
-		fmt.Println("### Failed to Commit transaction for command", dbCmd, err)
-		return result, err
+}
+
+func (db *DBUtil) StoreObjectInDb(obj models.ConfigObj) error {
+	return obj.StoreObjectInDb(db.Conn)
+}
+
+func (db *DBUtil) DeleteObjectFromDb(obj models.ConfigObj) error {
+	if db.Conn == nil {
+		return DBNotConnectedError{db.network, db.address}
 	}
-	return result, err
+	return obj.DeleteObjectFromDb(db.Conn)
+}
+
+func (db *DBUtil) GetObjectFromDb(obj models.ConfigObj, objKey string) (models.ConfigObj, error) {
+	if db.Conn == nil {
+		return obj, DBNotConnectedError{db.network, db.address}
+	}
+	return obj.GetObjectFromDb(objKey, db.Conn)
+}
+
+func (db *DBUtil) GetKey(obj models.ConfigObj) string {
+	return obj.GetKey()
+}
+
+func (db *DBUtil) GetAllObjFromDb(obj models.ConfigObj) ([]models.ConfigObj, error) {
+	if db.Conn == nil {
+		return make([]models.ConfigObj, 0), DBNotConnectedError{db.network, db.address}
+	}
+	return obj.GetAllObjFromDb(db.Conn)
+}
+
+func (db *DBUtil) CompareObjectsAndDiff(obj models.ConfigObj, updateKeys map[string]bool, inObj models.ConfigObj) (
+	[]bool, error) {
+	if db.Conn == nil {
+		return make([]bool, 0), DBNotConnectedError{db.network, db.address}
+	}
+	return obj.CompareObjectsAndDiff(updateKeys, inObj)
+}
+
+func (db *DBUtil) UpdateObjectInDb(obj, inObj models.ConfigObj, attrSet []bool) error {
+	if db.Conn == nil {
+		return DBNotConnectedError{db.network, db.address}
+	}
+	return obj.UpdateObjectInDb(inObj, attrSet, db.Conn)
+}
+
+func (db *DBUtil) MergeDbAndConfigObj(obj, dbObj models.ConfigObj, attrSet []bool) (models.ConfigObj, error) {
+	return obj.MergeDbAndConfigObj(dbObj, attrSet)
+}
+
+func (db *DBUtil) GetBulkObjFromDb(obj models.ConfigObj, startIndex, count int64) (error, int64, int64, bool,
+	[]models.ConfigObj) {
+	if db.Conn == nil {
+		return DBNotConnectedError{db.network, db.address}, 0, 0, false, make([]models.ConfigObj, 0)
+	}
+	return obj.GetBulkObjFromDb(startIndex, count, db.Conn)
 }

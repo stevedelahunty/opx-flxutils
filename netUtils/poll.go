@@ -21,30 +21,51 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__| 
 //                                                                                                           
 
-package commonDefs
+package netUtils
 
-//L2 types
-const (
-	IfTypePort = iota
-	IfTypeLag
-	IfTypeVlan
-	IfTypeP2P
-	IfTypeBcast
-	IfTypeLoopback
-	IfTypeSecondary
-	IfTypeVirtual
-	IfTypeNull
+import (
+	"errors"
+	"syscall"
 )
 
-func GetIfTypeName(ifType int) string {
-	switch ifType {
-	case IfTypePort:
-		return "Port"
-	case IfTypeLag:
-		return "Lag"
-	case IfTypeVlan:
-		return "Vlan"
-	default:
-		return "Unknown"
+const MAXEPOLLEVENTS = 32
+
+type EPoll struct {
+	fd     int
+	event  syscall.EpollEvent
+	events [MAXEPOLLEVENTS]syscall.EpollEvent
+}
+
+func NewEPoll(fd int) (*EPoll, error) {
+	var err error
+	var eFd int
+	if eFd, err = syscall.EpollCreate1(0); err != nil {
+		return nil, err
 	}
+
+	e := EPoll{}
+	e.fd = eFd
+	e.event.Events = syscall.EPOLLOUT
+	e.event.Fd = int32(fd)
+	if err = syscall.EpollCtl(eFd, syscall.EPOLL_CTL_ADD, fd, &e.event); err != nil {
+		e.Close()
+		return nil, err
+	}
+
+	return &e, nil
+}
+
+func (e *EPoll) Close() error {
+	return syscall.Close(e.fd)
+}
+
+func (e *EPoll) Wait(msec int) error {
+	nevents, err := syscall.EpollWait(e.fd, e.events[:], msec)
+	if err != nil {
+		return err
+	}
+	if nevents <= 0 {
+		return errors.New("i/o timeout")
+	}
+	return nil
 }

@@ -21,30 +21,18 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__| 
 //                                                                                                           
 
-package commonDefs
+package netUtils
 
-//L2 types
-const (
-	IfTypePort = iota
-	IfTypeLag
-	IfTypeVlan
-	IfTypeP2P
-	IfTypeBcast
-	IfTypeLoopback
-	IfTypeSecondary
-	IfTypeVirtual
-	IfTypeNull
+import (
+	"net"
+	"reflect"
 )
 
-func GetIfTypeName(ifType int) string {
-	switch ifType {
-	case IfTypePort:
-		return "Port"
-	case IfTypeLag:
-		return "Lag"
-	case IfTypeVlan:
-		return "Vlan"
-	default:
-		return "Unknown"
-	}
+func getFdFromTCPConn(tcpConn *net.TCPConn) int {
+	conn := reflect.ValueOf(*tcpConn)
+	valueConn := conn.FieldByName("conn")
+	fd := valueConn.FieldByName("fd")
+	ptr := reflect.Indirect(fd)
+	connFd := ptr.FieldByName("sysfd")
+	return int(connFd.Int())
 }

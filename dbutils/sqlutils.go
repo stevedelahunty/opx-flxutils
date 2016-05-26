@@ -21,30 +21,58 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__| 
 //                                                                                                           
 
-package commonDefs
+package dbutils
 
-//L2 types
-const (
-	IfTypePort = iota
-	IfTypeLag
-	IfTypeVlan
-	IfTypeP2P
-	IfTypeBcast
-	IfTypeLoopback
-	IfTypeSecondary
-	IfTypeVirtual
-	IfTypeNull
+import (
+	"database/sql"
+	"database/sql/driver"
+	"fmt"
 )
 
-func GetIfTypeName(ifType int) string {
-	switch ifType {
-	case IfTypePort:
-		return "Port"
-	case IfTypeLag:
-		return "Lag"
-	case IfTypeVlan:
-		return "Vlan"
-	default:
-		return "Unknown"
+func ConvertBoolToInt(val bool) int {
+	if val {
+		return 1
 	}
+	return 0
+}
+func ConvertIntToBool(val int) bool {
+	if val == 1 {
+		return true
+	}
+	return false
+}
+func ConvertStringToBool(val string) bool {
+	if val == "true" {
+		return true
+	}
+	return false
+}
+func ConvertStrBoolIntToBool(val string) bool {
+	if val == "true" {
+		return true
+	} else if val == "True" {
+		return true
+	} else if val == "1" {
+		return true
+	}
+	return false
+}
+func ExecuteSQLStmt(dbCmd string, dbHdl *sql.DB) (driver.Result, error) {
+	var result driver.Result
+	txn, err := dbHdl.Begin()
+	if err != nil {
+		fmt.Println("### Failed to strart db transaction for command", dbCmd)
+		return result, err
+	}
+	result, err = dbHdl.Exec(dbCmd)
+	if err != nil {
+		fmt.Println("### Failed to execute command ", dbCmd, err)
+		return result, err
+	}
+	err = txn.Commit()
+	if err != nil {
+		fmt.Println("### Failed to Commit transaction for command", dbCmd, err)
+		return result, err
+	}
+	return result, err
 }
