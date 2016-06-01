@@ -78,6 +78,5 @@ func (clnt *IPCClientBase) CloseIPCHandles() error {
 	if err := clnt.TTransport.Close(); err != nil {
 		return err
 	}
-	clnt.IsConnected = false
 	return nil
 }
