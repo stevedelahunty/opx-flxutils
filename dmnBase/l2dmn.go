@@ -94,8 +94,8 @@ func (dmn *L2Daemon) InitSubscribers() (err error) {
 	return err 
 }
 
-func (dmn *L2Daemon) Init() bool {
-	if !dmn.FSDaemon.Init() {
+func (dmn *L2Daemon) Init(dmnName string, logPrefix string) bool {
+	if !dmn.FSDaemon.Init(dmnName, logPrefix) {
 		dmn.Logger.Err("Init failed")
 		return false
 	}
@@ -114,6 +114,6 @@ func (dmn *L2Daemon) ConnectToServers () error {
 	}
 	return nil
 }
-func (dmn *L2Daemon) NewServer(dmnName string, logPrefix string) {
-	dmn.FSDaemon.NewServer(dmnName, logPrefix)
+func (dmn *L2Daemon) NewServer() {
+	dmn.FSDaemon.NewServer()
 }
