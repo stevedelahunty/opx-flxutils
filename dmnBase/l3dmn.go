@@ -149,8 +149,8 @@ func (dmn *L3Daemon) InitSubscribers() (err error) {
 	err = dmn.CreateRIBdSubscriber()
 	return err 
 }
-func (dmn *L3Daemon) Init() bool {
-	if !dmn.FSDaemon.Init() {
+func (dmn *L3Daemon) Init(dmnName string, logPrefix string) bool {
+	if !dmn.FSDaemon.Init(dmnName, logPrefix) {
 		dmn.Logger.Err("Init failed")
 		return false
 	}
@@ -170,6 +170,6 @@ func (dmn *L3Daemon) ConnectToServers () error {
 	}
 	return nil
 }
-func (dmn *L3Daemon) NewServer(dmnName string, logPrefix string) {
-	dmn.FSDaemon.NewServer(dmnName, logPrefix)
+func (dmn *L3Daemon) NewServer() {
+	dmn.FSDaemon.NewServer()
 }
