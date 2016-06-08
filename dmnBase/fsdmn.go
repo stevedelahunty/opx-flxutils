@@ -220,7 +220,7 @@ func (dmn *FSDaemon) ListenForASICdUpdates(address string) error {
 	return nil
 }
 
-func (dmn *FSDaemon) InitSubscribers() (err error) {
+func (dmn *FSDaemon) InitSubscribers([]string) (err error) {
 	go dmn.CreateASICdSubscriber()
 	return err
 }
