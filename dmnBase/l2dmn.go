@@ -88,9 +88,9 @@ func (dmn *L2Daemon) ConnectToArpd() error {
 	}
 	return err
 }
-func (dmn *L2Daemon) InitSubscribers() (err error) {
+func (dmn *L2Daemon) InitSubscribers([]string) (err error) {
 	dmn.Logger.Info("L2 Dmn InitSubscribers")
-	dmn.FSDaemon.InitSubscribers()
+	dmn.FSDaemon.InitSubscribers(nil)
 	return err
 }
 

@@ -33,7 +33,6 @@ import (
 	"utils/ipcutils"
 	"ribd"
 	nanomsg "github.com/op/go-nanomsg"
-	"l3/rib/ribdCommonDefs"
 )
 
 type RIBdClient struct {
@@ -93,9 +92,9 @@ func (dmn *L3Daemon) ConnectToRIBd() error {
 	return err
 }
 
-func (dmn *L3Daemon) CreateRIBdSubscriber() error {
+func (dmn *L3Daemon) CreateRIBdSubscriber(sub string) error {
 	dmn.Logger.Info("Listen for RIBd updates")
-	err := dmn.ListenForRIBdUpdates(ribdCommonDefs.PUB_SOCKET_BFDD_ADDR)
+	err := dmn.ListenForRIBdUpdates(sub)
 	if err != nil {
 		dmn.Logger.Err("Error initialzing RIBd subscriber")
 		return err
@@ -139,10 +138,12 @@ func (dmn *L3Daemon) ListenForRIBdUpdates(address string) error {
 	return nil
 }
 
-func (dmn *L3Daemon) InitSubscribers() (err error) {
+func (dmn *L3Daemon) InitSubscribers(ribdsubscriberList []string) (err error) {
 	dmn.Logger.Info("L3 Dmn InitSubscribers")
-	dmn.FSDaemon.InitSubscribers()
-	go dmn.CreateRIBdSubscriber()
+	dmn.FSDaemon.InitSubscribers(nil)
+	for _,sub := range ribdsubscriberList {
+	    go dmn.CreateRIBdSubscriber(sub)
+	}
 	return err 
 }
 func (dmn *L3Daemon) Init(dmnName string, logPrefix string) bool {
@@ -168,4 +169,6 @@ func (dmn *L3Daemon) ConnectToServers () error {
 }
 func (dmn *L3Daemon) NewServer() {
 	dmn.FSDaemon.NewServer()
+	dmn.RibdSubSocketCh = make(chan []byte)
+	dmn.RibdSubSocketErrCh = make(chan error)
 }
