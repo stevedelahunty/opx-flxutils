@@ -65,7 +65,6 @@ func (dmn *L3Daemon) ConnectToRIBd() error {
 	}
 
 	for _, client := range clientsList {
-		dmn.Logger.Info(fmt.Sprintln("#### Client name is ", client.Name))
 		if client.Name == "ribd" {
 			dmn.Logger.Info(fmt.Sprintln("found  ribd at port ", client.Port))
 			dmn.Ribdclnt.Address = "localhost:" + strconv.Itoa(client.Port)
@@ -141,12 +140,9 @@ func (dmn *L3Daemon) ListenForRIBdUpdates(address string) error {
 }
 
 func (dmn *L3Daemon) InitSubscribers() (err error) {
-	err = dmn.FSDaemon.InitSubscribers()
-	if err != nil {
-		dmn.Logger.Err("error creating base subscribers")
-		return err
-	}
-	err = dmn.CreateRIBdSubscriber()
+	dmn.Logger.Info("L3 Dmn InitSubscribers")
+	dmn.FSDaemon.InitSubscribers()
+	go dmn.CreateRIBdSubscriber()
 	return err 
 }
 func (dmn *L3Daemon) Init(dmnName string, logPrefix string) bool {
