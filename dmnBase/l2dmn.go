@@ -60,7 +60,6 @@ func (dmn *L2Daemon) ConnectToArpd() error {
 	}
 
 	for _, client := range clientsList {
-		dmn.Logger.Info(fmt.Sprintln("#### Client name is ", client.Name))
 		if client.Name == "arpd" {
 			dmn.Logger.Info(fmt.Sprintln("found  arpd at port ", client.Port))
 			dmn.Arpdclnt.Address = "localhost:" + strconv.Itoa(client.Port)
@@ -89,13 +88,14 @@ func (dmn *L2Daemon) ConnectToArpd() error {
 	}
 	return err
 }
-func (dmn *L2Daemon) InitSubscribers() (err error) {
-	err = dmn.FSDaemon.InitSubscribers()
-	return err 
+func (dmn *L2Daemon) InitSubscribers([]string) (err error) {
+	dmn.Logger.Info("L2 Dmn InitSubscribers")
+	dmn.FSDaemon.InitSubscribers(nil)
+	return err
 }
 
-func (dmn *L2Daemon) Init() bool {
-	if !dmn.FSDaemon.Init() {
+func (dmn *L2Daemon) Init(dmnName string, logPrefix string) bool {
+	if !dmn.FSDaemon.Init(dmnName, logPrefix) {
 		dmn.Logger.Err("Init failed")
 		return false
 	}
@@ -114,6 +114,6 @@ func (dmn *L2Daemon) ConnectToServers () error {
 	}
 	return nil
 }
-func (dmn *L2Daemon) NewServer(dmnName string, logPrefix string) {
-	dmn.FSDaemon.NewServer(dmnName, logPrefix)
+func (dmn *L2Daemon) NewServer() {
+	dmn.FSDaemon.NewServer()
 }

@@ -29,6 +29,7 @@ import (
 	"utils/logging"
 	"utils/dbutils"
 	"io/ioutil"
+    "utils/keepalive"
 	nanomsg "github.com/op/go-nanomsg"
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"asicdServices"
@@ -57,16 +58,76 @@ type AsicdClient struct {
 	ClientHdl *asicdServices.ASICDServicesClient
 }
 
-type FSDaemon struct {
-	DmnName   string
-    Logger    *logging.Writer
-	LogPrefix string
-	DbHdl     *dbutils.DBUtil
+type FSBaseDmn struct {
+    DmnName   string
 	ParamsDir string
+	LogPrefix string
+    Logger    *logging.Writer
+	DbHdl     *dbutils.DBUtil
+}
+
+type FSDaemon struct {
+    *FSBaseDmn
 	Asicdclnt AsicdClient
 	AsicdSubSocket        *nanomsg.SubSocket
 	AsicdSubSocketCh      chan []byte
 	AsicdSubSocketErrCh   chan error
+}
+
+func (dmn *FSBaseDmn) InitLogger()(err error) {
+	fmt.Println(dmn.LogPrefix, " Starting ", dmn.DmnName, "logger")
+	dmnLogger, err := logging.NewLogger(dmn.DmnName, dmn.LogPrefix, true)
+	if err != nil {
+		fmt.Println("Failed to start the logger. Nothing will be logged...")
+		return err
+	}
+	dmn.Logger = dmnLogger
+	return err
+}
+
+func (dmn *FSBaseDmn) InitDBHdl() (err error) {
+	dbHdl := dbutils.NewDBUtil(dmn.Logger)
+	err = dbHdl.Connect()
+	if err != nil {
+		dmn.Logger.Err("Failed to dial out to Redis server")
+		return err
+	}
+	return err
+}
+
+func (dmn *FSBaseDmn) Init() bool {
+	err := dmn.InitLogger()
+	if err != nil {
+		return false
+	}
+	err = dmn.InitDBHdl()
+	if err != nil {
+		return false
+	}
+	dmn.Logger.Info(fmt.Sprintln("Initializing base daemon"))
+	return true
+}
+
+func (dmn *FSBaseDmn) GetParams() string {
+	paramsDir := flag.String("params", "./params", "Params directory")
+	flag.Parse()
+	dirName := *paramsDir
+	if dirName[len(dirName)-1] != '/' {
+		dirName = dirName + "/"
+	}
+	return dirName
+}
+
+func (dmn *FSBaseDmn) StartKeepAlive() {
+    go keepalive.InitKeepAlive(dmn.DmnName, dmn.ParamsDir)
+}
+
+func NewBaseDmn(dmnName, logPrefix string) *FSBaseDmn {
+    var dmn = new(FSBaseDmn)
+	dmn.DmnName = dmnName
+	dmn.LogPrefix = logPrefix
+	dmn.ParamsDir = dmn.GetParams()
+    return dmn
 }
 
 func (dmn *FSDaemon) ConnectToAsicd() error {
@@ -85,7 +146,6 @@ func (dmn *FSDaemon) ConnectToAsicd() error {
 	}
 
 	for _, client := range clientsList {
-		dmn.Logger.Info(fmt.Sprintln("#### Client name is ", client.Name))
 		if client.Name == "asicd" {
 			dmn.Logger.Info(fmt.Sprintln("found  asicd at port ", client.Port))
 			dmn.Asicdclnt.Address = "localhost:" + strconv.Itoa(client.Port)
@@ -113,6 +173,7 @@ func (dmn *FSDaemon) ConnectToAsicd() error {
 	}
 	return err
 }
+
 func (dmn *FSDaemon) CreateASICdSubscriber() error {
 	dmn.Logger.Info("Listen for ASICd updates")
 	err := dmn.ListenForASICdUpdates(asicdCommonDefs.PUB_SOCKET_ADDR)
@@ -121,14 +182,14 @@ func (dmn *FSDaemon) CreateASICdSubscriber() error {
 		return err
 	}
 	for {
-		dmn.Logger.Debug("Read on ASICd subscriber socket...")
+		dmn.Logger.Info("Read on ASICd subscriber socket...")
 		asicdrxBuf, err := dmn.AsicdSubSocket.Recv(0)
 		if err != nil {
 			dmn.Logger.Err(fmt.Sprintln("Recv on ASICd subscriber socket failed with error:", err))
 			dmn.AsicdSubSocketErrCh <- err
 			continue
 		}
-		dmn.Logger.Debug(fmt.Sprintln("ASIC subscriber recv returned:", asicdrxBuf))
+		dmn.Logger.Info(fmt.Sprintln("ASIC subscriber recv returned:", asicdrxBuf))
 		dmn.AsicdSubSocketCh <- asicdrxBuf
 	}
 	return nil
@@ -159,42 +220,9 @@ func (dmn *FSDaemon) ListenForASICdUpdates(address string) error {
 	return nil
 }
 
-func (dmn *FSDaemon) InitSubscribers() (err error) {
-	err = dmn.CreateASICdSubscriber()
-	return err 
-}
-func (dmn *FSDaemon) InitLogger()(err error) {
-	fmt.Println(dmn.LogPrefix, " Starting ", dmn.DmnName, "logger")
-	dmnLogger, err := logging.NewLogger(dmn.DmnName, dmn.LogPrefix, true)
-	if err != nil {
-		fmt.Println("Failed to start the logger. Nothing will be logged...")
-		return err
-	}
-	dmn.Logger = dmnLogger 
+func (dmn *FSDaemon) InitSubscribers([]string) (err error) {
+	go dmn.CreateASICdSubscriber()
 	return err
-}
-
-func (dmn *FSDaemon) InitDBHdl() (err error) {
-	dbHdl := dbutils.NewDBUtil(dmn.Logger)
-	err = dbHdl.Connect()
-	if err != nil {
-		dmn.Logger.Err("Failed to dial out to Redis server")
-		return err
-	}
-	return err
-}
-
-func (dmn *FSDaemon) Init() bool {
-	err := dmn.InitLogger()
-	if err != nil {
-		return false
-	}
-	err = dmn.InitDBHdl()
-	if err != nil {
-		return false
-	}
-	dmn.Logger.Info(fmt.Sprintln("Starting ", dmn.DmnName, " server..."))
-	return true
 }
 
 func (dmn *FSDaemon) ConnectToServers() error{
@@ -204,21 +232,13 @@ func (dmn *FSDaemon) ConnectToServers() error{
 	}
 	return nil
 }
-func (dmn *FSDaemon) GetParams() string {
 
-	paramsDir := flag.String("params", "./params", "Params directory")
-	flag.Parse()
-	fileName := *paramsDir
-	if fileName[len(fileName)-1] != '/' {
-		fileName = fileName + "/"
-	}
-	return fileName
+func (dmn *FSDaemon) Init(dmnName, logPrefix string) bool {
+    dmn.FSBaseDmn = NewBaseDmn(dmnName, logPrefix)
+    return dmn.FSBaseDmn.Init()
 }
 
-func (dmn *FSDaemon) NewServer(dmnName string, logPrefix string) {
-	dmn.DmnName = dmnName
-	dmn.LogPrefix = logPrefix
-	dmn.ParamsDir = dmn.GetParams()
+func (dmn *FSDaemon) NewServer() {
 	dmn.AsicdSubSocketCh = make(chan []byte)
 	dmn.AsicdSubSocketErrCh = make(chan error)
 }
