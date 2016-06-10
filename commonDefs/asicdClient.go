@@ -141,6 +141,8 @@ const (
 	NOTIFY_LOGICAL_INTF_UPDATE
 	NOTIFY_IPV4INTF_CREATE
 	NOTIFY_IPV4INTF_DELETE
+	NOTIFY_IPV6INTF_CREATE
+	NOTIFY_IPV6INTF_DELETE
 	NOTIFY_LAG_CREATE
 	NOTIFY_LAG_DELETE
 	NOTIFY_LAG_UPDATE
@@ -196,6 +198,12 @@ type IPv4NbrMacMoveNotifyMsg struct {
 	IpAddr  string
 	IfIndex int32
 	VlanId  int32
+}
+
+type IPv6IntfNotifyMsg struct {
+	MsgType uint8
+	IpAddr  string
+	IfIndex int32
 }
 
 type AsicdNotificationHdl interface {
