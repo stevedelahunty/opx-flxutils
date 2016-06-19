@@ -13,20 +13,20 @@
 //	 See the License for the specific language governing permissions and
 //	 limitations under the License.
 //
-// _______  __       __________   ___      _______.____    __    ____  __  .___________.  ______  __    __  
-// |   ____||  |     |   ____\  \ /  /     /       |\   \  /  \  /   / |  | |           | /      ||  |  |  | 
-// |  |__   |  |     |  |__   \  V  /     |   (----` \   \/    \/   /  |  | `---|  |----`|  ,----'|  |__|  | 
-// |   __|  |  |     |   __|   >   <       \   \      \            /   |  |     |  |     |  |     |   __   | 
-// |  |     |  `----.|  |____ /  .  \  .----)   |      \    /\    /    |  |     |  |     |  `----.|  |  |  | 
-// |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__| 
-//                                                                                                           
+// _______  __       __________   ___      _______.____    __    ____  __  .___________.  ______  __    __
+// |   ____||  |     |   ____\  \ /  /     /       |\   \  /  \  /   / |  | |           | /      ||  |  |  |
+// |  |__   |  |     |  |__   \  V  /     |   (----` \   \/    \/   /  |  | `---|  |----`|  ,----'|  |__|  |
+// |   __|  |  |     |   __|   >   <       \   \      \            /   |  |     |  |     |  |     |   __   |
+// |  |     |  `----.|  |____ /  .  \  .----)   |      \    /\    /    |  |     |  |     |  `----.|  |  |  |
+// |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
+//
 
 package ipcutils
 
 import (
 	//"fmt"
 	"git.apache.org/thrift.git/lib/go/thrift"
-	"models"
+	"models/objects"
 )
 
 type IPCClientBase struct {
@@ -41,13 +41,13 @@ func (clnt *IPCClientBase) IsConnectedToServer() bool {
 	return clnt.IsConnected
 }
 
-func (clnt *IPCClientBase) GetBulkObject(obj models.ConfigObj, currMarker int64, count int64) (err error,
+func (clnt *IPCClientBase) GetBulkObject(obj objects.ConfigObj, currMarker int64, count int64) (err error,
 	objCount int64,
 	nextMarker int64,
 	more bool,
-	objs []models.ConfigObj) {
+	objs []objects.ConfigObj) {
 	//logger.Println("### Get Bulk request called with", currMarker, count)
-	return nil, 0, 0, false, make([]models.ConfigObj, 0)
+	return nil, 0, 0, false, make([]objects.ConfigObj, 0)
 }
 
 //
@@ -71,4 +71,13 @@ func CreateIPCHandles(address string) (thrift.TTransport, *thrift.TBinaryProtoco
 		return nil, nil, err
 	}
 	return ttransport, protocolFactory, err
+}
+
+func (clnt *IPCClientBase) CloseIPCHandles() error {
+	clnt.PtrProtocolFactory = nil
+	if err := clnt.TTransport.Close(); err != nil {
+		return err
+	}
+	clnt.IsConnected = false
+	return nil
 }
