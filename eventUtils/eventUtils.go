@@ -24,8 +24,8 @@
 package eventUtils
 
 import (
-	"encoding/json"
-	"models/events"
+	//"encoding/json"
+	//"models/events"
 	"utils/dbutils"
 	"utils/logging"
 )
@@ -39,11 +39,11 @@ func publish(channel, value interface{}, dbHdl *dbutils.DBUtil) {
 	dbHdl.Do("PUBLISH", channel, value)
 }
 
-func SendPortStateEvent(mgr EventMgr, evt events.PortStateEvent) {
-	evtBuf, err := json.Marshal(evt)
-	if err != nil {
-		mgr.Logger.Err("Unable to marshal the event structure")
-		return
-	}
-	publish("asicdPort", evtBuf, mgr.DbHdl)
-}
+//func SendPortStateEvent(mgr EventMgr, evt events.PortStateEvent) {
+//	evtBuf, err := json.Marshal(evt)
+//	if err != nil {
+//		mgr.Logger.Err("Unable to marshal the event structure")
+//		return
+//	}
+//	publish("asicdPort", evtBuf, mgr.DbHdl)
+//}
