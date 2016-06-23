@@ -42,6 +42,18 @@ const (
 	DB_CONNECT_RETRY_LOG_COUNT = 100
 )
 
+type LoggerIntf interface {
+	Crit(string) error
+	Err(string) error
+	Warning(string) error
+	Alert(string) error
+	Emerg(string) error
+	Notice(string) error
+	Info(string) error
+	Println(string) error
+	Debug(string) error
+}
+
 func ConvertLevelStrToVal(str string) sysdCommonDefs.SRDebugLevel {
 	var val sysdCommonDefs.SRDebugLevel
 	switch str {
