@@ -81,16 +81,40 @@ func GetIP(ipAddr string) (ip net.IP, err error) {
 	ip = ip.To4()
 	return ip, nil
 }
+func IsZeros(p net.IP) bool {
+	for i := 0; i < len(p); i++ {
+		if p[i] != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func IsIPv4Mask(mask net.IP) bool {
+	if !(len(mask) > 4)  {
+		return true
+	} 
+	if IsZeros(mask[0:10]) &&
+		mask[10] == 0xff &&
+		mask[11] == 0xff {
+		fmt.Println("iv4Mask")
+		return true
+	}
+	return false
+}
 
 func GetPrefixLen(networkMask net.IP) (prefixLen int, err error) {
-	ipInt, err := GetIPInt(networkMask)
-	if err != nil {
-		return -1, err
+	mask := net.IPMask(networkMask)
+	if IsIPv4Mask(net.IP(mask)) {
+	    if !(len(mask) > 4)  {
+		    prefixLen, _ = mask.Size()
+	    } else {
+		    prefixLen, _ = mask[12:16].Size()
+		}
+	} else {
+		prefixLen, _ = mask.Size()
 	}
-	for prefixLen = 0; ipInt != 0; ipInt >>= 1 {
-		prefixLen += ipInt & 1
-	}
-	return prefixLen, nil
+	return prefixLen, err
 }
 
 func GetNetworkPrefix(destNetIp net.IP, networkMask net.IP) (destNet patriciaDB.Prefix, err error) {
