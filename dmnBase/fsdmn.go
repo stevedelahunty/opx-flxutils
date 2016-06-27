@@ -42,6 +42,10 @@ import (
 	"utils/logging"
 )
 
+const (
+	CLIENTS_FILE_NAME = "clients.json"
+)
+
 type ClientJson struct {
 	Name string `json:Name`
 	Port int    `json:Port`
@@ -122,6 +126,10 @@ func (dmn *FSBaseDmn) GetParams() string {
 
 func (dmn *FSBaseDmn) StartKeepAlive() {
 	go keepalive.InitKeepAlive(dmn.DmnName, dmn.ParamsDir)
+}
+
+func (dmn *FSDaemon) StartKeepAlive() {
+	dmn.FSBaseDmn.StartKeepAlive()
 }
 
 func NewBaseDmn(dmnName, logPrefix string) *FSBaseDmn {
@@ -304,3 +312,48 @@ func (dmn *FSDaemon) GetAllIPv4IntfState() ([]*commonDefs.IPv4IntfState, error) 
 func (dmn *FSDaemon) DetermineRouterId() string {
 	return "0.0.0.0"
 }
+
+/*
+func getClient(fileName string, process string) (*ClientJson, error) {
+	var allClients []ClientJson
+
+	data, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+	json.Unmarshal(data, &allClients)
+	for _, client := range allClients {
+		if client.Name == process {
+			return &client, nil
+		}
+	}
+	return nil, errors.New("couldn't find " + process + " port info")
+}
+
+// Client RPC Listener code..
+func (dmn *FSDaemon) StartListener(processor interface{}) error {
+	fileName := dmn.FSBaseDmn.ParamsDir + CLIENTS_FILE_NAME
+
+	clientJson, err := getClient(fileName, dmn.FSBaseDmn.DmnName)
+	if err != nil || clientJson == nil {
+		return err
+	}
+	dmn.FSBaseDmn.Logger.Info(fmt.Sprintln("Got Client Info for", clientJson.Name, " port", clientJson.Port))
+	// create processor, transport and protocol for server
+	//processor := lldpd.NewLLDPDServicesProcessor(handler)
+	transportFactory := thrift.NewTBufferedTransportFactory(8192)
+	protocolFactory := thrift.NewTBinaryProtocolFactoryDefault()
+	transport, err := thrift.NewTServerSocket("localhost:" + strconv.Itoa(clientJson.Port))
+	if err != nil {
+		dmn.FSBaseDmn.Logger.Info(fmt.Sprintln("StartServer: NewTServerSocket failed with error:", err))
+		return err
+	}
+	server := thrift.NewTSimpleServer4(processor, transport, transportFactory, protocolFactory)
+	err = server.Serve()
+	if err != nil {
+		dmn.FSBaseDmn.Logger.Err(fmt.Sprintln("Failed to start the listener, err:", err))
+		return err
+	}
+	return nil
+}
+*/

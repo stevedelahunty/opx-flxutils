@@ -33,7 +33,6 @@ type SwitchIntf interface {
 	CreateIPv4Neighbor(ipAddr string, macAddr string, vlanId int32, ifIdx int32) (rv int32, err error)
 	UpdateIPv4Neighbor(ipAddr string, macAddr string, vlanId int32, ifIdx int32) (rv int32, err error)
 	DeleteIPv4Neighbor(ipAddr string) (rv int32, err error)
-
 	//GetBulkIPv4IntfState(curMark, count int) (*commonDefs.IPv4IntfStateGetInfo, error)
 	GetAllIPv4IntfState() ([]*commonDefs.IPv4IntfState, error)
 	GetAllPort(curMark, count int) (*commonDefs.PortGetInfo, error)
@@ -42,6 +41,8 @@ type SwitchIntf interface {
 	GetAllVlanState(curMark, count int) (*commonDefs.VlanStateGetInfo, error)
 	DetermineRouterId() string
 	Log(string, string)
+	StartKeepAlive()
+	//StartListener(interface{}) error
 }
 
 const (
