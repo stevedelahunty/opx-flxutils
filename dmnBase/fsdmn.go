@@ -150,16 +150,20 @@ func (dmn *FSDaemon) ConnectToAsicd() error {
 		if client.Name == "asicd" {
 			dmn.Logger.Info(fmt.Sprintln("found  asicd at port ", client.Port))
 			dmn.Asicdclnt.Address = "localhost:" + strconv.Itoa(client.Port)
-			dmn.Asicdclnt.Transport, dmn.Asicdclnt.PtrProtocolFactory, err = ipcutils.CreateIPCHandles(dmn.Asicdclnt.Address)
+			dmn.Asicdclnt.Transport, dmn.Asicdclnt.PtrProtocolFactory, err =
+				ipcutils.CreateIPCHandles(dmn.Asicdclnt.Address)
 			if dmn.Asicdclnt.Transport != nil && dmn.Asicdclnt.PtrProtocolFactory != nil {
-				dmn.Asicdclnt.ClientHdl = asicdServices.NewASICDServicesClientFactory(dmn.Asicdclnt.Transport, dmn.Asicdclnt.PtrProtocolFactory)
+				dmn.Asicdclnt.ClientHdl =
+					asicdServices.NewASICDServicesClientFactory(dmn.Asicdclnt.Transport,
+						dmn.Asicdclnt.PtrProtocolFactory)
 				dmn.Asicdclnt.IsConnected = true
 			} else {
 				dmn.Logger.Info(fmt.Sprintf("Failed to connect to Asicd, retrying until connection is successful"))
 				count := 0
 				ticker := time.NewTicker(time.Duration(1000) * time.Millisecond)
 				for _ = range ticker.C {
-					dmn.Asicdclnt.Transport, dmn.Asicdclnt.PtrProtocolFactory, err = ipcutils.CreateIPCHandles(dmn.Asicdclnt.Address)
+					dmn.Asicdclnt.Transport, dmn.Asicdclnt.PtrProtocolFactory, err =
+						ipcutils.CreateIPCHandles(dmn.Asicdclnt.Address)
 					if err == nil {
 						ticker.Stop()
 						break
