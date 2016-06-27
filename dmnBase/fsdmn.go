@@ -35,6 +35,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"time"
+	"utils/commonDefs"
 	"utils/dbutils"
 	"utils/ipcutils"
 	"utils/keepalive"
@@ -105,7 +106,7 @@ func (dmn *FSBaseDmn) Init() bool {
 	if err != nil {
 		return false
 	}
-	dmn.Logger.Info(fmt.Sprintln("Initializing base daemon"))
+	dmn.Logger.Info(fmt.Sprintln("Initializing FlexSwitch base daemon"))
 	return true
 }
 
@@ -238,6 +239,7 @@ func (dmn *FSDaemon) ConnectToServers() error {
 	return nil
 }
 
+// @TODO: remove this when l2 & l3 daemons have moved to Plugin Model
 func (dmn *FSDaemon) Init(dmnName, logPrefix string) bool {
 	dmn.FSBaseDmn = NewBaseDmn(dmnName, logPrefix)
 	return dmn.FSBaseDmn.Init()
@@ -246,4 +248,59 @@ func (dmn *FSDaemon) Init(dmnName, logPrefix string) bool {
 func (dmn *FSDaemon) NewServer() {
 	dmn.AsicdSubSocketCh = make(chan []byte)
 	dmn.AsicdSubSocketErrCh = make(chan error)
+}
+
+func (dmn *FSDaemon) Log(logType, msg string) {
+	switch logType {
+	case "info":
+		dmn.Logger.Info(msg)
+	case "error":
+		dmn.Logger.Err(msg)
+	case "debug":
+		dmn.Logger.Debug(msg)
+	}
+}
+
+func (dmn *FSDaemon) CreateIPv4Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
+	//fmt.Println(ipAddr, macAddr, vlanId, ifIdx, dmn.Val)
+	return 0, nil
+}
+
+func (dmn *FSDaemon) UpdateIPv4Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
+	//fmt.Println(ipAddr, macAddr, vlanId, ifIdx, dmn.Val)
+	return 0, nil
+}
+
+func (dmn *FSDaemon) DeleteIPv4Neighbor(ipAddr string) (int32, error) {
+	//fmt.Println(ipAddr, dmn.Val)
+	return 0, nil
+}
+
+func (dmn *FSDaemon) GetAllPort(curMark, count int) (*commonDefs.PortGetInfo, error) {
+	//fmt.Println("Port Get info", curMark, count, dmn.Val)
+	return nil, nil
+}
+
+func (dmn *FSDaemon) GetAllPortState(curMark, count int) (*commonDefs.PortStateGetInfo, error) {
+	//fmt.Println("Port State Get info", curMark, count, dmn.Val)
+	return nil, nil
+}
+
+func (dmn *FSDaemon) GetAllVlanState(curMark, count int) (*commonDefs.VlanStateGetInfo, error) {
+	//fmt.Println("Vlan State Get info", curMark, count, dmn.Val)
+	return nil, nil
+}
+
+func (dmn *FSDaemon) GetAllVlan(curMark, count int) (*commonDefs.VlanGetInfo, error) {
+	//fmt.Println("Vlan Get info", curMark, count, dmn.Val)
+	return nil, nil
+}
+
+func (dmn *FSDaemon) GetAllIPv4IntfState() ([]*commonDefs.IPv4IntfState, error) {
+	//fmt.Println("Get all IPv4 Intf State called")
+	return nil, nil
+}
+
+func (dmn *FSDaemon) DetermineRouterId() string {
+	return "0.0.0.0"
 }
