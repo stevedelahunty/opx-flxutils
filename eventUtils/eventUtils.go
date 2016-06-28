@@ -29,21 +29,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"models/events"
-	"strings"
 	"time"
 	"utils/dbutils"
 	"utils/logging"
 )
-
-type DaemonDetail struct {
-	EventOwnerId   int
-	EventOwnerName string
-	EventEnable    bool
-}
-
-type EventJson struct {
-	Daemons []DaemonDetail
-}
 
 type Event struct {
 	EventId     int
@@ -67,6 +56,34 @@ type EventDetails struct {
 }
 
 var EventMap map[events.EventId]EventDetails
+
+type FaultDetail struct {
+	RaiseFault       bool
+	ClearingEventId  int
+	ClearingDaemonId int
+}
+
+type EventStruct struct {
+	EventId     int
+	EventName   string
+	Description string
+	SrcObjName  string
+	EventEnable bool
+	IsFault     bool
+	Fault       FaultDetail
+}
+
+type DaemonEvent struct {
+	DaemonId          int
+	DaemonName        string
+	DaemonEventEnable bool
+	EventList         []EventStruct
+}
+
+type EventJson struct {
+	DaemonEvents []DaemonEvent
+}
+
 var GlobalEventEnable bool = true
 var OwnerName string
 var OwnerId events.OwnerId
@@ -77,13 +94,13 @@ const (
 	EventDir string = "/etc/flexswitch/"
 )
 
-func initOwnerDetails(ownerName string) error {
+func initEventDetails(ownerName string) error {
 	var evtJson EventJson
 	eventsFile := EventDir + "events.json"
 	bytes, err := ioutil.ReadFile(eventsFile)
 	if err != nil {
 		Logger.Err(fmt.Sprintln("Error in reading ", eventsFile, " file."))
-		err := errors.New(fmt.Sprintln("Error in rading ", eventsFile, " file."))
+		err := errors.New(fmt.Sprintln("Error in reading ", eventsFile, " file."))
 		return err
 	}
 
@@ -94,56 +111,28 @@ func initOwnerDetails(ownerName string) error {
 		return err
 	}
 
-	Logger.Info(fmt.Sprintln("Owner Name :", ownerName, "evtJson:", evtJson))
-	for _, daemon := range evtJson.Daemons {
-		Logger.Info(fmt.Sprintln("OwnerName:", ownerName, "damemon.OwnerName:", daemon.EventOwnerName))
-		if daemon.EventOwnerName == ownerName {
+	Logger.Debug(fmt.Sprintln("Owner Name :", ownerName, "evtJson:", evtJson))
+	for _, daemon := range evtJson.DaemonEvents {
+		Logger.Debug(fmt.Sprintln("OwnerName:", ownerName, "daemon.DaemonName:", daemon.DaemonName))
+		if daemon.DaemonName == ownerName {
 			OwnerName = ownerName
-			OwnerId = events.OwnerId(daemon.EventOwnerId)
-			GlobalEventEnable = daemon.EventEnable
-		}
-	}
-
-	Logger.Info(fmt.Sprintln("OwnerName:", OwnerName, "OwnerId:", OwnerId, "Enable:", GlobalEventEnable))
-	return nil
-
-}
-
-func initEventList(ownerName string) error {
-	var evts Events
-
-	eventsFile := EventDir + strings.ToLower(ownerName) + "Events.json"
-	bytes, err := ioutil.ReadFile(eventsFile)
-	if err != nil {
-		Logger.Err(fmt.Sprintln("Error in reading ", eventsFile, " file."))
-		err := errors.New(fmt.Sprintln("Error in rading ", eventsFile, " file."))
-		return err
-	}
-
-	err = json.Unmarshal(bytes, &evts)
-	if err != nil {
-		Logger.Err(fmt.Sprintln("Errors in unmarshalling json file : ", eventsFile))
-		err := errors.New(fmt.Sprintln("Errors in unmarshalling json file: ", eventsFile))
-		return err
-	}
-
-	for _, evt := range evts.EventList {
-		evtEnt, exist := EventMap[events.EventId(evt.EventId)]
-		if exist {
-			Logger.Err(fmt.Sprintln("Duplicate event id :", evt.EventId))
+			OwnerId = events.OwnerId(daemon.DaemonId)
+			GlobalEventEnable = daemon.DaemonEventEnable
+			for _, evt := range daemon.EventList {
+				evtId := events.EventId(evt.EventId)
+				evtEnt, _ := EventMap[evtId]
+				evtEnt.EventName = evt.EventName
+				evtEnt.Description = evt.Description
+				evtEnt.SrcObjName = evt.SrcObjName
+				evtEnt.Oid = OwnerId
+				evtEnt.OwnerName = OwnerName
+				evtEnt.Enable = evt.EventEnable
+				EventMap[evtId] = evtEnt
+			}
 			continue
 		}
-
-		evtEnt.Enable = evt.Enable
-		evtEnt.Oid = OwnerId
-		evtEnt.OwnerName = OwnerName
-		evtEnt.Description = evt.Description
-		evtEnt.EventName = evt.EventName
-		evtEnt.SrcObjName = evt.SrcObjName
-		EventMap[events.EventId(evt.EventId)] = evtEnt
 	}
 
-	Logger.Info(fmt.Sprintln("Event Map:", EventMap))
 	return nil
 }
 
@@ -153,16 +142,12 @@ func InitEvents(ownerName string, dbHdl *dbutils.DBUtil, logger *logging.Writer)
 	Logger = logger
 	DbHdl = dbHdl
 	Logger.Info(fmt.Sprintln("Initializing Owner Name :", ownerName))
-	err := initOwnerDetails(ownerName)
+	err := initEventDetails(ownerName)
 	if err != nil {
 		return err
 	}
 
-	err = initEventList(ownerName)
-	if err != nil {
-		return err
-	}
-
+	Logger.Info(fmt.Sprintln("EventMap:", EventMap))
 	return nil
 }
 
