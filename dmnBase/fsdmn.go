@@ -41,6 +41,10 @@ import (
 	"utils/logging"
 )
 
+const (
+	CLIENTS_FILE_NAME = "clients.json"
+)
+
 type ClientJson struct {
 	Name string `json:Name`
 	Port int    `json:Port`
@@ -105,7 +109,7 @@ func (dmn *FSBaseDmn) Init() bool {
 	if err != nil {
 		return false
 	}
-	dmn.Logger.Info(fmt.Sprintln("Initializing base daemon"))
+	dmn.Logger.Info(fmt.Sprintln("Initializing FlexSwitch base daemon"))
 	return true
 }
 
@@ -121,6 +125,10 @@ func (dmn *FSBaseDmn) GetParams() string {
 
 func (dmn *FSBaseDmn) StartKeepAlive() {
 	go keepalive.InitKeepAlive(dmn.DmnName, dmn.ParamsDir)
+}
+
+func (dmn *FSDaemon) StartKeepAlive() {
+	dmn.FSBaseDmn.StartKeepAlive()
 }
 
 func NewBaseDmn(dmnName, logPrefix string) *FSBaseDmn {
@@ -238,6 +246,7 @@ func (dmn *FSDaemon) ConnectToServers() error {
 	return nil
 }
 
+// @TODO: remove this when l2 & l3 daemons have moved to Plugin Model
 func (dmn *FSDaemon) Init(dmnName, logPrefix string) bool {
 	dmn.FSBaseDmn = NewBaseDmn(dmnName, logPrefix)
 	return dmn.FSBaseDmn.Init()
