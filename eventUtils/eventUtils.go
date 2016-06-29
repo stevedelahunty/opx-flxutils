@@ -30,7 +30,6 @@ import (
 	"io/ioutil"
 	"models/events"
 	"time"
-	"utils/dbutils"
 	"utils/logging"
 )
 
@@ -84,11 +83,15 @@ type EventJson struct {
 	DaemonEvents []DaemonEvent
 }
 
+type PubIntf interface {
+	Publish(string, interface{}, interface{})
+}
+
 var GlobalEventEnable bool = true
 var OwnerName string
 var OwnerId events.OwnerId
-var Logger *logging.Writer
-var DbHdl *dbutils.DBUtil
+var Logger logging.LoggerIntf
+var PubHdl PubIntf
 
 const (
 	EventDir string = "/etc/flexswitch/"
@@ -136,11 +139,11 @@ func initEventDetails(ownerName string) error {
 	return nil
 }
 
-func InitEvents(ownerName string, dbHdl *dbutils.DBUtil, logger *logging.Writer) error {
+func InitEvents(ownerName string, pubHdl PubIntf, logger logging.LoggerIntf) error {
 
 	EventMap = make(map[events.EventId]EventDetails)
 	Logger = logger
-	DbHdl = dbHdl
+	PubHdl = pubHdl
 	Logger.Info(fmt.Sprintln("Initializing Owner Name :", ownerName))
 	err := initEventDetails(ownerName)
 	if err != nil {
@@ -175,6 +178,6 @@ func PublishEvents(eventId events.EventId, key interface{}) error {
 	evt.SrcObjKey = key
 	Logger.Info(fmt.Sprintln("Events to be published: ", evt))
 	msg, _ := json.Marshal(*evt)
-	DbHdl.Do("PUBLISH", evt.OwnerName, msg)
+	PubHdl.Publish("PUBLISH", evt.OwnerName, msg)
 	return nil
 }
