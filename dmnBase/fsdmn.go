@@ -35,6 +35,8 @@ import (
 	"io/ioutil"
 	"strconv"
 	"time"
+	"utils/asicdClient"
+	"utils/commonDefs"
 	"utils/dbutils"
 	"utils/ipcutils"
 	"utils/keepalive"
@@ -70,10 +72,12 @@ type FSBaseDmn struct {
 	DbHdl     *dbutils.DBUtil
 }
 
+// @TODO: need to remove this struct, it duplicate and introducing bugs
 type FSDaemon struct {
 	*FSBaseDmn
-	Asicdclnt           AsicdClient
-	AsicdSubSocket      *nanomsg.SubSocket
+	Asicdclnt      AsicdClient
+	AsicdSubSocket *nanomsg.SubSocket
+	// @ALERT ANY FUTURE DEVELOPER PLEASE DO NOT USE THIS, REFER NDP AND SEE HOW TO USE FSBaseDmn
 	AsicdSubSocketCh    chan []byte
 	AsicdSubSocketErrCh chan error
 }
@@ -255,4 +259,20 @@ func (dmn *FSDaemon) Init(dmnName, logPrefix string) bool {
 func (dmn *FSDaemon) NewServer() {
 	dmn.AsicdSubSocketCh = make(chan []byte)
 	dmn.AsicdSubSocketErrCh = make(chan error)
+}
+
+func (dmn *FSBaseDmn) GetLogger() *logging.Writer {
+	return dmn.Logger
+}
+
+func (dmn *FSBaseDmn) GetDbHdl() *dbutils.DBUtil {
+	return dmn.DbHdl
+}
+
+func (dmn *FSBaseDmn) InitSwitch(plugin, dmnName, logPrefix string, switchHdl commonDefs.AsicdClientStruct) asicdClient.AsicdClientIntf {
+	//dmn.FSBaseDmn = NewBaseDmn(dmnName, logPrefix)
+	//dmn.FSBaseDmn.Init()
+	// @TODO: need to change second argument
+	return asicdClient.NewAsicdClientInit(plugin, dmn.ParamsDir+"clients.json", switchHdl)
+
 }

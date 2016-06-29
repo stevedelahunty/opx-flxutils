@@ -220,3 +220,16 @@ type AsicdClientStruct struct {
 	NHdl   AsicdNotificationHdl
 	NMap   AsicdNotification
 }
+
+type IPv6IntfState struct {
+	IntfRef           string
+	IfIndex           int32
+	IpAddr            string
+	OperState         string
+	NumUpEvents       int32
+	LastUpEventTime   string
+	NumDownEvents     int32
+	LastDownEventTime string
+	L2IntfType        string
+	L2IntfId          int32
+}

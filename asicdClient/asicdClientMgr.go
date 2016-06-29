@@ -36,12 +36,14 @@ type AsicdClientIntf interface {
 
 	GetBulkIPv4IntfState(curMark, count int) (*commonDefs.IPv4IntfStateGetInfo, error)
 	GetAllIPv4IntfState() ([]*commonDefs.IPv4IntfState, error)
-
+	GetAllIPv6IntfState() ([]*commonDefs.IPv6IntfState, error)
+	GetAllPortState() ([]*commonDefs.PortState, error)
 	GetBulkPort(curMark, count int) (*commonDefs.PortGetInfo, error)
 	GetBulkPortState(curMark, count int) (*commonDefs.PortStateGetInfo, error)
 	GetBulkVlan(curMark, count int) (*commonDefs.VlanGetInfo, error)
 	GetBulkVlanState(curMark, count int) (*commonDefs.VlanStateGetInfo, error)
 	DetermineRouterId() string
+	GetPort(string) (*commonDefs.Port, error)
 }
 
 func NewAsicdClientInit(plugin string, paramsFile string, asicdHdl commonDefs.AsicdClientStruct) AsicdClientIntf {
