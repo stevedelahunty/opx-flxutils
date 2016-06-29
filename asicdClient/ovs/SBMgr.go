@@ -77,6 +77,21 @@ func (asicdClientMgr *OvsAsicdClientMgr) GetAllIPv4IntfState() ([]*commonDefs.IP
 	return nil, nil
 }
 
+func (asicdClientMgr *OvsAsicdClientMgr) GetAllIPv6IntfState() ([]*commonDefs.IPv6IntfState, error) {
+	fmt.Println("Get all IPv6 Intf State called")
+	return nil, nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) GetAllPortState() ([]*commonDefs.PortState, error) {
+	fmt.Println("Get all Port Intf State called")
+	return nil, nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) GetPort(name string) (*commonDefs.Port, error) {
+	fmt.Println("Get Port Intf State called")
+	return nil, nil
+}
+
 func (asicdClientMgr *OvsAsicdClientMgr) DetermineRouterId() string {
 	return "0.0.0.0"
 }
