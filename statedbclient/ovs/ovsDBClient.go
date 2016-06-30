@@ -21,20 +21,38 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package policyCommonDefs
+package ovs
 
-const (
-	PolicyConditionTypeDstIpPrefixMatch       = 0
-	PolicyConditionTypeProtocolMatch          = 1
-	PolicyConditionTypeNeighborMatch          = 2
-	PolicyActionTypeRouteDisposition          = 0
-	PolicyActionTypeRouteRedistribute         = 1
-	PoilcyActionTypeSetAdminDistance          = 2
-	PolicyActionTypeNetworkStatementAdvertise = 3
-	PolicyActionTypeAggregate                 = 4
-	PolicyActionTypeRIBIn                     = 5
-	PolicyActionTypeRIBOut                    = 6
-	PolicyPath_Import                         = 1
-	PolicyPath_Export                         = 2
-	PolicyPath_All                            = 3
+import (
+	"fmt"
+	"models/objects"
+	"utils/logging"
 )
+
+type OVSDBClient struct {
+}
+
+func NewOVSDBClient(logger *logging.Writer) *OVSDBClient {
+	return &OVSDBClient{}
+}
+
+func (fs *OVSDBClient) Init() error {
+	fmt.Sprintf("OVSDBClient - Init")
+	return nil
+}
+
+func (fs *OVSDBClient) AddObject(obj objects.ConfigObj) error {
+	return nil
+}
+
+func (fs *OVSDBClient) DeleteObject(obj objects.ConfigObj) error {
+	return nil
+}
+
+func (fs *OVSDBClient) UpdateObject(obj objects.ConfigObj) error {
+	return nil
+}
+
+func (fs *OVSDBClient) DeleteAllObjects(obj objects.ConfigObj) error {
+	return nil
+}

@@ -21,20 +21,43 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package policyCommonDefs
+package statedbclient
+
+import (
+	"fmt"
+	"models/objects"
+	"utils/logging"
+	"utils/statedbclient/flexswitch"
+	"utils/statedbclient/ovs"
+)
 
 const (
-	PolicyConditionTypeDstIpPrefixMatch       = 0
-	PolicyConditionTypeProtocolMatch          = 1
-	PolicyConditionTypeNeighborMatch          = 2
-	PolicyActionTypeRouteDisposition          = 0
-	PolicyActionTypeRouteRedistribute         = 1
-	PoilcyActionTypeSetAdminDistance          = 2
-	PolicyActionTypeNetworkStatementAdvertise = 3
-	PolicyActionTypeAggregate                 = 4
-	PolicyActionTypeRIBIn                     = 5
-	PolicyActionTypeRIBOut                    = 6
-	PolicyPath_Import                         = 1
-	PolicyPath_Export                         = 2
-	PolicyPath_All                            = 3
+	FlexSwitchPlugin = "Flexswitch"
+	OVSPlugin        = "OvsDB"
 )
+
+type StateDBClient interface {
+	Init() error
+	AddObject(obj objects.ConfigObj) error
+	DeleteObject(obj objects.ConfigObj) error
+	UpdateObject(obj objects.ConfigObj) error
+	DeleteAllObjects(obj objects.ConfigObj) error
+}
+
+func NewStateDBClient(plugin string, logger *logging.Writer) (StateDBClient, error) {
+	var client StateDBClient
+	if plugin == FlexSwitchPlugin {
+		client = flexswitch.NewFSDBClient(logger)
+	} else if plugin == OVSPlugin {
+		client = ovs.NewOVSDBClient(logger)
+	} else {
+		logger.Err(fmt.Sprintf("Unknown plugin %s for State DB client", plugin))
+	}
+
+	if err := client.Init(); err != nil {
+		logger.Err(fmt.Sprintf("Failed to instantiate State DB client for %s", plugin))
+		return client, err
+	}
+
+	return client, nil
+}
