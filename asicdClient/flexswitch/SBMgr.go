@@ -71,6 +71,18 @@ func (asicdClientMgr *FSAsicdClientMgr) DeleteIPv4Neighbor(ipAddr string) (int32
 	return asicdClientMgr.ClientHdl.DeleteIPv4Neighbor(ipAddr, "00:00:00:00:00:00", 0, 0)
 }
 
+func (asicdClientMgr *FSAsicdClientMgr) CreateIPv6Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
+	return asicdClientMgr.ClientHdl.CreateIPv6Neighbor(ipAddr, macAddr, vlanId, ifIdx)
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) UpdateIPv6Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
+	return asicdClientMgr.ClientHdl.UpdateIPv6Neighbor(ipAddr, macAddr, vlanId, ifIdx)
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) DeleteIPv6Neighbor(ipAddr string) (int32, error) {
+	return asicdClientMgr.ClientHdl.DeleteIPv6Neighbor(ipAddr, "00:00:00:00:00:00", 0, 0)
+}
+
 func (asicdClientMgr *FSAsicdClientMgr) convertAsicdIP4InfoToCommonInfo(info asicdServices.IPv4IntfState) *commonDefs.IPv4IntfState {
 	entry := &commonDefs.IPv4IntfState{}
 	entry.IntfRef = info.IntfRef

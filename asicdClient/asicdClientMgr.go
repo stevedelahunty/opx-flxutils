@@ -34,6 +34,10 @@ type AsicdClientIntf interface {
 	UpdateIPv4Neighbor(ipAddr string, macAddr string, vlanId int32, ifIdx int32) (rv int32, err error)
 	DeleteIPv4Neighbor(ipAddr string) (rv int32, err error)
 
+	CreateIPv6Neighbor(ipAddr string, macAddr string, vlanId int32, ifIdx int32) (rv int32, err error)
+	UpdateIPv6Neighbor(ipAddr string, macAddr string, vlanId int32, ifIdx int32) (rv int32, err error)
+	DeleteIPv6Neighbor(ipAddr string) (rv int32, err error)
+
 	GetBulkIPv4IntfState(curMark, count int) (*commonDefs.IPv4IntfStateGetInfo, error)
 	GetAllIPv4IntfState() ([]*commonDefs.IPv4IntfState, error)
 	GetAllIPv6IntfState() ([]*commonDefs.IPv6IntfState, error)
