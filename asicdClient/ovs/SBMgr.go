@@ -102,6 +102,16 @@ func (asicdClientMgr *OvsAsicdClientMgr) GetAllPortState() ([]*commonDefs.PortSt
 	return nil, nil
 }
 
+func (asicdClientMgr *OvsAsicdClientMgr) GetAllVlanState() ([]*commonDefs.VlanState, error) {
+	fmt.Println("Get all Vlan State called")
+	return nil, nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) GetAllVlan() ([]*commonDefs.Vlan, error) {
+	fmt.Println("Get all Vlan called")
+	return nil, nil
+}
+
 func (asicdClientMgr *OvsAsicdClientMgr) GetPort(name string) (*commonDefs.Port, error) {
 	fmt.Println("Get Port Intf State called")
 	return nil, nil
