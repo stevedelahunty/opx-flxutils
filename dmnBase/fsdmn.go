@@ -24,21 +24,20 @@
 package dmnBase
 
 import (
-	"fmt"
-	"flag"
-	"utils/logging"
-	"utils/dbutils"
-	"io/ioutil"
-    "utils/keepalive"
-	nanomsg "github.com/op/go-nanomsg"
-	"git.apache.org/thrift.git/lib/go/thrift"
-	"asicdServices"
 	"asicd/asicdCommonDefs"
-	"time"
+	"asicdServices"
 	"encoding/json"
-	"utils/ipcutils"
+	"flag"
+	"fmt"
+	"git.apache.org/thrift.git/lib/go/thrift"
+	nanomsg "github.com/op/go-nanomsg"
+	"io/ioutil"
 	"strconv"
-	"errors"
+	"time"
+	"utils/dbutils"
+	"utils/ipcutils"
+	"utils/keepalive"
+	"utils/logging"
 )
 
 type ClientJson struct {
@@ -59,22 +58,23 @@ type AsicdClient struct {
 }
 
 type FSBaseDmn struct {
-    DmnName   string
-	ParamsDir string
-	LogPrefix string
-    Logger    *logging.Writer
-	DbHdl     *dbutils.DBUtil
+	DmnName     string
+	ParamsDir   string
+	LogPrefix   string
+	Logger      *logging.Writer
+	DbHdl       *dbutils.DBUtil
+	ClientsList []ClientJson
 }
 
 type FSDaemon struct {
-    *FSBaseDmn
-	Asicdclnt AsicdClient
-	AsicdSubSocket        *nanomsg.SubSocket
-	AsicdSubSocketCh      chan []byte
-	AsicdSubSocketErrCh   chan error
+	*FSBaseDmn
+	Asicdclnt           AsicdClient
+	AsicdSubSocket      *nanomsg.SubSocket
+	AsicdSubSocketCh    chan []byte
+	AsicdSubSocketErrCh chan error
 }
 
-func (dmn *FSBaseDmn) InitLogger()(err error) {
+func (dmn *FSBaseDmn) InitLogger() (err error) {
 	fmt.Println(dmn.LogPrefix, " Starting ", dmn.DmnName, "logger")
 	dmnLogger, err := logging.NewLogger(dmn.DmnName, dmn.LogPrefix, true)
 	if err != nil {
@@ -92,6 +92,7 @@ func (dmn *FSBaseDmn) InitDBHdl() (err error) {
 		dmn.Logger.Err("Failed to dial out to Redis server")
 		return err
 	}
+	dmn.DbHdl = dbHdl
 	return err
 }
 
@@ -104,7 +105,18 @@ func (dmn *FSBaseDmn) Init() bool {
 	if err != nil {
 		return false
 	}
-	dmn.Logger.Info(fmt.Sprintln("Initializing base daemon"))
+	configFile := dmn.ParamsDir + "clients.json"
+	bytes, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		dmn.Logger.Info(fmt.Sprintln("Error in reading configuration file ", configFile))
+		return false
+	}
+	err = json.Unmarshal(bytes, &dmn.ClientsList)
+	if err != nil {
+		dmn.Logger.Info("Error in Unmarshalling Json")
+		return false
+	}
+	dmn.Logger.Info("Base daemon init completed")
 	return true
 }
 
@@ -119,33 +131,20 @@ func (dmn *FSBaseDmn) GetParams() string {
 }
 
 func (dmn *FSBaseDmn) StartKeepAlive() {
-    go keepalive.InitKeepAlive(dmn.DmnName, dmn.ParamsDir)
+	go keepalive.InitKeepAlive(dmn.DmnName, dmn.ParamsDir)
 }
 
 func NewBaseDmn(dmnName, logPrefix string) *FSBaseDmn {
-    var dmn = new(FSBaseDmn)
+	var dmn = new(FSBaseDmn)
 	dmn.DmnName = dmnName
 	dmn.LogPrefix = logPrefix
 	dmn.ParamsDir = dmn.GetParams()
-    return dmn
+	return dmn
 }
 
 func (dmn *FSDaemon) ConnectToAsicd() error {
-	configFile := dmn.ParamsDir + "clients.json"
-	var clientsList []ClientJson
-
-	bytes, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		dmn.Logger.Info(fmt.Sprintln("Error in reading configuration file ", configFile))
-		return errors.New(fmt.Sprintln("Error in reading config file: ", configFile))
-	}
-	err = json.Unmarshal(bytes, &clientsList)
-	if err != nil {
-		dmn.Logger.Info("Error in Unmarshalling Json")
-		return errors.New("Error unmarshaling")
-	}
-
-	for _, client := range clientsList {
+	var err error
+	for _, client := range dmn.FSBaseDmn.ClientsList {
 		if client.Name == "asicd" {
 			dmn.Logger.Info(fmt.Sprintln("found  asicd at port ", client.Port))
 			dmn.Asicdclnt.Address = "localhost:" + strconv.Itoa(client.Port)
@@ -225,7 +224,7 @@ func (dmn *FSDaemon) InitSubscribers([]string) (err error) {
 	return err
 }
 
-func (dmn *FSDaemon) ConnectToServers() error{
+func (dmn *FSDaemon) ConnectToServers() error {
 	err := dmn.ConnectToAsicd()
 	if err != nil {
 		return err
@@ -234,8 +233,8 @@ func (dmn *FSDaemon) ConnectToServers() error{
 }
 
 func (dmn *FSDaemon) Init(dmnName, logPrefix string) bool {
-    dmn.FSBaseDmn = NewBaseDmn(dmnName, logPrefix)
-    return dmn.FSBaseDmn.Init()
+	dmn.FSBaseDmn = NewBaseDmn(dmnName, logPrefix)
+	return dmn.FSBaseDmn.Init()
 }
 
 func (dmn *FSDaemon) NewServer() {
