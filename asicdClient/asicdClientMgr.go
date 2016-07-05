@@ -46,6 +46,8 @@ type AsicdClientIntf interface {
 	GetBulkPortState(curMark, count int) (*commonDefs.PortStateGetInfo, error)
 	GetBulkVlan(curMark, count int) (*commonDefs.VlanGetInfo, error)
 	GetBulkVlanState(curMark, count int) (*commonDefs.VlanStateGetInfo, error)
+	GetAllVlanState() ([]*commonDefs.VlanState, error)
+	GetAllVlan() ([]*commonDefs.Vlan, error)
 	DetermineRouterId() string
 	GetPort(string) (*commonDefs.Port, error)
 }

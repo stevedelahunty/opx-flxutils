@@ -246,6 +246,64 @@ func (asicdClientMgr *FSAsicdClientMgr) GetBulkVlanState(curMark, count int) (*c
 	return &vlanStateInfo, nil
 }
 
+func convertAsicdVlanStateInfoToCommonInfo(info asicdServices.VlanState) *commonDefs.VlanState {
+	entry := &commonDefs.VlanState{
+		VlanId:    info.VlanId,
+		VlanName:  info.VlanName,
+		OperState: info.OperState,
+		IfIndex:   info.IfIndex,
+	}
+	return entry
+}
+
+func convertAsicdVlanInfoToCommonInfo(info asicdInt.Vlan) *commonDefs.Vlan {
+	entry := &commonDefs.Vlan{}
+	entry.VlanId = info.VlanId
+	entry.IfIndexList = append(entry.IfIndexList, info.IfIndexList...)
+	entry.UntagIfIndexList = append(entry.UntagIfIndexList, info.UntagIfIndexList...)
+	return entry
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) GetAllVlanState() ([]*commonDefs.VlanState, error) {
+	curMark := 0
+	count := 100
+	vlanStateInfo := make([]*commonDefs.VlanState, 0)
+	for {
+		bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkVlanState(asicdServices.Int(curMark), asicdServices.Int(count))
+		if bulkInfo == nil {
+			return nil, err
+		}
+		curMark = int(bulkInfo.EndIdx)
+		for idx := 0; idx < int(bulkInfo.Count); idx++ {
+			vlanStateInfo = append(vlanStateInfo, convertAsicdVlanStateInfoToCommonInfo(*bulkInfo.VlanStateList[idx]))
+		}
+		if bulkInfo.More == false {
+			break
+		}
+	}
+	return vlanStateInfo, nil
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) GetAllVlan() ([]*commonDefs.Vlan, error) {
+	curMark := 0
+	count := 100
+	vlanInfo := make([]*commonDefs.Vlan, 0)
+	for {
+		bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkVlan(asicdInt.Int(curMark), asicdInt.Int(count))
+		if bulkInfo == nil {
+			return nil, err
+		}
+		curMark = int(bulkInfo.EndIdx)
+		for idx := 0; idx < int(bulkInfo.Count); idx++ {
+			vlanInfo = append(vlanInfo, convertAsicdVlanInfoToCommonInfo(*bulkInfo.VlanList[idx]))
+		}
+		if bulkInfo.More == false {
+			break
+		}
+	}
+	return vlanInfo, nil
+}
+
 func (asicdClientMgr *FSAsicdClientMgr) GetBulkVlan(curMark, count int) (*commonDefs.VlanGetInfo, error) {
 	bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkVlan(asicdInt.Int(curMark), asicdInt.Int(count))
 	if bulkInfo == nil {
