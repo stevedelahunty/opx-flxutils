@@ -61,8 +61,8 @@ type DBIntf interface {
 	GetObjectFromDb(objects.ConfigObj, string) (objects.ConfigObj, error)
 	GetKey(objects.ConfigObj) string
 	GetAllObjFromDb(objects.ConfigObj) ([]objects.ConfigObj, error)
-	CompareObjectsAndDiff(objects.ConfigObj, map[string]bool, objects.ConfigObj)
-	UpdateObjectInDb(objects.ConfigObj, objects.ConfigObj, []bool)
+	CompareObjectsAndDiff(objects.ConfigObj, map[string]bool, objects.ConfigObj) ([]bool, error)
+	UpdateObjectInDb(objects.ConfigObj, objects.ConfigObj, []bool) error
 	MergeDbAndConfigObj(objects.ConfigObj, objects.ConfigObj, []bool) (objects.ConfigObj, error)
 	GetBulkObjFromDb(obj objects.ConfigObj, startIndex, count int64) (error, int64, int64, bool, []objects.ConfigObj)
 	Publish(string, interface{}, interface{})
