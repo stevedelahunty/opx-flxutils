@@ -24,6 +24,7 @@
 package dbutils
 
 import (
+	"errors"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"models/objects"
@@ -66,6 +67,9 @@ type DBIntf interface {
 	MergeDbAndConfigObj(objects.ConfigObj, objects.ConfigObj, []bool) (objects.ConfigObj, error)
 	GetBulkObjFromDb(obj objects.ConfigObj, startIndex, count int64) (error, int64, int64, bool, []objects.ConfigObj)
 	Publish(string, interface{}, interface{})
+	StoreValInDb(interface{}, interface{}, interface{}) error
+	GetAllKeys(interface{}) (interface{}, error)
+	GetValFromDB(key interface{}, field interface{}) (val interface{}, err error)
 }
 
 func NewDBUtil(logger *logging.Writer) *DBUtil {
@@ -171,4 +175,33 @@ func (db *DBUtil) Publish(op string, channel interface{}, msg interface{}) {
 	if db.Conn != nil {
 		db.Do(op, channel, msg)
 	}
+}
+
+func (db *DBUtil) StoreValInDb(key interface{}, val interface{}, field interface{}) error {
+	if db.Conn != nil {
+		_, err := db.Do("HMSET", key, field, val)
+		if err != nil {
+			return err
+		}
+	}
+	err := errors.New("DB Connection handler is nil")
+	return err
+}
+
+func (db *DBUtil) GetAllKeys(pattern interface{}) (val interface{}, err error) {
+	if db.Conn != nil {
+		val, err = db.Do("KEYS", pattern)
+		return val, err
+	}
+	err = errors.New("DB Connection handler is nil")
+	return val, err
+}
+
+func (db *DBUtil) GetValFromDB(key interface{}, field interface{}) (val interface{}, err error) {
+	if db.Conn != nil {
+		val, err := db.Do("HGET", key, field)
+		return val, err
+	}
+	err = errors.New("DB Connection handler is nil")
+	return val, err
 }
