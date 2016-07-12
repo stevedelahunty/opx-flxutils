@@ -20,91 +20,94 @@
 // |  |     |  `----.|  |____ /  .  \  .----)   |      \    /\    /    |  |     |  |     |  `----.|  |  |  |
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
+// This class module should represet a mocked interface class for users to use.  It should be used as a 'BASE'
+// class for testing purposes only.  It will help in saving time in having to create each of the methods
+// when testing.  The testing method should overwrite any methods it sees fit for the test.
 
-package ovs
+package mockasicdclientplugin
 
 import (
 	"fmt"
 	"utils/commonDefs"
 )
 
-type OvsAsicdClientMgr struct {
+type MockAsicdClientMgr struct {
 	Val int
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) CreateIPv4Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
+func (asicdClientMgr *MockAsicdClientMgr) CreateIPv4Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
 	fmt.Println(ipAddr, macAddr, vlanId, ifIdx, asicdClientMgr.Val)
 	return 0, nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) UpdateIPv4Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
+func (asicdClientMgr *MockAsicdClientMgr) UpdateIPv4Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
 	fmt.Println(ipAddr, macAddr, vlanId, ifIdx, asicdClientMgr.Val)
 	return 0, nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) DeleteIPv4Neighbor(ipAddr string) (int32, error) {
+func (asicdClientMgr *MockAsicdClientMgr) DeleteIPv4Neighbor(ipAddr string) (int32, error) {
 	fmt.Println(ipAddr, asicdClientMgr.Val)
 	return 0, nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) GetBulkIPv4IntfState(curMark, count int) (*commonDefs.IPv4IntfStateGetInfo, error) {
+func (asicdClientMgr *MockAsicdClientMgr) GetBulkIPv4IntfState(curMark, count int) (*commonDefs.IPv4IntfStateGetInfo, error) {
 	fmt.Println("IPv4 Intf State", curMark, count, asicdClientMgr.Val)
 	return nil, nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) GetBulkPort(curMark, count int) (*commonDefs.PortGetInfo, error) {
+func (asicdClientMgr *MockAsicdClientMgr) GetBulkPort(curMark, count int) (*commonDefs.PortGetInfo, error) {
 	fmt.Println("Port Get info", curMark, count, asicdClientMgr.Val)
 	return nil, nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) GetBulkPortState(curMark, count int) (*commonDefs.PortStateGetInfo, error) {
+func (asicdClientMgr *MockAsicdClientMgr) GetBulkPortState(curMark, count int) (*commonDefs.PortStateGetInfo, error) {
 	fmt.Println("Port State Get info", curMark, count, asicdClientMgr.Val)
 	return nil, nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) GetBulkVlanState(curMark, count int) (*commonDefs.VlanStateGetInfo, error) {
+func (asicdClientMgr *MockAsicdClientMgr) GetBulkVlanState(curMark, count int) (*commonDefs.VlanStateGetInfo, error) {
 	fmt.Println("Vlan State Get info", curMark, count, asicdClientMgr.Val)
 	return nil, nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) GetBulkVlan(curMark, count int) (*commonDefs.VlanGetInfo, error) {
+func (asicdClientMgr *MockAsicdClientMgr) GetBulkVlan(curMark, count int) (*commonDefs.VlanGetInfo, error) {
 	fmt.Println("Vlan Get info", curMark, count, asicdClientMgr.Val)
 	return nil, nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) GetAllIPv4IntfState() ([]*commonDefs.IPv4IntfState, error) {
+func (asicdClientMgr *MockAsicdClientMgr) GetAllIPv4IntfState() ([]*commonDefs.IPv4IntfState, error) {
 	fmt.Println("Get all IPv4 Intf State called")
 	return nil, nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) DetermineRouterId() string {
+func (asicdClientMgr *MockAsicdClientMgr) DetermineRouterId() string {
 	return "0.0.0.0"
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) GetPortLinkStatus(pId int32) bool {
+func (asicdClientMgr *MockAsicdClientMgr) GetPortLinkStatus(pId int32) bool {
 	return true
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) CreateStgBridge(vlanList []uint16) int32 {
+func (asicdClientMgr *MockAsicdClientMgr) CreateStgBridge(vlanList []uint16) int32 {
 	return -1
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) DeleteStgBridge(stgid int32, vlanList []uint16) error {
+func (asicdClientMgr *MockAsicdClientMgr) DeleteStgBridge(stgid int32, vlanList []uint16) error {
 	return nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) SetStgPortState(stgid int32, ifindex int32, state int) error {
+func (asicdClientMgr *MockAsicdClientMgr) SetStgPortState(stgid int32, ifindex int32, state int) error {
 	return nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) FlushStgFdb(stgid int32) error {
+func (asicdClientMgr *MockAsicdClientMgr) FlushStgFdb(stgid int32) error {
 	return nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) BPDUGuardDetected(ifindex int32, enable bool) error {
+func (asicdClientMgr *MockAsicdClientMgr) BPDUGuardDetected(ifindex int32, enable bool) error {
 	return nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) GetSwitchMAC(paramsPath string) string {
+func (asicdClientMgr *MockAsicdClientMgr) GetSwitchMAC(paramsPath string) string {
 	return "00:00:00:00:00:00"
 }
