@@ -50,6 +50,21 @@ type AsicdClientIntf interface {
 	GetAllVlan() ([]*commonDefs.Vlan, error)
 	DetermineRouterId() string
 	GetPort(string) (*commonDefs.Port, error)
+
+	// get the switch MAC given in string format
+	GetSwitchMAC(paramsPath string) string
+
+	// Get the current link status of a link
+	GetPortLinkStatus(pId int32) bool
+	// create stp bridge, map vlans to stg, stgid returned by caller
+	CreateStgBridge(vlanList []uint16) int32
+	DeleteStgBridge(stgid int32, vlanList []uint16) error
+	// set forwarding/learning/blocked state
+	SetStgPortState(stgid int32, ifindex int32, state int) error
+	// Flush the macs associated with this stg
+	FlushStgFdb(stgid int32) error
+	// BPDU Guard detection
+	BPDUGuardDetected(ifindex int32, enable bool) error
 }
 
 func NewAsicdClientInit(plugin string, paramsFile string, asicdHdl commonDefs.AsicdClientStruct) AsicdClientIntf {
