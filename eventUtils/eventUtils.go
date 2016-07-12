@@ -27,38 +27,35 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"models/events"
-	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-	"utils/commonDefs"
+	"utils/dbutils"
 	"utils/logging"
 	"utils/typeConv"
 )
 
-type Event struct {
-	EventId     int
-	EventName   string
-	Description string
-	SrcObjName  string
-	Enable      bool
-}
-
-type Events struct {
-	EventList []Event
-}
-
 type EventDetails struct {
 	Enable      bool
-	Oid         events.OwnerId
+	OwnerId     events.OwnerId
 	OwnerName   string
 	EventName   string
 	Description string
 	SrcObjName  string
+}
+
+type EventBase struct {
+	EventDetails
+	EvtId     events.EventId
+	TimeStamp time.Time
+}
+
+type Event struct {
+	EventBase
+	SrcObjKey interface{}
 }
 
 var EventMap map[events.EventId]EventDetails
@@ -92,9 +89,6 @@ type EventJson struct {
 
 type PubIntf interface {
 	Publish(string, interface{}, interface{})
-	StoreValInDb(interface{}, interface{}, interface{}) error
-	GetAllKeys(interface{}) (interface{}, error)
-	GetValFromDB(key interface{}, field interface{}) (interface{}, error)
 }
 
 type KeyObj struct {
@@ -105,10 +99,9 @@ type KeyObj struct {
 type KeyObjSlice []KeyObj
 
 var GlobalEventEnable bool = true
-var OwnerName string
-var OwnerId events.OwnerId
 var Logger logging.LoggerIntf
 var PubHdl PubIntf
+var DbHdl dbutils.DBIntf
 
 const (
 	EventDir string = "/etc/flexswitch/"
@@ -135,8 +128,6 @@ func initEventDetails(ownerName string) error {
 	for _, daemon := range evtJson.DaemonEvents {
 		Logger.Debug(fmt.Sprintln("OwnerName:", ownerName, "daemon.DaemonName:", daemon.DaemonName))
 		if daemon.DaemonName == ownerName {
-			OwnerName = ownerName
-			OwnerId = events.OwnerId(daemon.DaemonId)
 			GlobalEventEnable = daemon.DaemonEventEnable
 			for _, evt := range daemon.EventList {
 				evtId := events.EventId(evt.EventId)
@@ -144,8 +135,8 @@ func initEventDetails(ownerName string) error {
 				evtEnt.EventName = evt.EventName
 				evtEnt.Description = evt.Description
 				evtEnt.SrcObjName = evt.SrcObjName
-				evtEnt.Oid = OwnerId
-				evtEnt.OwnerName = OwnerName
+				evtEnt.OwnerId = events.OwnerId(daemon.DaemonId)
+				evtEnt.OwnerName = ownerName
 				evtEnt.Enable = evt.EventEnable
 				EventMap[evtId] = evtEnt
 			}
@@ -156,11 +147,12 @@ func initEventDetails(ownerName string) error {
 	return nil
 }
 
-func InitEvents(ownerName string, pubHdl PubIntf, logger logging.LoggerIntf) error {
+func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger logging.LoggerIntf) error {
 
 	EventMap = make(map[events.EventId]EventDetails)
 	Logger = logger
 	PubHdl = pubHdl
+	DbHdl = dbHdl
 	Logger.Info(fmt.Sprintln("Initializing Owner Name :", ownerName))
 	err := initEventDetails(ownerName)
 	if err != nil {
@@ -172,10 +164,11 @@ func InitEvents(ownerName string, pubHdl PubIntf, logger logging.LoggerIntf) err
 }
 
 func PublishEvents(eventId events.EventId, key interface{}) error {
+	var err error
 	if GlobalEventEnable == false {
 		return nil
 	}
-	evt := new(events.Event)
+	evt := new(Event)
 	evtEnt, exist := EventMap[eventId]
 	if !exist {
 		err := errors.New(fmt.Sprintln("Unable to find the event corresponding to given eventId: ", eventId))
@@ -185,7 +178,8 @@ func PublishEvents(eventId events.EventId, key interface{}) error {
 	if evtEnt.Enable == false {
 		return nil
 	}
-	evt.OwnerId = evtEnt.Oid
+	//Store raw event in DB
+	evt.OwnerId = evtEnt.OwnerId
 	evt.OwnerName = evtEnt.OwnerName
 	evt.EvtId = eventId
 	evt.EventName = evtEnt.EventName
@@ -196,90 +190,95 @@ func PublishEvents(eventId events.EventId, key interface{}) error {
 	Logger.Debug(fmt.Sprintln("Events to be published: ", evt))
 	keyStr := fmt.Sprintf("Events#%s#%s#%s#%s#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, evt.SrcObjKey, evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
 	Logger.Debug(fmt.Sprintln("Key Str :", keyStr))
-	err := PubHdl.StoreValInDb(keyStr, evt.Description, "Desc")
+	err = DbHdl.StoreValInDb(keyStr, evt.Description, "Desc")
 	if err != nil {
 		Logger.Err(fmt.Sprintln("Storing Events in database failed, err:", err))
 	}
+	//Store event stats in DB
+	var statObj events.EventStats
+	statObj.EventId = eventId
+	dbObj, err := DbHdl.GetEventObjectFromDb(statObj, statObj.GetKey())
+	if err != nil {
+		//Event stat does not exist in db. Create one.
+		statObj.EventName = evtEnt.EventName
+		statObj.NumEvents = uint32(1)
+		statObj.LastEventTime = evt.TimeStamp.String()
+	} else {
+		//Update DB entry
+		statObj = dbObj.(events.EventStats)
+		statObj.NumEvents += 1
+		statObj.LastEventTime = evt.TimeStamp.String()
+	}
+	err = DbHdl.StoreEventObjectInDb(statObj)
+	if err != nil {
+		Logger.Err(fmt.Sprintln("Storing Event Stats in database failed, err:", err))
+	}
+	//Publish event
 	msg, _ := json.Marshal(*evt)
 	PubHdl.Publish("PUBLISH", evt.OwnerName, msg)
 	return nil
 }
 
-func GetEventQueryParams(r *http.Request) (evtObj events.EventObject, err error) {
-	var body []byte
-	if r != nil {
-		body, err = ioutil.ReadAll(io.LimitReader(r.Body, commonDefs.MAX_JSON_LENGTH))
+func GetEvents(evtObj events.EventObj, dbHdl dbutils.DBIntf, logger logging.LoggerIntf) (evt []events.EventObj, err error) {
+	switch evtObj.(type) {
+	case events.Event:
+		qPattern := constructQueryPattern(evtObj.(events.Event))
+		fmt.Println("Pattern Query:", qPattern)
+		keys, err := typeConv.ConvertToStrings(dbHdl.GetAllKeys(qPattern))
 		if err != nil {
-			return evtObj, err
+			logger.Err(fmt.Sprintln("Error querying for keys:", err))
 		}
-		if err = r.Body.Close(); err != nil {
-			return evtObj, err
+		keySlice := constructKeySlice(keys)
+		if keySlice == nil {
+			logger.Err("Key slice is nil")
 		}
-	}
-
-	if len(body) == 0 {
-		return evtObj, err
-	}
-	err = json.Unmarshal(body, &evtObj)
-	if err != nil {
-		fmt.Println("UnmarshalObject returned error", err, "for ojbect info", evtObj)
-	}
-	return evtObj, err
-}
-
-func GetEvents(evtQueryObj events.EventObject, pubHdl PubIntf, logger logging.LoggerIntf) (evt []events.EventObject, err error) {
-	qPattern := constructQueryPattern(evtQueryObj)
-	fmt.Println("Pattern Query:", qPattern)
-	keys, err := typeConv.ConvertToStrings(pubHdl.GetAllKeys(qPattern))
-	if err != nil {
-		logger.Err(fmt.Sprintln("Error querying for keys:", err))
-	}
-	keySlice := constructKeySlice(keys)
-	if keySlice == nil {
-		logger.Err("Key slice is nil")
-	}
-	sort.Sort(KeyObjSlice(keySlice))
-	for _, keyObj := range keySlice {
-		desc, err := typeConv.ConvertToString(pubHdl.GetValFromDB(keyObj.Key, "Desc"))
-		if err != nil {
-			logger.Err(fmt.Sprintln("Error getting the value from DB", err))
-			continue
+		sort.Sort(KeyObjSlice(keySlice))
+		for _, keyObj := range keySlice {
+			desc, err := typeConv.ConvertToString(dbHdl.GetValFromDB(keyObj.Key, "Desc"))
+			if err != nil {
+				logger.Err(fmt.Sprintln("Error getting the value from DB", err))
+				continue
+			}
+			str := strings.Split(keyObj.Key, "#")
+			obj := events.Event{
+				OwnerName:   str[1],
+				EventName:   str[2],
+				TimeStamp:   str[5],
+				Description: desc,
+				SrcObjName:  str[3],
+				SrcObjKey:   str[4],
+			}
+			evt = append(evt, obj)
 		}
-		str := strings.Split(keyObj.Key, "#")
-		obj := events.EventObject{
-			OwnerName:   str[1],
-			EventName:   str[2],
-			TimeStamp:   str[5],
-			Description: desc,
-			SrcObjName:  str[3],
-			SrcObjKey:   str[4],
-		}
-		evt = append(evt, obj)
+	case events.EventStats:
+		var statObj events.EventStats
+		evt, _ = dbHdl.GetAllEventObjFromDb(statObj)
+	default:
 	}
 	return evt, err
 }
 
-func constructQueryPattern(evtQueryObj events.EventObject) string {
+func constructQueryPattern(evtObj events.Event) string {
 	pattern := "Events#"
-	if evtQueryObj.OwnerName == "" {
+	if evtObj.OwnerName == "" {
 		pattern = pattern + "*#"
 	} else {
-		pattern = pattern + strings.ToUpper(evtQueryObj.OwnerName) + "#"
+		pattern = pattern + strings.ToUpper(evtObj.OwnerName) + "#"
 	}
-	if evtQueryObj.EventName == "" {
+	if evtObj.EventName == "" {
 		pattern = pattern + "*#"
 	} else {
-		pattern = pattern + evtQueryObj.EventName + "#"
+		pattern = pattern + evtObj.EventName + "#"
 	}
-	if evtQueryObj.SrcObjName == "" {
+	if evtObj.SrcObjName == "" {
 		pattern = pattern + "*#"
 	} else {
-		pattern = pattern + evtQueryObj.SrcObjName + "#"
+		pattern = pattern + evtObj.SrcObjName + "#"
 	}
-	if evtQueryObj.SrcObjKey == "" {
+	if evtObj.SrcObjKey == "" {
 		pattern = pattern + "*#"
 	} else {
-		pattern = pattern + evtQueryObj.SrcObjKey + "#"
+		pattern = pattern + evtObj.SrcObjKey + "#"
 	}
 	pattern = pattern + "*"
 	return pattern
