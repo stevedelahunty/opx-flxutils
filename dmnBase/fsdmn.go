@@ -268,8 +268,6 @@ func (dmn *FSBaseDmn) GetDbHdl() *dbutils.DBUtil {
 }
 
 func (dmn *FSBaseDmn) InitSwitch(plugin, dmnName, logPrefix string, switchHdl commonDefs.AsicdClientStruct) asicdClient.AsicdClientIntf {
-	//dmn.FSBaseDmn = NewBaseDmn(dmnName, logPrefix)
-	//dmn.FSBaseDmn.Init()
 	// @TODO: need to change second argument
 	return asicdClient.NewAsicdClientInit(plugin, dmn.ParamsDir+"clients.json", switchHdl)
 
