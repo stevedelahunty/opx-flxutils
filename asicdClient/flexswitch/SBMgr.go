@@ -25,6 +25,7 @@ package flexswitch
 
 import (
 	"asicd/asicdCommonDefs"
+	"asicd/pluginManager/pluginCommon"
 	"asicdInt"
 	"asicdServices"
 	"encoding/json"
@@ -44,6 +45,14 @@ type AsicdClient struct {
 	ClientHdl *asicdServices.ASICDServicesClient
 }
 
+type CfgFileJson struct {
+	SwitchMac        string            `json:"SwitchMac"`
+	PluginList       []string          `json:"PluginList"`
+	IfNameMap        map[string]string `json:"IfNameMap"`
+	IfNamePrefix     map[string]string `json:"IfNamePrefix"`
+	SysRsvdVlanRange string            `json:"SysRsvdVlanRange"`
+}
+
 type ClientJson struct {
 	Name string `json:Name`
 	Port int    `json:Port`
@@ -58,6 +67,8 @@ type ClientBase struct {
 type FSAsicdClientMgr struct {
 	ClientHdl *asicdServices.ASICDServicesClient
 }
+
+var Logger *logging.Writer
 
 func (asicdClientMgr *FSAsicdClientMgr) CreateIPv4Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
 	return asicdClientMgr.ClientHdl.CreateIPv4Neighbor(ipAddr, macAddr, vlanId, ifIdx)
@@ -216,6 +227,7 @@ func (asicdClientMgr *FSAsicdClientMgr) GetBulkVlan(curMark, count int) (*common
 
 func GetAsicdThriftClientHdl(paramsFile string, logger *logging.Writer) *asicdServices.ASICDServicesClient {
 	var asicdClient AsicdClient
+	Logger = logger
 	logger.Debug(fmt.Sprintln("Inside connectToServers...paramsFile", paramsFile))
 	var clientsList []ClientJson
 
@@ -333,4 +345,164 @@ func (asicdClientMgr *FSAsicdClientMgr) DetermineRouterId() string {
 		}
 	}
 	return rtrId
+}
+
+// convert the lacp port names name to asic format string list
+func asicDPortBmpFormatGet(distPortList []string) string {
+	s := ""
+	dLength := len(distPortList)
+
+	for i := 0; i < dLength; i++ {
+		num := strings.Split(distPortList[i], "-")[1]
+		if i == dLength-1 {
+			s += num
+		} else {
+			s += num + ","
+		}
+	}
+	return s
+
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) GetPortLinkStatus(pId int32) bool {
+
+	if asicdClientMgr.ClientHdl != nil {
+		//asicdmutex.Lock()
+		bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkPortState(asicdServices.Int(asicdCommonDefs.MIN_SYS_PORTS), asicdServices.Int(asicdCommonDefs.MAX_SYS_PORTS))
+		//asicdmutex.Unlock()
+		if err == nil && bulkInfo.Count != 0 {
+			objCount := int64(bulkInfo.Count)
+			for i := int64(0); i < objCount; i++ {
+				if bulkInfo.PortStateList[i].IfIndex == pId {
+					return bulkInfo.PortStateList[i].OperState == pluginCommon.UpDownState[1]
+				}
+			}
+		}
+		Logger.Info(fmt.Sprintf("asicDGetPortLinkSatus: could not get status for port %d, failure in get method\n", pId))
+	}
+	return true
+
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) CreateStgBridge(vlanList []uint16) int32 {
+
+	vl := make([]int32, 0)
+	if asicdClientMgr.ClientHdl != nil {
+		for _, v := range vlanList {
+			vl = append(vl, int32(v))
+		}
+		//asicdmutex.Lock()
+		// default vlan is already created in opennsl
+		stgid, err := asicdClientMgr.ClientHdl.CreateStg(vl)
+		//asicdmutex.Unlock()
+		if err == nil {
+			for _, v := range vl {
+				if v != 0 &&
+					v != 4095 {
+					protocolmac := asicdInt.RsvdProtocolMacConfig{
+						MacAddr:     "01:00:0C:CC:CC:CD",
+						MacAddrMask: "FF:FF:FF:FF:FF:FF",
+						VlanId:      int32(v),
+					}
+					//asicdmutex.Lock()
+					asicdClientMgr.ClientHdl.EnablePacketReception(&protocolmac)
+					//asicdmutex.Unlock()
+				}
+			}
+			return stgid
+		} else {
+			Logger.Info(fmt.Sprintf("Create Stg Group error %#v", err))
+		}
+	} else {
+		Logger.Info(fmt.Sprintf("Create Stg Group failed asicd not connected"))
+	}
+	return -1
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) DeleteStgBridge(stgid int32, vlanList []uint16) error {
+	vl := make([]int32, 0)
+
+	if asicdClientMgr.ClientHdl != nil {
+
+		for _, v := range vlanList {
+			vl = append(vl, int32(v))
+		}
+		for _, v := range vl {
+			if v != 0 &&
+				v != 4095 {
+				protocolmac := asicdInt.RsvdProtocolMacConfig{
+					MacAddr:     "01:00:0C:CC:CC:CD",
+					MacAddrMask: "FF:FF:FF:FF:FF:FF",
+					VlanId:      int32(v),
+				}
+
+				Logger.Info(fmt.Sprintf("Deleting PVST MAC entry %#v", protocolmac))
+				//asicdmutex.Lock()
+				asicdClientMgr.ClientHdl.DisablePacketReception(&protocolmac)
+				//asicdmutex.Unlock()
+			}
+		}
+		Logger.Info(fmt.Sprintf("Deleting Stg Group %d with vlans %#v", stgid, vl))
+
+		//asicdmutex.Lock()
+		_, err := asicdClientMgr.ClientHdl.DeleteStg(stgid)
+		//asicdmutex.Unlock()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) SetStgPortState(stgid int32, ifindex int32, state int) error {
+	if asicdClientMgr.ClientHdl != nil {
+		//asicdmutex.Lock()
+		_, err := asicdClientMgr.ClientHdl.SetPortStpState(stgid, ifindex, int32(state))
+		//asicdmutex.Unlock()
+		return err
+	}
+	return nil
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) FlushStgFdb(stgid int32) error {
+	if asicdClientMgr.ClientHdl != nil {
+		//asicdmutex.Lock()
+		_, err := asicdClientMgr.ClientHdl.FlushFdbStgGroup(stgid)
+		//asicdmutex.Unlock()
+		return err
+	}
+	return nil
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) BPDUGuardDetected(ifindex int32, enable bool) error {
+	if asicdClientMgr.ClientHdl != nil {
+		state := "DOWN"
+		if enable {
+			state = "UP"
+		}
+		//asicdmutex.Lock()
+		_, err := asicdClientMgr.ClientHdl.ErrorDisablePort(ifindex, state, "STP BPDU GUARD")
+		//asicdmutex.Unlock()
+		return err
+	}
+	return nil
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) GetSwitchMAC(paramsPath string) string {
+	var cfgFile CfgFileJson
+
+	asicdconffilename := paramsPath + "asicd.conf"
+
+	cfgFileData, err := ioutil.ReadFile(asicdconffilename)
+	if err != nil {
+		Logger.Err("Error reading config file - asicd.conf. Using defaults (linux plugin only)")
+		return "00:00:00:00:00:00"
+	}
+	err = json.Unmarshal(cfgFileData, &cfgFile)
+	if err != nil {
+		Logger.Err("Error parsing config file, using defaults (linux plugin only)")
+		return "00:00:00:00:00:00"
+	}
+
+	return cfgFile.SwitchMac
 }
