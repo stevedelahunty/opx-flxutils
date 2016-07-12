@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"models/events"
 	"models/objects"
 	"reflect"
 	"sync"
@@ -72,6 +73,9 @@ type DBIntf interface {
 	StoreValInDb(interface{}, interface{}, interface{}) error
 	GetAllKeys(interface{}) (interface{}, error)
 	GetValFromDB(key interface{}, field interface{}) (val interface{}, err error)
+	StoreEventObjectInDb(events.EventObj) error
+	GetEventObjectFromDb(events.EventObj, string) (events.EventObj, error)
+	GetAllEventObjFromDb(events.EventObj) ([]events.EventObj, error)
 }
 
 func NewDBUtil(logger *logging.Writer) *DBUtil {
@@ -198,6 +202,27 @@ func (db *DBUtil) Publish(op string, channel interface{}, msg interface{}) {
 		db.DbLock.Lock()
 		db.Do(op, channel, msg)
 	}
+}
+
+func (db *DBUtil) StoreEventObjectInDb(obj events.EventObj) error {
+	if db.Conn == nil {
+		return DBNotConnectedError{db.network, db.address}
+	}
+	return obj.StoreObjectInDb(db.Conn)
+}
+
+func (db *DBUtil) GetEventObjectFromDb(obj events.EventObj, objKey string) (events.EventObj, error) {
+	if db.Conn == nil {
+		return obj, DBNotConnectedError{db.network, db.address}
+	}
+	return obj.GetObjectFromDb(objKey, db.Conn)
+}
+
+func (db *DBUtil) GetAllEventObjFromDb(obj events.EventObj) ([]events.EventObj, error) {
+	if db.Conn == nil {
+		return make([]events.EventObj, 0), DBNotConnectedError{db.network, db.address}
+	}
+	return obj.GetAllObjFromDb(db.Conn)
 }
 
 func (db *DBUtil) StoreValInDb(key interface{}, val interface{}, field interface{}) error {
