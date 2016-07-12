@@ -120,3 +120,31 @@ func (asicdClientMgr *OvsAsicdClientMgr) GetPort(name string) (*commonDefs.Port,
 func (asicdClientMgr *OvsAsicdClientMgr) DetermineRouterId() string {
 	return "0.0.0.0"
 }
+
+func (asicdClientMgr *OvsAsicdClientMgr) GetPortLinkStatus(pId int32) bool {
+	return true
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) CreateStgBridge(vlanList []uint16) int32 {
+	return -1
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) DeleteStgBridge(stgid int32, vlanList []uint16) error {
+	return nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) SetStgPortState(stgid int32, ifindex int32, state int) error {
+	return nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) FlushStgFdb(stgid int32) error {
+	return nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) BPDUGuardDetected(ifindex int32, enable bool) error {
+	return nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) GetSwitchMAC(paramsPath string) string {
+	return "00:00:00:00:00:00"
+}
