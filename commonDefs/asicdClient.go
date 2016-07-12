@@ -201,6 +201,13 @@ type IPv4NbrMacMoveNotifyMsg struct {
 	VlanId  int32
 }
 
+type IPv6NbrMacMoveNotifyMsg struct {
+	MsgType uint8
+	IpAddr  string
+	IfIndex int32
+	VlanId  int32
+}
+
 type IPv6IntfNotifyMsg struct {
 	MsgType uint8
 	IpAddr  string
