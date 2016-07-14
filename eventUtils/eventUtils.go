@@ -188,8 +188,17 @@ func PublishEvents(eventId events.EventId, key interface{}) error {
 	evt.Description = evtEnt.Description
 	evt.SrcObjName = evtEnt.SrcObjName
 	evt.SrcObjKey = key
-	Logger.Debug(fmt.Sprintln("Events to be published: ", evt))
-	keyStr := fmt.Sprintf("Events#%s#%s#%s#%s#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, evt.SrcObjKey, evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
+	msg, _ := json.Marshal(*evt)
+	var unmarshalMsg Event
+	err = json.Unmarshal(msg, &unmarshalMsg)
+	keyMap, _ := events.EventKeyMap[evt.OwnerName]
+	obj, _ := keyMap[evt.SrcObjName]
+	obj = unmarshalMsg.SrcObjKey
+	str := fmt.Sprintf("%v", obj)
+	keyString := strings.TrimPrefix(str, "map[")
+	strKey := strings.Split(keyString, "]")
+	Logger.Info(fmt.Sprintln("Events to be published: ", evt, strKey[0]))
+	keyStr := fmt.Sprintf("Events#%s#%s#%s#%s#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, strKey[0], evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
 	Logger.Debug(fmt.Sprintln("Key Str :", keyStr))
 	err = DbHdl.StoreValInDb(keyStr, evt.Description, "Desc")
 	if err != nil {
@@ -215,7 +224,6 @@ func PublishEvents(eventId events.EventId, key interface{}) error {
 		Logger.Err(fmt.Sprintln("Storing Event Stats in database failed, err:", err))
 	}
 	//Publish event
-	msg, _ := json.Marshal(*evt)
 	PubHdl.Publish("PUBLISH", evt.OwnerName, msg)
 	return nil
 }
