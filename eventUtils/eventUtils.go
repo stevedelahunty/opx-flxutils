@@ -64,6 +64,7 @@ type FaultDetail struct {
 	RaiseFault       bool
 	ClearingEventId  int
 	ClearingDaemonId int
+	AlarmSeverity    string
 }
 
 type EventStruct struct {
