@@ -233,6 +233,7 @@ func (db *DBUtil) StoreValInDb(key interface{}, val interface{}, field interface
 		if err != nil {
 			return err
 		}
+		return err
 	}
 	err := errors.New("DB Connection handler is nil")
 	return err
