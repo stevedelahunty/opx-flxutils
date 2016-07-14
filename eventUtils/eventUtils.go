@@ -189,7 +189,7 @@ func PublishEvents(eventId events.EventId, key interface{}) error {
 	evt.SrcObjName = evtEnt.SrcObjName
 	evt.SrcObjKey = key
 	Logger.Debug(fmt.Sprintln("Events to be published: ", evt))
-	keyStr := fmt.Sprintf("Events#%s#%s#%s#%s#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, evt.SrcObjKey, evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
+	keyStr := fmt.Sprintf("Events#%s#%s#%s#%v#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, evt.SrcObjKey, evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
 	Logger.Debug(fmt.Sprintln("Key Str :", keyStr))
 	err = DbHdl.StoreValInDb(keyStr, evt.Description, "Desc")
 	if err != nil {
