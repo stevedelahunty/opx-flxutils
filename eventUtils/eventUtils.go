@@ -228,7 +228,6 @@ func PublishEvents(eventId events.EventId, key interface{}, additionalInfo strin
 		Logger.Err(fmt.Sprintln("Storing Event Stats in database failed, err:", err))
 	}
 	//Publish event
-	msg, _ := json.Marshal(*evt)
 	PubHdl.Publish("PUBLISH", evt.OwnerName, msg)
 	return nil
 }
