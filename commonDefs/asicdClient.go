@@ -160,11 +160,10 @@ type L2IntfStateNotifyMsg struct {
 }
 
 type L3IntfStateNotifyMsg struct {
-	MsgType  uint8
-	IpAddr   string
-	Ipv6Addr string
-	IfIndex  int32
-	IfState  uint8
+	MsgType uint8
+	IpAddr  string
+	IfIndex int32
+	IfState uint8
 }
 
 type VlanNotifyMsg struct {
