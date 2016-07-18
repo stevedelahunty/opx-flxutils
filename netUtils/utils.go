@@ -13,24 +13,25 @@
 //	 See the License for the specific language governing permissions and
 //	 limitations under the License.
 //
-// _______  __       __________   ___      _______.____    __    ____  __  .___________.  ______  __    __  
-// |   ____||  |     |   ____\  \ /  /     /       |\   \  /  \  /   / |  | |           | /      ||  |  |  | 
-// |  |__   |  |     |  |__   \  V  /     |   (----` \   \/    \/   /  |  | `---|  |----`|  ,----'|  |__|  | 
-// |   __|  |  |     |   __|   >   <       \   \      \            /   |  |     |  |     |  |     |   __   | 
-// |  |     |  `----.|  |____ /  .  \  .----)   |      \    /\    /    |  |     |  |     |  `----.|  |  |  | 
-// |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__| 
-//                                                                                                           
+// _______  __       __________   ___      _______.____    __    ____  __  .___________.  ______  __    __
+// |   ____||  |     |   ____\  \ /  /     /       |\   \  /  \  /   / |  | |           | /      ||  |  |  |
+// |  |__   |  |     |  |__   \  V  /     |   (----` \   \/    \/   /  |  | `---|  |----`|  ,----'|  |__|  |
+// |   __|  |  |     |   __|   >   <       \   \      \            /   |  |     |  |     |  |     |   __   |
+// |  |     |  `----.|  |____ /  .  \  .----)   |      \    /\    /    |  |     |  |     |  `----.|  |  |  |
+// |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
+//
 
 // netUtils.go
 package netUtils
 
 import (
-	"net"
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"utils/patriciaDB"
 )
+
 func GetNetowrkPrefixFromStrings(ipAddr string, mask string) (prefix patriciaDB.Prefix, err error) {
 	destNetIpAddr, err := GetIP(ipAddr)
 	if err != nil {
@@ -59,8 +60,8 @@ func GetNetworkPrefixFromCIDR(ipAddr string) (ipPrefix patriciaDB.Prefix, err er
 	copy(ipMask, ipNet.Mask)
 	ipAddrStr := ip.String()
 	ipMaskStr := net.IP(ipMask).String()
-	ipPrefix ,err= GetNetowrkPrefixFromStrings(ipAddrStr, ipMaskStr)
-    return ipPrefix, err
+	ipPrefix, err = GetNetowrkPrefixFromStrings(ipAddrStr, ipMaskStr)
+	return ipPrefix, err
 }
 func GetIPInt(ip net.IP) (ipInt int, err error) {
 	if ip == nil {
@@ -81,16 +82,40 @@ func GetIP(ipAddr string) (ip net.IP, err error) {
 	ip = ip.To4()
 	return ip, nil
 }
+func IsZeros(p net.IP) bool {
+	for i := 0; i < len(p); i++ {
+		if p[i] != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func IsIPv4Mask(mask net.IP) bool {
+	if !(len(mask) > 4) {
+		return true
+	}
+	if IsZeros(mask[0:10]) &&
+		mask[10] == 0xff &&
+		mask[11] == 0xff {
+		fmt.Println("iv4Mask")
+		return true
+	}
+	return false
+}
 
 func GetPrefixLen(networkMask net.IP) (prefixLen int, err error) {
-	ipInt, err := GetIPInt(networkMask)
-	if err != nil {
-		return -1, err
+	mask := net.IPMask(networkMask)
+	if IsIPv4Mask(net.IP(mask)) {
+		if !(len(mask) > 4) {
+			prefixLen, _ = mask.Size()
+		} else {
+			prefixLen, _ = mask[12:16].Size()
+		}
+	} else {
+		prefixLen, _ = mask.Size()
 	}
-	for prefixLen = 0; ipInt != 0; ipInt >>= 1 {
-		prefixLen += ipInt & 1
-	}
-	return prefixLen, nil
+	return prefixLen, err
 }
 
 func GetNetworkPrefix(destNetIp net.IP, networkMask net.IP) (destNet patriciaDB.Prefix, err error) {
@@ -117,15 +142,15 @@ func GetCIDR(ipAddr string, mask string) (addr string, err error) {
 		fmt.Println("destNetIpAddr invalid")
 		return addr, err
 	}
-	maskIP,err:=GetIP(mask)
+	maskIP, err := GetIP(mask)
 	if err != nil {
-       fmt.Println("err in getting mask IP for mask string", mask)
-	   return addr, err
+		fmt.Println("err in getting mask IP for mask string", mask)
+		return addr, err
 	}
-	prefixLen,err := GetPrefixLen(maskIP)
+	prefixLen, err := GetPrefixLen(maskIP)
 	if err != nil {
-	   fmt.Println("err in getting prefix len for mask string", mask)
-	   return addr, err
+		fmt.Println("err in getting prefix len for mask string", mask)
+		return addr, err
 	}
 	addr = (destNetIpAddr.Mask(net.IPMask(maskIP))).String() + "/" + strconv.Itoa(prefixLen)
 	return addr, err
