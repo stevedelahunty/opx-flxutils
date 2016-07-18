@@ -82,7 +82,19 @@ func (asicdClientMgr *FSAsicdClientMgr) DeleteIPv4Neighbor(ipAddr string) (int32
 	return asicdClientMgr.ClientHdl.DeleteIPv4Neighbor(ipAddr, "00:00:00:00:00:00", 0, 0)
 }
 
-func (asicdClientMgr *FSAsicdClientMgr) convertAsicdInfoToCommonInfo(info asicdServices.IPv4IntfState) *commonDefs.IPv4IntfState {
+func (asicdClientMgr *FSAsicdClientMgr) CreateIPv6Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
+	return asicdClientMgr.ClientHdl.CreateIPv6Neighbor(ipAddr, macAddr, vlanId, ifIdx)
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) UpdateIPv6Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
+	return asicdClientMgr.ClientHdl.UpdateIPv6Neighbor(ipAddr, macAddr, vlanId, ifIdx)
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) DeleteIPv6Neighbor(ipAddr string) (int32, error) {
+	return asicdClientMgr.ClientHdl.DeleteIPv6Neighbor(ipAddr, "00:00:00:00:00:00", 0, 0)
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) convertAsicdIP4InfoToCommonInfo(info asicdServices.IPv4IntfState) *commonDefs.IPv4IntfState {
 	entry := &commonDefs.IPv4IntfState{}
 	entry.IntfRef = info.IntfRef
 	entry.IfIndex = info.IfIndex
@@ -94,6 +106,45 @@ func (asicdClientMgr *FSAsicdClientMgr) convertAsicdInfoToCommonInfo(info asicdS
 	entry.LastDownEventTime = info.LastDownEventTime
 	entry.L2IntfType = info.L2IntfType
 	entry.L2IntfId = info.L2IntfId
+	return entry
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) convertAsicdIP6InfoToCommonInfo(info asicdServices.IPv6IntfState) *commonDefs.IPv6IntfState {
+	entry := &commonDefs.IPv6IntfState{}
+	entry.IntfRef = info.IntfRef
+	entry.IfIndex = info.IfIndex
+	entry.IpAddr = info.IpAddr
+	entry.OperState = info.OperState
+	entry.NumUpEvents = info.NumUpEvents
+	entry.LastUpEventTime = info.LastUpEventTime
+	entry.NumDownEvents = info.NumDownEvents
+	entry.LastDownEventTime = info.LastDownEventTime
+	entry.L2IntfType = info.L2IntfType
+	entry.L2IntfId = info.L2IntfId
+	return entry
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) convertAsicdPortStateInfoToCommonInfo(info asicdServices.PortState) *commonDefs.PortState {
+	entry := &commonDefs.PortState{}
+	entry.IntfRef = info.IntfRef
+	entry.IfIndex = info.IfIndex
+	entry.Name = info.Name
+	entry.OperState = info.OperState
+	entry.NumUpEvents = info.NumUpEvents
+	entry.LastUpEventTime = info.LastUpEventTime
+	entry.NumDownEvents = info.NumDownEvents
+	entry.LastDownEventTime = info.LastDownEventTime
+	entry.Pvid = info.Pvid
+	entry.IfInOctets = info.IfInOctets
+	entry.IfInUcastPkts = info.IfInUcastPkts
+	entry.IfInDiscards = info.IfInDiscards
+	entry.IfInErrors = info.IfInErrors
+	entry.IfInUnknownProtos = info.IfInUnknownProtos
+	entry.IfOutOctets = info.IfOutOctets
+	entry.IfOutUcastPkts = info.IfOutUcastPkts
+	entry.IfOutDiscards = info.IfOutDiscards
+	entry.IfOutErrors = info.IfOutErrors
+	entry.ErrDisableReason = info.ErrDisableReason
 	return entry
 }
 
@@ -206,6 +257,64 @@ func (asicdClientMgr *FSAsicdClientMgr) GetBulkVlanState(curMark, count int) (*c
 	return &vlanStateInfo, nil
 }
 
+func convertAsicdVlanStateInfoToCommonInfo(info asicdServices.VlanState) *commonDefs.VlanState {
+	entry := &commonDefs.VlanState{
+		VlanId:    info.VlanId,
+		VlanName:  info.VlanName,
+		OperState: info.OperState,
+		IfIndex:   info.IfIndex,
+	}
+	return entry
+}
+
+func convertAsicdVlanInfoToCommonInfo(info asicdInt.Vlan) *commonDefs.Vlan {
+	entry := &commonDefs.Vlan{}
+	entry.VlanId = info.VlanId
+	entry.IfIndexList = append(entry.IfIndexList, info.IfIndexList...)
+	entry.UntagIfIndexList = append(entry.UntagIfIndexList, info.UntagIfIndexList...)
+	return entry
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) GetAllVlanState() ([]*commonDefs.VlanState, error) {
+	curMark := 0
+	count := 100
+	vlanStateInfo := make([]*commonDefs.VlanState, 0)
+	for {
+		bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkVlanState(asicdServices.Int(curMark), asicdServices.Int(count))
+		if bulkInfo == nil {
+			return nil, err
+		}
+		curMark = int(bulkInfo.EndIdx)
+		for idx := 0; idx < int(bulkInfo.Count); idx++ {
+			vlanStateInfo = append(vlanStateInfo, convertAsicdVlanStateInfoToCommonInfo(*bulkInfo.VlanStateList[idx]))
+		}
+		if bulkInfo.More == false {
+			break
+		}
+	}
+	return vlanStateInfo, nil
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) GetAllVlan() ([]*commonDefs.Vlan, error) {
+	curMark := 0
+	count := 100
+	vlanInfo := make([]*commonDefs.Vlan, 0)
+	for {
+		bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkVlan(asicdInt.Int(curMark), asicdInt.Int(count))
+		if bulkInfo == nil {
+			return nil, err
+		}
+		curMark = int(bulkInfo.EndIdx)
+		for idx := 0; idx < int(bulkInfo.Count); idx++ {
+			vlanInfo = append(vlanInfo, convertAsicdVlanInfoToCommonInfo(*bulkInfo.VlanList[idx]))
+		}
+		if bulkInfo.More == false {
+			break
+		}
+	}
+	return vlanInfo, nil
+}
+
 func (asicdClientMgr *FSAsicdClientMgr) GetBulkVlan(curMark, count int) (*commonDefs.VlanGetInfo, error) {
 	bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkVlan(asicdInt.Int(curMark), asicdInt.Int(count))
 	if bulkInfo == nil {
@@ -273,6 +382,74 @@ func GetAsicdThriftClientHdl(paramsFile string, logger *logging.Writer) *asicdSe
 	return nil
 }
 
+func (asicdClientMgr *FSAsicdClientMgr) GetAllPortState() ([]*commonDefs.PortState, error) {
+	curMark := int(asicdCommonDefs.MIN_SYS_PORTS)
+	count := 100
+	portState := make([]*commonDefs.PortState, 0)
+	for {
+		bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkPortState(asicdServices.Int(curMark), asicdServices.Int(count))
+		if bulkInfo == nil {
+			return nil, err
+		}
+		curMark = int(bulkInfo.EndIdx)
+		for idx := 0; idx < int(bulkInfo.Count); idx++ {
+			portState = append(portState,
+				asicdClientMgr.convertAsicdPortStateInfoToCommonInfo(*bulkInfo.PortStateList[idx]))
+		}
+		if bulkInfo.More == false {
+			break
+		}
+	}
+	return portState, nil
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) GetPort(intfRef string) (*commonDefs.Port, error) {
+	portInfo, err := asicdClientMgr.ClientHdl.GetPort(intfRef)
+	if err != nil {
+		return nil, err
+	}
+	port := &commonDefs.Port{
+		IntfRef:     portInfo.IntfRef,
+		IfIndex:     portInfo.IfIndex,
+		Description: portInfo.Description,
+		PhyIntfType: portInfo.PhyIntfType,
+		AdminState:  portInfo.AdminState,
+		MacAddr:     portInfo.MacAddr,
+		Speed:       portInfo.Speed,
+		Duplex:      portInfo.Duplex,
+		Autoneg:     portInfo.Autoneg,
+		MediaType:   portInfo.MediaType,
+		Mtu:         portInfo.Mtu,
+	}
+	return port, nil
+}
+
+/*  API to return all ipv4 addresses created on the system... If a dameons uses this then they do not have to worry
+ *  about checking is any ipv4 addresses are left on the system or not
+ */
+func (asicdClientMgr *FSAsicdClientMgr) GetAllIPv6IntfState() ([]*commonDefs.IPv6IntfState, error) {
+	curMark := 0
+	count := 100
+	ipv6Info := make([]*commonDefs.IPv6IntfState, 0)
+	for {
+		bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkIPv6IntfState(asicdServices.Int(curMark),
+			asicdServices.Int(count))
+		if bulkInfo == nil {
+			return nil, err
+		}
+		curMark = int(bulkInfo.EndIdx)
+		for idx := 0; idx < int(bulkInfo.Count); idx++ {
+			ipv6Info = append(ipv6Info,
+				asicdClientMgr.convertAsicdIP6InfoToCommonInfo(*bulkInfo.IPv6IntfStateList[idx]))
+		}
+		if bulkInfo.More == false {
+			break
+		}
+	}
+
+	return ipv6Info, nil
+}
+
 /*  API to return all ipv4 addresses created on the system... If a dameons uses this then they do not have to worry
  *  about checking is any ipv4 addresses are left on the system or not
  */
@@ -289,7 +466,7 @@ func (asicdClientMgr *FSAsicdClientMgr) GetAllIPv4IntfState() ([]*commonDefs.IPv
 		curMark = int(bulkInfo.EndIdx)
 		for idx := 0; idx < int(bulkInfo.Count); idx++ {
 			ipv4Info = append(ipv4Info,
-				asicdClientMgr.convertAsicdInfoToCommonInfo(*bulkInfo.IPv4IntfStateList[idx]))
+				asicdClientMgr.convertAsicdIP4InfoToCommonInfo(*bulkInfo.IPv4IntfStateList[idx]))
 		}
 		if bulkInfo.More == false {
 			break
