@@ -370,20 +370,20 @@ func (db *PolicyEngineDB) UpdateActions(policyStmt PolicyStmt, action PolicyActi
 	return err
 }
 func (db *PolicyEngineDB) ValidatePolicyStatementCreate(cfg PolicyStmtConfig) (err error) {
-	db.Logger.Println("ValidatePolicyStatementCreate")
+	db.Logger.Info("ValidatePolicyStatementCreate")
 	policyStmt := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.Name))
 	if policyStmt != nil {
-		db.Logger.Println("Duplicate Policy definition name")
+		db.Logger.Err("Duplicate Policy definition name")
 		err = errors.New("Duplicate policy definition")
 		return err
 	}
 	if !validMatchConditions(cfg.MatchConditions) {
-		db.Logger.Println("Invalid match conditions - try any/all")
+		db.Logger.Err("Invalid match conditions - try any/all")
 		err = errors.New("Invalid match conditions - try any/all")
 		return err
 	}
 	if len(cfg.Actions) > 1 {
-		db.Logger.Println("Cannot have more than 1 action in a policy")
+		db.Logger.Err("Cannot have more than 1 action in a policy")
 		err = errors.New("Cannot have more than 1 action in a policy")
 		return err
 	}
@@ -449,7 +449,7 @@ func (db *PolicyEngineDB) CreatePolicyStatement(cfg PolicyStmtConfig) (err error
 }
 
 func (db *PolicyEngineDB) ValidatePolicyStatementDelete(cfg PolicyStmtConfig) (err error) {
-	db.Logger.Println("ValidatePolicyStatementCreate")
+	db.Logger.Err("ValidatePolicyStatementCreate")
 	ok := db.PolicyStmtDB.Match(patriciaDB.Prefix(cfg.Name))
 	if !ok {
 		err = errors.New("No policy statement with this name found")
@@ -553,10 +553,10 @@ func (db *PolicyEngineDB) UpdateApplyPolicy(info ApplyPolicyInfo, apply bool) {
 	}
 }
 func (db *PolicyEngineDB) ValidatePolicyDefinitionCreate(cfg PolicyDefinitionConfig) (err error) {
-	db.Logger.Println("ValidatePolicyDefinitionCreate")
+	db.Logger.Err("ValidatePolicyDefinitionCreate")
 	policy := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
 	if policy != nil {
-		db.Logger.Println("Duplicate Policy definition name")
+		db.Logger.Err("Duplicate Policy definition name")
 		err = errors.New("Duplicate policy definition")
 		return err
 	}
@@ -656,16 +656,16 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 	return err
 }
 func (db *PolicyEngineDB) ValidatePolicyDefinitionDelete(cfg PolicyDefinitionConfig) (err error) {
-	db.Logger.Println("ValidatePolicyDefinitionDelete")
+	db.Logger.Info("ValidatePolicyDefinitionDelete")
 	policyItem := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
 	if policyItem == nil {
-		db.Logger.Println("Policy not defined")
+		db.Logger.Err("Policy not defined")
 		err = errors.New("Policy not defined")
 		return err
 	}
 	policy := policyItem.(Policy)
 	if db.ApplyPolicyMap[policy.Name] != nil {
-		db.Logger.Println(" Policy being applied, cannot delete it")
+		db.Logger.Err(" Policy being applied, cannot delete it")
 		err = errors.New(fmt.Sprintln("Policy being used, cannot delete"))
 		return err
 	}
