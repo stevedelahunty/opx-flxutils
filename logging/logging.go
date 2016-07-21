@@ -32,7 +32,7 @@ import (
 	"log"
 	"log/syslog"
 	"models/objects"
-	//	"os"
+	"os"
 	"sysd"
 	"time"
 )
@@ -104,10 +104,10 @@ func NewLogger(name string, tag string, listenToConfig bool) (*Writer, error) {
 		return srLogger, err
 	}
 	// if SysLogger can't be initialized then send all logs to /dev/null
-	/*devNull, err := os.Open(os.DevNull)
+	devNull, err := os.Open(os.DevNull)
 	if err == nil {
 		srLogger.nullLogger = log.New(devNull, tag, log.Ldate|log.Ltime|log.Lshortfile)
-	}*/
+	}
 
 	srLogger.GlobalLogging = true
 	srLogger.MyLogLevel = sysdCommonDefs.INFO

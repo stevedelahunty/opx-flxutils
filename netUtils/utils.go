@@ -101,12 +101,15 @@ func IsIPv4Mask(mask net.IP) bool {
 }
 
 func GetPrefixLen(networkMask net.IP) (prefixLen int, err error) {
+	//fmt.Println("GetPrefixLen() for mask:", networkMask)
 	mask := net.IPMask(networkMask)
+	//fmt.Println("mask:", mask)
 	if IsIPv4Mask(net.IP(mask)) {
 		prefixLen, _ = mask[12:16].Size()
 	} else {
 		prefixLen, _ = mask.Size()
 	}
+	//fmt.Println("prefixLen = ", prefixLen, " err:", err)
 	return prefixLen, err
 }
 func GetNetworkPrefix(destNetIp net.IP, networkMask net.IP) (destNet patriciaDB.Prefix, err error) {
