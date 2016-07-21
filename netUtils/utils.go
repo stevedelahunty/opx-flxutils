@@ -56,11 +56,12 @@ func GetNetworkPrefixFromCIDR(ipAddr string) (ipPrefix patriciaDB.Prefix, err er
 	if err != nil {
 		return ipPrefix, err
 	}
-	ipMask = make(net.IP, 4)
+	ipMask = make(net.IP, 16)
 	copy(ipMask, ipNet.Mask)
 	ipAddrStr := ip.String()
-	ipMaskStr := net.IP(ipMask).String()
-	ipPrefix, err = GetNetowrkPrefixFromStrings(ipAddrStr, ipMaskStr)
+	//ipMaskStr := net.IP(ipMask).String()
+	ipPrefix, err = GetNetowrkPrefixFromStrings(ipAddrStr, (net.IP(ipNet.Mask)).String()) //ipMaskStr)
+
 	return ipPrefix, err
 }
 func GetIPInt(ip net.IP) (ipInt int, err error) {
@@ -79,7 +80,6 @@ func GetIP(ipAddr string) (ip net.IP, err error) {
 	if ip == nil {
 		return ip, errors.New("Invalid destination network IP Address")
 	}
-	ip = ip.To4()
 	return ip, nil
 }
 func IsZeros(p net.IP) bool {
@@ -92,13 +92,9 @@ func IsZeros(p net.IP) bool {
 }
 
 func IsIPv4Mask(mask net.IP) bool {
-	if !(len(mask) > 4) {
-		return true
-	}
 	if IsZeros(mask[0:10]) &&
 		mask[10] == 0xff &&
 		mask[11] == 0xff {
-		fmt.Println("iv4Mask")
 		return true
 	}
 	return false
@@ -107,25 +103,25 @@ func IsIPv4Mask(mask net.IP) bool {
 func GetPrefixLen(networkMask net.IP) (prefixLen int, err error) {
 	mask := net.IPMask(networkMask)
 	if IsIPv4Mask(net.IP(mask)) {
-		if !(len(mask) > 4) {
-			prefixLen, _ = mask.Size()
-		} else {
-			prefixLen, _ = mask[12:16].Size()
-		}
+		prefixLen, _ = mask[12:16].Size()
 	} else {
 		prefixLen, _ = mask.Size()
 	}
 	return prefixLen, err
 }
-
 func GetNetworkPrefix(destNetIp net.IP, networkMask net.IP) (destNet patriciaDB.Prefix, err error) {
 	prefixLen, err := GetPrefixLen(networkMask)
 	if err != nil {
 		fmt.Println("err when getting prefixLen, err= ", err)
-		return destNet, err
+		return destNet, errors.New(fmt.Sprintln("Invalid networkmask ", networkMask))
 	}
-	vdestMask := net.IPv4Mask(networkMask[0], networkMask[1], networkMask[2], networkMask[3])
-	netIp := destNetIp.Mask(vdestMask)
+	var netIp net.IP
+	vdestMask := net.IPMask(networkMask)
+	if IsIPv4Mask(net.IP(vdestMask)) {
+		netIp = destNetIp.Mask(vdestMask[12:16])
+	} else {
+		netIp = destNetIp.Mask(vdestMask)
+	}
 	numbytes := prefixLen / 8
 	if (prefixLen % 8) != 0 {
 		numbytes++
