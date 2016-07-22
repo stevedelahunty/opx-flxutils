@@ -205,9 +205,7 @@ func (db *DBUtil) StoreValInDb(key interface{}, val interface{}, field interface
 		defer db.DbLock.Unlock()
 		db.DbLock.Lock()
 		_, err := db.Do("HMSET", key, field, val)
-		if err != nil {
-			return err
-		}
+		return err
 	}
 	err := errors.New("DB Connection handler is nil")
 	return err
