@@ -42,7 +42,22 @@ func (asicdClientMgr *OvsAsicdClientMgr) UpdateIPv4Neighbor(ipAddr, macAddr stri
 	return 0, nil
 }
 
+func (asicdClientMgr *OvsAsicdClientMgr) CreateIPv6Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
+	fmt.Println(ipAddr, macAddr, vlanId, ifIdx, asicdClientMgr.Val)
+	return 0, nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) UpdateIPv6Neighbor(ipAddr, macAddr string, vlanId, ifIdx int32) (int32, error) {
+	fmt.Println(ipAddr, macAddr, vlanId, ifIdx, asicdClientMgr.Val)
+	return 0, nil
+}
+
 func (asicdClientMgr *OvsAsicdClientMgr) DeleteIPv4Neighbor(ipAddr string) (int32, error) {
+	fmt.Println(ipAddr, asicdClientMgr.Val)
+	return 0, nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) DeleteIPv6Neighbor(ipAddr string) (int32, error) {
 	fmt.Println(ipAddr, asicdClientMgr.Val)
 	return 0, nil
 }
@@ -74,6 +89,31 @@ func (asicdClientMgr *OvsAsicdClientMgr) GetBulkVlan(curMark, count int) (*commo
 
 func (asicdClientMgr *OvsAsicdClientMgr) GetAllIPv4IntfState() ([]*commonDefs.IPv4IntfState, error) {
 	fmt.Println("Get all IPv4 Intf State called")
+	return nil, nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) GetAllIPv6IntfState() ([]*commonDefs.IPv6IntfState, error) {
+	fmt.Println("Get all IPv6 Intf State called")
+	return nil, nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) GetAllPortState() ([]*commonDefs.PortState, error) {
+	fmt.Println("Get all Port Intf State called")
+	return nil, nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) GetAllVlanState() ([]*commonDefs.VlanState, error) {
+	fmt.Println("Get all Vlan State called")
+	return nil, nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) GetAllVlan() ([]*commonDefs.Vlan, error) {
+	fmt.Println("Get all Vlan called")
+	return nil, nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) GetPort(name string) (*commonDefs.Port, error) {
+	fmt.Println("Get Port Intf State called")
 	return nil, nil
 }
 
