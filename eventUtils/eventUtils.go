@@ -164,7 +164,7 @@ func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger l
 	return nil
 }
 
-func PublishEvents(eventId events.EventId, key interface{}) error {
+func PublishEvents(eventId events.EventId, key interface{}, additionalInfo string) error {
 	var err error
 	if GlobalEventEnable == false {
 		return nil
@@ -185,11 +185,15 @@ func PublishEvents(eventId events.EventId, key interface{}) error {
 	evt.EvtId = eventId
 	evt.EventName = evtEnt.EventName
 	evt.TimeStamp = time.Now()
-	evt.Description = evtEnt.Description
+	if additionalInfo != "" {
+		evt.Description = evtEnt.Description + ": " + additionalInfo
+	} else {
+		evt.Description = evtEnt.Description
+	}
 	evt.SrcObjName = evtEnt.SrcObjName
 	evt.SrcObjKey = key
 	msg, _ := json.Marshal(*evt)
-	var unmarshalMsg Event
+	var unmarshalMsg events.Event
 	err = json.Unmarshal(msg, &unmarshalMsg)
 	keyMap, _ := events.EventKeyMap[evt.OwnerName]
 	obj, _ := keyMap[evt.SrcObjName]
