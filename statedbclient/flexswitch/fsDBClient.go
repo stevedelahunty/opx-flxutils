@@ -57,7 +57,7 @@ func NewFSDBClient(logger *logging.Writer) *FSDBClient {
 	return &FSDBClient{
 		logger:     logger,
 		dbUtil:     dbutils.NewDBUtil(logger),
-		objStateCh: make(chan objInfo, 100),
+		objStateCh: make(chan objInfo, 10000),
 	}
 }
 
@@ -73,7 +73,7 @@ func (fs *FSDBClient) Init() error {
 }
 
 func (fs *FSDBClient) AddObject(obj objects.ConfigObj) error {
-	fs.logger.Info(fmt.Sprintf("AddObject object %s", obj.GetKey()))
+	//fs.logger.Info(fmt.Sprintf("AddObject object %s", obj.GetKey()))
 	fs.objStateCh <- objInfo{objAdd, obj}
 	return nil
 }
@@ -106,13 +106,13 @@ func (fs *FSDBClient) DeleteAllObjects(obj objects.ConfigObj) error {
 }
 
 func (fs *FSDBClient) addObjToDB(obj objects.ConfigObj) error {
-	fs.logger.Info(fmt.Sprintf("addObjToDB object %s", obj.GetKey()))
+	//fs.logger.Info(fmt.Sprintf("addObjToDB object %s", obj.GetKey()))
 	err := fs.dbUtil.StoreObjectInDb(obj)
 	if err != nil {
 		fs.logger.Err(fmt.Sprintf("Failed to add state object %s to DB with error %s", obj.GetKey(), err))
 		return err
 	}
-	fs.logger.Info(fmt.Sprintf("Added state object %s to DB", obj.GetKey()))
+	//fs.logger.Info(fmt.Sprintf("Added state object %s to DB", obj.GetKey()))
 	return nil
 }
 
@@ -136,14 +136,14 @@ func (fs *FSDBClient) StartStateObjectReceiver() {
 		select {
 		case info := <-fs.objStateCh:
 			if info.operation == objAdd {
-				err = fs.addObjToDB(info.obj)
+				//		err = fs.addObjToDB(info.obj)
 			} else if info.operation == objDelete {
 				err = fs.delObjToDB(info.obj)
 			} else if info.operation == objUpdate {
 				//err = fs.updObjToDB(info.obj)
-				err = fs.delObjToDB(info.obj)
+				//	err = fs.delObjToDB(info.obj)
 				if err == nil {
-					err = fs.addObjToDB(info.obj)
+					//		err = fs.addObjToDB(info.obj)
 				}
 			} else {
 				fs.logger.Err(fmt.Sprintf("Recieved unknown operation %d for state object %s", info.operation,
@@ -151,8 +151,8 @@ func (fs *FSDBClient) StartStateObjectReceiver() {
 			}
 
 			if err != nil {
-				fs.logger.Err(fmt.Sprintf("Failed to %s state object %s", objOperation[info.operation],
-					info.obj.GetKey()))
+				//		fs.logger.Err(fmt.Sprintf("Failed to %s state object %s", objOperation[info.operation],
+				//			info.obj.GetKey()))
 			}
 		}
 	}
