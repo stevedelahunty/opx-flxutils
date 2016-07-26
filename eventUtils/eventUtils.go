@@ -99,10 +99,17 @@ type KeyObj struct {
 
 type KeyObjSlice []KeyObj
 
+type RecvdEvent struct {
+	eventId        events.EventId
+	key            interface{}
+	additionalInfo string
+}
+
 var GlobalEventEnable bool = true
 var Logger logging.LoggerIntf
 var PubHdl PubIntf
 var DbHdl dbutils.DBIntf
+var PublishCh chan RecvdEvent
 
 const (
 	EventDir string = "/etc/flexswitch/"
@@ -148,8 +155,7 @@ func initEventDetails(ownerName string) error {
 	return nil
 }
 
-func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger logging.LoggerIntf) error {
-
+func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger logging.LoggerIntf, evtChBufSize int32) error {
 	EventMap = make(map[events.EventId]EventDetails)
 	Logger = logger
 	PubHdl = pubHdl
@@ -159,12 +165,33 @@ func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger l
 	if err != nil {
 		return err
 	}
-
+	PublishCh = make(chan RecvdEvent, evtChBufSize)
+	go eventHandler()
 	Logger.Info(fmt.Sprintln("EventMap:", EventMap))
 	return nil
 }
 
+func eventHandler() {
+	for {
+		recvdEvt := <-PublishCh
+		err := publishRecvdEvents(recvdEvt.eventId, recvdEvt.key, recvdEvt.additionalInfo)
+		if err != nil {
+			Logger.Err(fmt.Sprintln("Error Publishing Events:", err))
+		}
+	}
+}
+
 func PublishEvents(eventId events.EventId, key interface{}, additionalInfo string) error {
+	recvdEvt := RecvdEvent{
+		eventId:        eventId,
+		key:            key,
+		additionalInfo: additionalInfo,
+	}
+	PublishCh <- recvdEvt
+	return nil
+}
+
+func publishRecvdEvents(eventId events.EventId, key interface{}, additionalInfo string) error {
 	var err error
 	if GlobalEventEnable == false {
 		return nil
