@@ -43,15 +43,24 @@ const (
 )
 
 type LoggerIntf interface {
-	Crit(string) error
-	Err(string) error
-	Warning(string) error
-	Alert(string) error
-	Emerg(string) error
-	Notice(string) error
-	Info(string) error
-	Println(string) error
-	Debug(string) error
+	/*	Crit(string) error
+		Err(string) error
+		Warning(string) error
+		Alert(string) error
+		Emerg(string) error
+		Notice(string) error
+		Info(string) error
+		Println(string) error
+		Debug(string) error*/
+	Crit(...interface{}) error
+	Err(...interface{}) error
+	Warning(...interface{}) error
+	Alert(...interface{}) error
+	Emerg(...interface{}) error
+	Notice(...interface{}) error
+	Info(...interface{}) error
+	Println(...interface{}) error
+	Debug(...interface{}) error
 }
 
 func ConvertLevelStrToVal(str string) sysdCommonDefs.SRDebugLevel {
