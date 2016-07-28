@@ -199,6 +199,7 @@ func (logger *Writer) SetLevel(level sysdCommonDefs.SRDebugLevel) error {
 	return nil
 }
 
+/*
 func (logger *Writer) Crit(message string) error {
 	if logger.initialized {
 		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.CRIT {
@@ -294,6 +295,117 @@ func (logger *Writer) Debug(message string) error {
 		}
 	} else if logger.nullLogger != nil {
 		logger.nullLogger.Println(message)
+	}
+	return nil
+}
+
+func (logger *Writer) Write(message string) (int, error) {
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.TRACE {
+			n, err := logger.SysLogger.Write([]byte(message))
+			return n, err
+		}
+	} else if logger.nullLogger != nil {
+		logger.nullLogger.Println(message)
+	}
+	return 0, nil
+}
+*/
+func (logger *Writer) Crit(message ...interface{}) error {
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.CRIT {
+			return logger.SysLogger.Crit(fmt.Sprintln(message))
+		}
+	} else if logger.nullLogger != nil {
+		logger.nullLogger.Println(fmt.Sprintln(message))
+	}
+	return nil
+}
+
+func (logger *Writer) Err(message ...interface{}) error {
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.ERR {
+			return logger.SysLogger.Err(fmt.Sprintln(message))
+		}
+	} else if logger.nullLogger != nil {
+		logger.nullLogger.Println(fmt.Sprintln(message))
+	}
+	return nil
+}
+
+func (logger *Writer) Warning(message ...interface{}) error {
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.WARN {
+			return logger.SysLogger.Warning(fmt.Sprintln(message))
+		}
+	} else if logger.nullLogger != nil {
+		logger.nullLogger.Println(fmt.Sprintln(message))
+	}
+	return nil
+}
+
+func (logger *Writer) Alert(message ...interface{}) error {
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.ALERT {
+			return logger.SysLogger.Alert(fmt.Sprintln(message))
+		}
+	} else if logger.nullLogger != nil {
+		logger.nullLogger.Println(fmt.Sprintln(message))
+	}
+	return nil
+}
+
+func (logger *Writer) Emerg(message ...interface{}) error {
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.EMERG {
+			return logger.SysLogger.Emerg(fmt.Sprintln(message))
+		}
+	} else if logger.nullLogger != nil {
+		logger.nullLogger.Println(fmt.Sprintln(message))
+	}
+	return nil
+}
+
+func (logger *Writer) Notice(message ...interface{}) error {
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.NOTICE {
+			return logger.SysLogger.Notice(fmt.Sprintln(message))
+		}
+	} else if logger.nullLogger != nil {
+		logger.nullLogger.Println(fmt.Sprintln(message))
+	}
+	return nil
+}
+
+func (logger *Writer) Info(message ...interface{}) error {
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.INFO {
+			return logger.SysLogger.Info(fmt.Sprintln(message))
+		}
+	} else if logger.nullLogger != nil {
+		logger.nullLogger.Println(fmt.Sprintln(message))
+	}
+	return nil
+}
+
+func (logger *Writer) Println(message ...interface{}) error {
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.INFO {
+			return logger.SysLogger.Info(fmt.Sprintln(message))
+		}
+	} else if logger.nullLogger != nil {
+		logger.nullLogger.Println(fmt.Sprintln(message))
+	}
+	return nil
+}
+
+func (logger *Writer) Debug(message ...interface{}) error {
+	if logger.initialized {
+		if logger.GlobalLogging && logger.MyLogLevel >= sysdCommonDefs.DEBUG {
+			return logger.SysLogger.Debug(fmt.Sprintln(message))
+		}
+	} else if logger.nullLogger != nil {
+		logger.nullLogger.Println(fmt.Sprintln(message))
 	}
 	return nil
 }
