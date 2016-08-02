@@ -232,7 +232,6 @@ func (db *DBUtil) StoreValInDb(key interface{}, val interface{}, field interface
 		_, err := db.Do("HMSET", key, field, val)
 		return err
 	}
-		return err
 	err := errors.New("DB Connection handler is nil")
 	return err
 }
