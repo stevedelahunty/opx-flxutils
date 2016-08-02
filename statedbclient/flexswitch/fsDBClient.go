@@ -57,7 +57,7 @@ func NewFSDBClient(logger *logging.Writer) *FSDBClient {
 	return &FSDBClient{
 		logger:     logger,
 		dbUtil:     dbutils.NewDBUtil(logger),
-		objStateCh: make(chan objInfo, 10000),
+		objStateCh: make(chan objInfo, 30000),
 	}
 }
 
