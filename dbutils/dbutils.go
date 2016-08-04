@@ -136,7 +136,24 @@ func (db *DBUtil) DeleteObjectFromDb(obj objects.ConfigObj) error {
 	db.DbLock.Lock()
 	return obj.DeleteObjectFromDb(db.Conn)
 }
-
+func (db *DBUtil) DeleteObjectWithKeyFromDb(key interface{}) error {
+	if db.Conn == nil {
+		return DBNotConnectedError{db.network, db.address}
+	}
+	list, err := redis.Strings(db.Do("KEYS", key))
+	if err != nil {
+		fmt.Println("Failed to get all object keys from db for key", key)
+		return err
+	}
+	for _, k := range list {
+		_, err = db.Do("DEL", k)
+		if err != nil {
+			fmt.Println("Failed to delete obj from DB for key", k)
+			return err
+		}
+	}
+	return nil
+}
 func (db *DBUtil) GetObjectFromDb(obj objects.ConfigObj, objKey string) (objects.ConfigObj, error) {
 	if db.Conn == nil {
 		return obj, DBNotConnectedError{db.network, db.address}
