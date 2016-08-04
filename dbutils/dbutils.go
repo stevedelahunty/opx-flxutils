@@ -76,6 +76,7 @@ type DBIntf interface {
 	StoreEventObjectInDb(events.EventObj) error
 	GetEventObjectFromDb(events.EventObj, string) (events.EventObj, error)
 	GetAllEventObjFromDb(events.EventObj) ([]events.EventObj, error)
+	MergeDbAndConfigObjForPatchUpdate(objects.ConfigObj, objects.ConfigObj, []objects.PatchOpInfo) (objects.ConfigObj, []bool, error)
 }
 
 func NewDBUtil(logger *logging.Writer) *DBUtil {
@@ -186,6 +187,12 @@ func (db *DBUtil) MergeDbAndConfigObj(obj, dbObj objects.ConfigObj, attrSet []bo
 	return obj.MergeDbAndConfigObj(dbObj, attrSet)
 }
 
+func (db *DBUtil) MergeDbAndConfigObjForPatchUpdate(obj, dbObj objects.ConfigObj, patchInfo []objects.PatchOpInfo) (objects.ConfigObj, []bool, error) {
+	defer db.DbLock.Unlock()
+	db.DbLock.Lock()
+	return obj.MergeDbAndConfigObjForPatchUpdate(dbObj, patchInfo)
+}
+
 func (db *DBUtil) GetBulkObjFromDb(obj objects.ConfigObj, startIndex, count int64) (error, int64, int64, bool,
 	[]objects.ConfigObj) {
 	if db.Conn == nil {
@@ -208,6 +215,8 @@ func (db *DBUtil) StoreEventObjectInDb(obj events.EventObj) error {
 	if db.Conn == nil {
 		return DBNotConnectedError{db.network, db.address}
 	}
+	defer db.DbLock.Unlock()
+	db.DbLock.Lock()
 	return obj.StoreObjectInDb(db.Conn)
 }
 
@@ -215,6 +224,8 @@ func (db *DBUtil) GetEventObjectFromDb(obj events.EventObj, objKey string) (even
 	if db.Conn == nil {
 		return obj, DBNotConnectedError{db.network, db.address}
 	}
+	defer db.DbLock.Unlock()
+	db.DbLock.Lock()
 	return obj.GetObjectFromDb(objKey, db.Conn)
 }
 
@@ -222,6 +233,8 @@ func (db *DBUtil) GetAllEventObjFromDb(obj events.EventObj) ([]events.EventObj, 
 	if db.Conn == nil {
 		return make([]events.EventObj, 0), DBNotConnectedError{db.network, db.address}
 	}
+	defer db.DbLock.Unlock()
+	db.DbLock.Lock()
 	return obj.GetAllObjFromDb(db.Conn)
 }
 
