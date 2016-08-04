@@ -55,6 +55,7 @@ func TestGetPrefixLen(t *testing.T) {
 		fmt.Println("netIP invalid")
 	}
 	prefixLen, err := GetPrefixLen(netIP)
+	fmt.Println("netIp:", netIP)
 	fmt.Println("prefixLen:", prefixLen, " err:", err, " for ip:", ip)
 
 	ip = "0.0.0.0"
@@ -65,12 +66,24 @@ func TestGetPrefixLen(t *testing.T) {
 	prefixLen, err = GetPrefixLen(netIP)
 	fmt.Println("prefixLen:", prefixLen, " err:", err, " for ip:", ip)
 
-	ip = "255.255.255.0"
+	ip = "255.254.0.0"
 	parsedIP := IPAddrStringToU8List(ip)
 	fmt.Println("parsedIP:", parsedIP, " for ip:", ip)
 	prefixLen, err = GetPrefixLen(parsedIP)
 	fmt.Println("prefixLen:", prefixLen, " err:", err, " for ip:", ip)
-	fmt.Println("**************************")
+
+	ip = "255.254.0.0"
+	prefixLen, err = GetPrefixLen(net.IP(ip))
+	fmt.Println("prefixLen:", prefixLen, " err:", err, " for ip:", ip)
+
+	ip = "11.1.10.2"
+	netIP, err = GetIP(ip)
+	if err != nil {
+		fmt.Println("netIP invalid")
+	}
+	fmt.Println("netIp:", netIP)
+	prefixLen, err = GetPrefixLen(netIP)
+	fmt.Println("prefixLen:", prefixLen, " err:", err, " for ip:", ip)
 }
 
 func TestGetNetworkPrefixFromCIDR(t *testing.T) {
@@ -85,6 +98,12 @@ func TestGetNetworkPrefixFromCIDR(t *testing.T) {
 	prefix, err = GetNetworkPrefixFromCIDR(ip)
 	fmt.Println("prefix:", prefix, " err:", err, " for ip:", ip)
 	ip = "fe80::/64"
+	prefix, err = GetNetworkPrefixFromCIDR(ip)
+	fmt.Println("prefix:", prefix, " err:", err, " for ip:", ip)
+	ip = "80.16.16.16/32"
+	prefix, err = GetNetworkPrefixFromCIDR(ip)
+	fmt.Println("prefix:", prefix, " err:", err, " for ip:", ip)
+	ip = "5010:1010::/32"
 	prefix, err = GetNetworkPrefixFromCIDR(ip)
 	fmt.Println("prefix:", prefix, " err:", err, " for ip:", ip)
 	fmt.Println("****************")
