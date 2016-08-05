@@ -88,6 +88,11 @@ type EventJson struct {
 	DaemonEvents []DaemonEvent
 }
 
+type EventDBData struct {
+	SrcObjKey   interface{}
+	Description string
+}
+
 type PubIntf interface {
 	Publish(string, interface{}, interface{})
 }
@@ -220,18 +225,14 @@ func publishRecvdEvents(eventId events.EventId, key interface{}, additionalInfo 
 	evt.SrcObjName = evtEnt.SrcObjName
 	evt.SrcObjKey = key
 	msg, _ := json.Marshal(*evt)
-	var unmarshalMsg events.Event
-	err = json.Unmarshal(msg, &unmarshalMsg)
-	keyMap, _ := events.EventKeyMap[evt.OwnerName]
-	obj, _ := keyMap[evt.SrcObjName]
-	obj = unmarshalMsg.SrcObjKey
-	str := fmt.Sprintf("%v", obj)
-	keyString := strings.TrimPrefix(str, "map[")
-	strKey := strings.Split(keyString, "]")
-	Logger.Info(fmt.Sprintln("Events to be published: ", evt, strKey[0]))
-	keyStr := fmt.Sprintf("Events#%s#%s#%s#%s#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, strKey[0], evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
-	Logger.Debug(fmt.Sprintln("Key Str :", keyStr))
-	err = DbHdl.StoreValInDb(keyStr, evt.Description, "Desc")
+	keyStr := fmt.Sprintf("Events#%s#%s#%s#%v#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, key, evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
+	Logger.Info(fmt.Sprintln("Key Str :", keyStr))
+	dbData := EventDBData{
+		SrcObjKey:   key,
+		Description: evt.Description,
+	}
+	data, _ := json.Marshal(dbData)
+	err = DbHdl.StoreValInDb(keyStr, data, "Data")
 	if err != nil {
 		Logger.Err(fmt.Sprintln("Storing Events in database failed, err:", err))
 	}
@@ -274,9 +275,16 @@ func GetEvents(evtObj events.EventObj, dbHdl dbutils.DBIntf, logger logging.Logg
 		}
 		sort.Sort(KeyObjSlice(keySlice))
 		for _, keyObj := range keySlice {
-			desc, err := typeConv.ConvertToString(dbHdl.GetValFromDB(keyObj.Key, "Desc"))
+			var dbData EventDBData
+			logger.Info(fmt.Sprintln("keyObj.Key:", keyObj.Key))
+			data, err := dbHdl.GetValFromDB(keyObj.Key, "Data")
 			if err != nil {
 				logger.Err(fmt.Sprintln("Error getting the value from DB", err))
+				continue
+			}
+			err = json.Unmarshal(data.([]byte), &dbData)
+			if err != nil {
+				logger.Err(fmt.Sprintln("Error unmarshalling data", err))
 				continue
 			}
 			str := strings.Split(keyObj.Key, "#")
@@ -284,9 +292,9 @@ func GetEvents(evtObj events.EventObj, dbHdl dbutils.DBIntf, logger logging.Logg
 				OwnerName:   str[1],
 				EventName:   str[2],
 				TimeStamp:   str[5],
-				Description: desc,
+				Description: dbData.Description,
 				SrcObjName:  str[3],
-				SrcObjKey:   str[4],
+				SrcObjKey:   dbData.SrcObjKey,
 			}
 			evt = append(evt, obj)
 		}
@@ -315,10 +323,10 @@ func constructQueryPattern(evtObj events.Event) string {
 	} else {
 		pattern = pattern + evtObj.SrcObjName + "#"
 	}
-	if evtObj.SrcObjKey == "" {
+	if evtObj.SrcObjKey == nil {
 		pattern = pattern + "*#"
 	} else {
-		pattern = pattern + evtObj.SrcObjKey + "#"
+		pattern = fmt.Sprintf("%s%v#", pattern, evtObj.SrcObjKey)
 	}
 	pattern = pattern + "*"
 	return pattern
