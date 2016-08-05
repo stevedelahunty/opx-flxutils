@@ -29,6 +29,15 @@ import (
 	"testing"
 )
 
+type IPRange struct {
+	testAddr      string
+	baseAddr      string
+	lowPrefixLen  int
+	highPrefixLen int
+}
+
+var IPRangeData []IPRange
+
 func IPAddrStringToU8List(ipAddr string) []uint8 {
 	ip := net.ParseIP(ipAddr)
 	if ip == nil {
@@ -36,7 +45,19 @@ func IPAddrStringToU8List(ipAddr string) []uint8 {
 	}
 	return ip
 }
-
+func TestInitNetUtils(t *testing.T) {
+	IPRangeData = make([]IPRange, 0)
+	IPRangeData = append(IPRangeData, IPRange{"192.168.1.1", "192.168.1.0", 24, 32})
+	IPRangeData = append(IPRangeData, IPRange{"192.168.2.1", "192.168.1.0", 26, 32})
+	IPRangeData = append(IPRangeData, IPRange{"192.168.2.1", "192.168.0.0", 16, 32})
+	IPRangeData = append(IPRangeData, IPRange{"192.167.2.1", "192.168.0.0", 16, 32})
+	IPRangeData = append(IPRangeData, IPRange{"192.168.1.1", "200.1.1.0", 24, 32})
+	IPRangeData = append(IPRangeData, IPRange{"2003::11:1:10:1", "5001:6000:7000::0", 64, 128})
+	IPRangeData = append(IPRangeData, IPRange{"2003::11:1:10:1", "2003:11:1::0", 64, 128})
+	IPRangeData = append(IPRangeData, IPRange{"2003::11:1:10:1", "2003::0", 64, 128})
+	IPRangeData = append(IPRangeData, IPRange{"5001::11:1:10:1", "5001:6000:7000::0", 64, 128})
+	IPRangeData = append(IPRangeData, IPRange{"5001:6000:7000::11:1:10:1", "5001:6000:7000::0", 64, 128})
+}
 func TestGetNetworkPrefix(t *testing.T) {
 	fmt.Println("****TestGetNetworkPrefix****")
 	ip := "10.1.10.1"
@@ -107,4 +128,12 @@ func TestGetNetworkPrefixFromCIDR(t *testing.T) {
 	prefix, err = GetNetworkPrefixFromCIDR(ip)
 	fmt.Println("prefix:", prefix, " err:", err, " for ip:", ip)
 	fmt.Println("****************")
+}
+
+func TestCheckIfInRange(t *testing.T) {
+	fmt.Println("****TestCheckIfInRange()****")
+	for _, data := range IPRangeData {
+		fmt.Println("match result for ", data, CheckIfInRange(data.testAddr, data.baseAddr, data.lowPrefixLen, data.highPrefixLen))
+	}
+	fmt.Println("****************************")
 }

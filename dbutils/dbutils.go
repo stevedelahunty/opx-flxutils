@@ -142,13 +142,13 @@ func (db *DBUtil) DeleteObjectWithKeyFromDb(key interface{}) error {
 	}
 	list, err := redis.Strings(db.Do("KEYS", key))
 	if err != nil {
-		fmt.Println("Failed to get all object keys from db for key", key)
+		fmt.Println("Failed to get all object keys from db for key", key, " error:")
 		return err
 	}
 	for _, k := range list {
 		_, err = db.Do("DEL", k)
 		if err != nil {
-			fmt.Println("Failed to delete obj from DB for key", k)
+			fmt.Println("Failed to delete obj from DB for key", k, " error:", err)
 			return err
 		}
 	}
