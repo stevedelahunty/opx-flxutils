@@ -154,3 +154,20 @@ func GetCIDR(ipAddr string, mask string) (addr string, err error) {
 	addr = (destNetIpAddr.Mask(net.IPMask(maskIP))).String() + "/" + strconv.Itoa(prefixLen)
 	return addr, err
 }
+func CheckIfInRange(testIPAddr, ipAddr string, lowPrefixLen int, highPrefixLen int) bool {
+	//fmt.Println("testIPAddr:", testIPAddr, " ipAddr:", ipAddr, " lowPrefixLen:", lowPrefixLen, " highPrefixLen:", highPrefixLen)
+	testAddr := net.ParseIP(testIPAddr)
+	for idx := lowPrefixLen; idx < highPrefixLen; idx++ {
+		networkAddr := ipAddr + "/" + strconv.Itoa(idx)
+		_, cidrnet, err := net.ParseCIDR(networkAddr)
+		if err != nil {
+			fmt.Println("Error parsing cidr addr ", networkAddr)
+			return false
+		}
+		if cidrnet.Contains(testAddr) == true {
+			//fmt.Println(cidrnet, " contains ip:", testAddr)
+			return true
+		}
+	}
+	return false
+}
