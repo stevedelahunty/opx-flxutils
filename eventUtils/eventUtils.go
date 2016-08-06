@@ -59,36 +59,6 @@ type Event struct {
 
 var EventMap map[events.EventId]EventDetails
 
-/*
-type FaultDetail struct {
-	RaiseFault       bool
-	ClearingEventId  int
-	ClearingDaemonId int
-	AlarmSeverity    string
-}
-
-type EventStruct struct {
-	EventId     int
-	EventName   string
-	Description string
-	SrcObjName  string
-	EventEnable bool
-	IsFault     bool
-	Fault       FaultDetail
-}
-
-type DaemonEvent struct {
-	DaemonId          int
-	DaemonName        string
-	DaemonEventEnable bool
-	EventList         []EventStruct
-}
-
-type EventJson struct {
-	DaemonEvents []DaemonEvent
-}
-*/
-
 type EventDBData struct {
 	SrcObjKey   interface{}
 	Description string
@@ -118,24 +88,6 @@ var DbHdl dbutils.DBIntf
 var PublishCh chan RecvdEvent
 
 func initEventDetails(ownerName string) error {
-	/*
-		var evtJson EventJson
-		eventsFile := EventDir + "events.json"
-		bytes, err := ioutil.ReadFile(eventsFile)
-		if err != nil {
-			Logger.Err(fmt.Sprintln("Error in reading ", eventsFile, " file."))
-			err := errors.New(fmt.Sprintln("Error in reading ", eventsFile, " file."))
-			return err
-		}
-
-		err = json.Unmarshal(bytes, &evtJson)
-		if err != nil {
-			Logger.Err(fmt.Sprintln("Errors in unmarshalling json file : ", eventsFile))
-			err := errors.New(fmt.Sprintln("Errors in unmarshalling json file: ", eventsFile))
-			return err
-		}
-
-	*/
 	evtJson, err := ParseEventsJson()
 	if err != nil {
 		Logger.Err(fmt.Sprintln("Error Parsing Events Json file", err))
@@ -169,14 +121,14 @@ func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger l
 	Logger = logger
 	PubHdl = pubHdl
 	DbHdl = dbHdl
-	Logger.Info(fmt.Sprintln("Initializing Owner Name :", ownerName))
+	Logger.Debug(fmt.Sprintln("Initializing Owner Name :", ownerName))
 	err := initEventDetails(ownerName)
 	if err != nil {
 		return err
 	}
 	PublishCh = make(chan RecvdEvent, evtChBufSize)
 	go eventHandler()
-	Logger.Info(fmt.Sprintln("EventMap:", EventMap))
+	Logger.Debug(fmt.Sprintln("EventMap:", EventMap))
 	return nil
 }
 
