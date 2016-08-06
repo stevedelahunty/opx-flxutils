@@ -156,9 +156,33 @@ func GetCIDR(ipAddr string, mask string) (addr string, err error) {
 }
 func CheckIfInRange(testIPAddr, ipAddr string, lowPrefixLen int, highPrefixLen int) bool {
 	//fmt.Println("testIPAddr:", testIPAddr, " ipAddr:", ipAddr, " lowPrefixLen:", lowPrefixLen, " highPrefixLen:", highPrefixLen)
-	testAddr := net.ParseIP(testIPAddr)
-	for idx := lowPrefixLen; idx < highPrefixLen; idx++ {
-		networkAddr := ipAddr + "/" + strconv.Itoa(idx)
+	//testAddr := net.ParseIP(testIPAddr)
+	testAddr, _, err := net.ParseCIDR(testIPAddr)
+	if err != nil {
+		fmt.Println("error parsing address:", testIPAddr)
+		return false
+	}
+	if lowPrefixLen == -1 && highPrefixLen == -1 {
+		_, cidrnet, err := net.ParseCIDR(ipAddr)
+		if err != nil {
+			fmt.Println("Error parsing cidr addr ", ipAddr)
+			return false
+		}
+		if cidrnet.Contains(testAddr) == true {
+			//fmt.Println(cidrnet, " contains ip:", testAddr)
+			return true
+		} else {
+			fmt.Println(cidrnet, " does not contain ip:", testAddr)
+			return false
+		}
+	}
+	baseAddr, _, err := net.ParseCIDR(ipAddr)
+	if err != nil {
+		fmt.Println("error parsing address:", ipAddr)
+		return false
+	}
+	for idx := lowPrefixLen; idx <= highPrefixLen; idx++ {
+		networkAddr := baseAddr.String() + "/" + strconv.Itoa(idx)
 		_, cidrnet, err := net.ParseCIDR(networkAddr)
 		if err != nil {
 			fmt.Println("Error parsing cidr addr ", networkAddr)
