@@ -27,7 +27,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"models/events"
 	"sort"
 	"strconv"
@@ -60,6 +59,7 @@ type Event struct {
 
 var EventMap map[events.EventId]EventDetails
 
+/*
 type FaultDetail struct {
 	RaiseFault       bool
 	ClearingEventId  int
@@ -87,6 +87,7 @@ type DaemonEvent struct {
 type EventJson struct {
 	DaemonEvents []DaemonEvent
 }
+*/
 
 type EventDBData struct {
 	SrcObjKey   interface{}
@@ -116,27 +117,30 @@ var PubHdl PubIntf
 var DbHdl dbutils.DBIntf
 var PublishCh chan RecvdEvent
 
-const (
-	EventDir string = "/etc/flexswitch/"
-)
-
 func initEventDetails(ownerName string) error {
-	var evtJson EventJson
-	eventsFile := EventDir + "events.json"
-	bytes, err := ioutil.ReadFile(eventsFile)
+	/*
+		var evtJson EventJson
+		eventsFile := EventDir + "events.json"
+		bytes, err := ioutil.ReadFile(eventsFile)
+		if err != nil {
+			Logger.Err(fmt.Sprintln("Error in reading ", eventsFile, " file."))
+			err := errors.New(fmt.Sprintln("Error in reading ", eventsFile, " file."))
+			return err
+		}
+
+		err = json.Unmarshal(bytes, &evtJson)
+		if err != nil {
+			Logger.Err(fmt.Sprintln("Errors in unmarshalling json file : ", eventsFile))
+			err := errors.New(fmt.Sprintln("Errors in unmarshalling json file: ", eventsFile))
+			return err
+		}
+
+	*/
+	evtJson, err := ParseEventsJson()
 	if err != nil {
-		Logger.Err(fmt.Sprintln("Error in reading ", eventsFile, " file."))
-		err := errors.New(fmt.Sprintln("Error in reading ", eventsFile, " file."))
+		Logger.Err(fmt.Sprintln("Error Parsing Events Json file", err))
 		return err
 	}
-
-	err = json.Unmarshal(bytes, &evtJson)
-	if err != nil {
-		Logger.Err(fmt.Sprintln("Errors in unmarshalling json file : ", eventsFile))
-		err := errors.New(fmt.Sprintln("Errors in unmarshalling json file: ", eventsFile))
-		return err
-	}
-
 	Logger.Debug(fmt.Sprintln("Owner Name :", ownerName, "evtJson:", evtJson))
 	for _, daemon := range evtJson.DaemonEvents {
 		Logger.Debug(fmt.Sprintln("OwnerName:", ownerName, "daemon.DaemonName:", daemon.DaemonName))
