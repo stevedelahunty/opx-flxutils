@@ -33,10 +33,10 @@ import (
 	"utils/patriciaDB"
 	"utils/policy/policyCommonDefs"
 	//	"utils/commonDefs"
-	"net"
+	//"net"
 	//	"asicdServices"
 	//	"asicd/asicdConstDefs"
-	"bytes"
+	//"bytes"
 	//  "database/sql"
 )
 
@@ -228,10 +228,11 @@ func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Pre
 	return match
 }
 */
-func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Prefix, condition PolicyCondition) (match bool) {
-	db.Logger.Info("ipAddr : ", ipAddr, " ipPrefix: ", ipPrefix, " condition.IpPrefix: ", condition.ConditionInfo.(MatchPrefixConditionInfo).IpPrefix, " conditionInfo,MaskLengthRange: ", condition.ConditionInfo.(MatchPrefixConditionInfo).Prefix.IpPrefix)
+func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, condition PolicyCondition) (match bool) {
+	db.Logger.Info("ipAddr : ", ipAddr, " condition.IpPrefix: ", condition.ConditionInfo.(MatchPrefixConditionInfo).IpPrefix, " conditionInfo,MaskLengthRange: ", condition.ConditionInfo.(MatchPrefixConditionInfo).Prefix.IpPrefix)
 	conditionInfo := condition.ConditionInfo.(MatchPrefixConditionInfo)
-	if conditionInfo.LowRange == -1 && conditionInfo.HighRange == -1 {
+	match = netUtils.CheckIfInRange(conditionInfo.Prefix.IpPrefix, ipAddr, conditionInfo.LowRange, conditionInfo.HighRange)
+	/*	if conditionInfo.LowRange == -1 && conditionInfo.HighRange == -1 {
 		_, ipNet, err := net.ParseCIDR(condition.ConditionInfo.(MatchPrefixConditionInfo).Prefix.IpPrefix)
 		if err != nil {
 			return false
@@ -251,7 +252,7 @@ func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Pre
 			db.Logger.Info(" Did not match the exact prefix")
 			return false
 		}
-	}
+	}*/
 	/*	tempSlice := strings.Split(ipAddr, "/")
 		maskLen, err := strconv.Atoi(tempSlice[1])
 		if err != nil {
@@ -266,7 +267,7 @@ func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Pre
 			db.Logger.Info("Mask range of the route ", maskLen, " within the required mask range:", conditionInfo.LowRange, "-", conditionInfo.HighRange)
 			return true
 		}*/
-	baseIp, _, err := net.ParseCIDR(condition.ConditionInfo.(MatchPrefixConditionInfo).Prefix.IpPrefix)
+	/*baseIp, _, err := net.ParseCIDR(condition.ConditionInfo.(MatchPrefixConditionInfo).Prefix.IpPrefix)
 	if err != nil {
 		db.Logger.Info("Invalid condition ip:", condition.ConditionInfo.(MatchPrefixConditionInfo).Prefix.IpPrefix)
 		return false
@@ -276,18 +277,18 @@ func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Pre
 		db.Logger.Err("Invalid ipAddr:", ipAddr)
 		return false
 	}
-	match = netUtils.CheckIfInRange(testIp.String(), baseIp.String(), conditionInfo.LowRange, conditionInfo.HighRange)
+	match = netUtils.CheckIfInRange(testIp.String(), baseIp.String(), conditionInfo.LowRange, conditionInfo.HighRange)*/
 	return match
 }
 
 func (db *PolicyEngineDB) DstIpPrefixMatchConditionfunc(entity PolicyEngineFilterEntityParams, condition PolicyCondition) (match bool) {
 	db.Logger.Info("dstIpPrefixMatchConditionfunc")
-	ipPrefix, err := netUtils.GetNetworkPrefixFromCIDR(entity.DestNetIp)
+	/*ipPrefix, err := netUtils.GetNetworkPrefixFromCIDR(entity.DestNetIp)
 	if err != nil {
 		db.Logger.Info("Invalid ipPrefix for the route ", entity.DestNetIp)
 		return false
-	}
-	match = db.FindPrefixMatch(entity.DestNetIp, ipPrefix, condition)
+	}*/
+	match = db.FindPrefixMatch(entity.DestNetIp, condition)
 	if match {
 		db.Logger.Info("Found a match for this prefix")
 	}
