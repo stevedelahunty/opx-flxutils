@@ -60,8 +60,9 @@ type Event struct {
 var EventMap map[events.EventId]EventDetails
 
 type EventDBData struct {
-	SrcObjKey   interface{}
-	Description string
+	SrcObjKey      interface{}
+	Description    string
+	AdditionalData interface{}
 }
 
 type PubIntf interface {
@@ -180,8 +181,9 @@ func publishTxEvents(txEvt *TxEvent) error {
 	keyStr := fmt.Sprintf("Events#%s#%s#%s#%v#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, txEvt.Key, evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
 	Logger.Info(fmt.Sprintln("Key Str :", keyStr))
 	dbData := EventDBData{
-		SrcObjKey:   txEvt.Key,
-		Description: evt.Description,
+		SrcObjKey:      txEvt.Key,
+		Description:    evt.Description,
+		AdditionalData: txEvt.AdditionalData,
 	}
 	data, _ := json.Marshal(dbData)
 	err = DbHdl.StoreValInDb(keyStr, data, "Data")
@@ -241,12 +243,13 @@ func GetEvents(evtObj events.EventObj, dbHdl dbutils.DBIntf, logger logging.Logg
 			}
 			str := strings.Split(keyObj.Key, "#")
 			obj := events.Event{
-				OwnerName:   str[1],
-				EventName:   str[2],
-				TimeStamp:   str[5],
-				Description: dbData.Description,
-				SrcObjName:  str[3],
-				SrcObjKey:   dbData.SrcObjKey,
+				OwnerName:      str[1],
+				EventName:      str[2],
+				TimeStamp:      str[5],
+				Description:    dbData.Description,
+				SrcObjName:     str[3],
+				SrcObjKey:      dbData.SrcObjKey,
+				AdditionalData: dbData.AdditionalData,
 			}
 			evt = append(evt, obj)
 		}
