@@ -86,7 +86,7 @@ var GlobalEventEnable bool = true
 var Logger logging.LoggerIntf
 var PubHdl PubIntf
 var DbHdl dbutils.DBIntf
-var PublishCh chan TxEvent
+var PublishCh chan *TxEvent
 
 func initEventDetails(ownerName string) error {
 	evtJson, err := ParseEventsJson()
@@ -127,7 +127,7 @@ func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger l
 	if err != nil {
 		return err
 	}
-	PublishCh = make(chan TxEvent, evtChBufSize)
+	PublishCh = make(chan *TxEvent, evtChBufSize)
 	go eventHandler()
 	Logger.Debug(fmt.Sprintln("EventMap:", EventMap))
 	return nil
@@ -136,7 +136,6 @@ func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger l
 func eventHandler() {
 	for {
 		txEvt := <-PublishCh
-		//err := publishRecvdEvents(recvdEvt.eventId, recvdEvt.key, recvdEvt.additionalInfo)
 		err := publishTxEvents(txEvt)
 		if err != nil {
 			Logger.Err(fmt.Sprintln("Error Publishing Events:", err))
@@ -144,21 +143,12 @@ func eventHandler() {
 	}
 }
 
-//func PublishEvents(eventId events.EventId, key interface{}, additionalInfo string, additionalData interface{}) error {
-func PublishEvents(txEvt TxEvent) error {
-	/*
-		recvdEvt := RecvdEvent{
-			eventId:        eventId,
-			key:            key,
-			additionalInfo: additionalInfo,
-		}
-	*/
+func PublishEvents(txEvt *TxEvent) error {
 	PublishCh <- txEvt
 	return nil
 }
 
-//func publishRecvdEvents(eventId events.EventId, key interface{}, additionalInfo string) error {
-func publishTxEvents(txEvt TxEvent) error {
+func publishTxEvents(txEvt *TxEvent) error {
 	var err error
 	if GlobalEventEnable == false {
 		return nil
