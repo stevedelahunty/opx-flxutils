@@ -75,17 +75,18 @@ type KeyObj struct {
 
 type KeyObjSlice []KeyObj
 
-type RecvdEvent struct {
-	eventId        events.EventId
-	key            interface{}
-	additionalInfo string
+type TxEvent struct {
+	EventId        events.EventId
+	Key            interface{}
+	AdditionalInfo string
+	AdditionalData interface{}
 }
 
 var GlobalEventEnable bool = true
 var Logger logging.LoggerIntf
 var PubHdl PubIntf
 var DbHdl dbutils.DBIntf
-var PublishCh chan RecvdEvent
+var PublishCh chan TxEvent
 
 func initEventDetails(ownerName string) error {
 	evtJson, err := ParseEventsJson()
@@ -126,7 +127,7 @@ func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger l
 	if err != nil {
 		return err
 	}
-	PublishCh = make(chan RecvdEvent, evtChBufSize)
+	PublishCh = make(chan TxEvent, evtChBufSize)
 	go eventHandler()
 	Logger.Debug(fmt.Sprintln("EventMap:", EventMap))
 	return nil
@@ -134,33 +135,38 @@ func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger l
 
 func eventHandler() {
 	for {
-		recvdEvt := <-PublishCh
-		err := publishRecvdEvents(recvdEvt.eventId, recvdEvt.key, recvdEvt.additionalInfo)
+		txEvt := <-PublishCh
+		//err := publishRecvdEvents(recvdEvt.eventId, recvdEvt.key, recvdEvt.additionalInfo)
+		err := publishTxEvents(txEvt)
 		if err != nil {
 			Logger.Err(fmt.Sprintln("Error Publishing Events:", err))
 		}
 	}
 }
 
-func PublishEvents(eventId events.EventId, key interface{}, additionalInfo string) error {
-	recvdEvt := RecvdEvent{
-		eventId:        eventId,
-		key:            key,
-		additionalInfo: additionalInfo,
-	}
-	PublishCh <- recvdEvt
+//func PublishEvents(eventId events.EventId, key interface{}, additionalInfo string, additionalData interface{}) error {
+func PublishEvents(txEvt TxEvent) error {
+	/*
+		recvdEvt := RecvdEvent{
+			eventId:        eventId,
+			key:            key,
+			additionalInfo: additionalInfo,
+		}
+	*/
+	PublishCh <- txEvt
 	return nil
 }
 
-func publishRecvdEvents(eventId events.EventId, key interface{}, additionalInfo string) error {
+//func publishRecvdEvents(eventId events.EventId, key interface{}, additionalInfo string) error {
+func publishTxEvents(txEvt TxEvent) error {
 	var err error
 	if GlobalEventEnable == false {
 		return nil
 	}
 	evt := new(Event)
-	evtEnt, exist := EventMap[eventId]
+	evtEnt, exist := EventMap[txEvt.EventId]
 	if !exist {
-		err := errors.New(fmt.Sprintln("Unable to find the event corresponding to given eventId: ", eventId))
+		err := errors.New(fmt.Sprintln("Unable to find the event corresponding to given eventId: ", txEvt.EventId))
 		return err
 	}
 
@@ -170,21 +176,21 @@ func publishRecvdEvents(eventId events.EventId, key interface{}, additionalInfo 
 	//Store raw event in DB
 	evt.OwnerId = evtEnt.OwnerId
 	evt.OwnerName = evtEnt.OwnerName
-	evt.EvtId = eventId
+	evt.EvtId = txEvt.EventId
 	evt.EventName = evtEnt.EventName
 	evt.TimeStamp = time.Now()
-	if additionalInfo != "" {
-		evt.Description = evtEnt.Description + ": " + additionalInfo
+	if txEvt.AdditionalInfo != "" {
+		evt.Description = evtEnt.Description + ": " + txEvt.AdditionalInfo
 	} else {
 		evt.Description = evtEnt.Description
 	}
 	evt.SrcObjName = evtEnt.SrcObjName
-	evt.SrcObjKey = key
+	evt.SrcObjKey = txEvt.Key
 	msg, _ := json.Marshal(*evt)
-	keyStr := fmt.Sprintf("Events#%s#%s#%s#%v#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, key, evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
+	keyStr := fmt.Sprintf("Events#%s#%s#%s#%v#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, txEvt.Key, evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
 	Logger.Info(fmt.Sprintln("Key Str :", keyStr))
 	dbData := EventDBData{
-		SrcObjKey:   key,
+		SrcObjKey:   txEvt.Key,
 		Description: evt.Description,
 	}
 	data, _ := json.Marshal(dbData)
@@ -194,7 +200,7 @@ func publishRecvdEvents(eventId events.EventId, key interface{}, additionalInfo 
 	}
 	//Store event stats in DB
 	var statObj events.EventStats
-	statObj.EventId = eventId
+	statObj.EventId = txEvt.EventId
 	dbObj, err := DbHdl.GetEventObjectFromDb(statObj, statObj.GetKey())
 	if err != nil {
 		//Event stat does not exist in db. Create one.
