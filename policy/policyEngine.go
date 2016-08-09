@@ -231,7 +231,7 @@ func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Pre
 func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, condition PolicyCondition) (match bool) {
 	db.Logger.Info("ipAddr : ", ipAddr, " condition.IpPrefix: ", condition.ConditionInfo.(MatchPrefixConditionInfo).IpPrefix, " conditionInfo,MaskLengthRange: ", condition.ConditionInfo.(MatchPrefixConditionInfo).Prefix.IpPrefix)
 	conditionInfo := condition.ConditionInfo.(MatchPrefixConditionInfo)
-	match = netUtils.CheckIfInRange(conditionInfo.Prefix.IpPrefix, ipAddr, conditionInfo.LowRange, conditionInfo.HighRange)
+	match = netUtils.CheckIfInRange(ipAddr, conditionInfo.Prefix.IpPrefix, conditionInfo.LowRange, conditionInfo.HighRange)
 	/*	if conditionInfo.LowRange == -1 && conditionInfo.HighRange == -1 {
 		_, ipNet, err := net.ParseCIDR(condition.ConditionInfo.(MatchPrefixConditionInfo).Prefix.IpPrefix)
 		if err != nil {
