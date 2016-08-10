@@ -230,7 +230,7 @@ func GetEvents(evtObj events.EventObj, dbHdl dbutils.DBIntf, logger logging.Logg
 		sort.Sort(KeyObjSlice(keySlice))
 		for _, keyObj := range keySlice {
 			var dbData EventDBData
-			logger.Info(fmt.Sprintln("keyObj.Key:", keyObj.Key))
+			logger.Debug(fmt.Sprintln("keyObj.Key:", keyObj.Key))
 			data, err := dbHdl.GetValFromDB(keyObj.Key, "Data")
 			if err != nil {
 				logger.Err(fmt.Sprintln("Error getting the value from DB", err))
