@@ -60,8 +60,9 @@ type Event struct {
 var EventMap map[events.EventId]EventDetails
 
 type EventDBData struct {
-	SrcObjKey   interface{}
-	Description string
+	SrcObjKey      interface{}
+	Description    string
+	AdditionalData interface{}
 }
 
 type PubIntf interface {
@@ -75,17 +76,18 @@ type KeyObj struct {
 
 type KeyObjSlice []KeyObj
 
-type RecvdEvent struct {
-	eventId        events.EventId
-	key            interface{}
-	additionalInfo string
+type TxEvent struct {
+	EventId        events.EventId
+	Key            interface{}
+	AdditionalInfo string
+	AdditionalData interface{}
 }
 
 var GlobalEventEnable bool = true
 var Logger logging.LoggerIntf
 var PubHdl PubIntf
 var DbHdl dbutils.DBIntf
-var PublishCh chan RecvdEvent
+var PublishCh chan *TxEvent
 
 func initEventDetails(ownerName string) error {
 	evtJson, err := ParseEventsJson()
@@ -126,7 +128,7 @@ func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger l
 	if err != nil {
 		return err
 	}
-	PublishCh = make(chan RecvdEvent, evtChBufSize)
+	PublishCh = make(chan *TxEvent, evtChBufSize)
 	go eventHandler()
 	Logger.Debug(fmt.Sprintln("EventMap:", EventMap))
 	return nil
@@ -134,33 +136,28 @@ func InitEvents(ownerName string, dbHdl dbutils.DBIntf, pubHdl PubIntf, logger l
 
 func eventHandler() {
 	for {
-		recvdEvt := <-PublishCh
-		err := publishRecvdEvents(recvdEvt.eventId, recvdEvt.key, recvdEvt.additionalInfo)
+		txEvt := <-PublishCh
+		err := publishTxEvents(txEvt)
 		if err != nil {
 			Logger.Err(fmt.Sprintln("Error Publishing Events:", err))
 		}
 	}
 }
 
-func PublishEvents(eventId events.EventId, key interface{}, additionalInfo string) error {
-	recvdEvt := RecvdEvent{
-		eventId:        eventId,
-		key:            key,
-		additionalInfo: additionalInfo,
-	}
-	PublishCh <- recvdEvt
+func PublishEvents(txEvt *TxEvent) error {
+	PublishCh <- txEvt
 	return nil
 }
 
-func publishRecvdEvents(eventId events.EventId, key interface{}, additionalInfo string) error {
+func publishTxEvents(txEvt *TxEvent) error {
 	var err error
 	if GlobalEventEnable == false {
 		return nil
 	}
 	evt := new(Event)
-	evtEnt, exist := EventMap[eventId]
+	evtEnt, exist := EventMap[txEvt.EventId]
 	if !exist {
-		err := errors.New(fmt.Sprintln("Unable to find the event corresponding to given eventId: ", eventId))
+		err := errors.New(fmt.Sprintln("Unable to find the event corresponding to given eventId: ", txEvt.EventId))
 		return err
 	}
 
@@ -170,22 +167,23 @@ func publishRecvdEvents(eventId events.EventId, key interface{}, additionalInfo 
 	//Store raw event in DB
 	evt.OwnerId = evtEnt.OwnerId
 	evt.OwnerName = evtEnt.OwnerName
-	evt.EvtId = eventId
+	evt.EvtId = txEvt.EventId
 	evt.EventName = evtEnt.EventName
 	evt.TimeStamp = time.Now()
-	if additionalInfo != "" {
-		evt.Description = evtEnt.Description + ": " + additionalInfo
+	if txEvt.AdditionalInfo != "" {
+		evt.Description = evtEnt.Description + ": " + txEvt.AdditionalInfo
 	} else {
 		evt.Description = evtEnt.Description
 	}
 	evt.SrcObjName = evtEnt.SrcObjName
-	evt.SrcObjKey = key
+	evt.SrcObjKey = txEvt.Key
 	msg, _ := json.Marshal(*evt)
-	keyStr := fmt.Sprintf("Events#%s#%s#%s#%v#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, key, evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
+	keyStr := fmt.Sprintf("Events#%s#%s#%s#%v#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, txEvt.Key, evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
 	Logger.Info(fmt.Sprintln("Key Str :", keyStr))
 	dbData := EventDBData{
-		SrcObjKey:   key,
-		Description: evt.Description,
+		SrcObjKey:      txEvt.Key,
+		Description:    evt.Description,
+		AdditionalData: txEvt.AdditionalData,
 	}
 	data, _ := json.Marshal(dbData)
 	err = DbHdl.StoreValInDb(keyStr, data, "Data")
@@ -194,7 +192,7 @@ func publishRecvdEvents(eventId events.EventId, key interface{}, additionalInfo 
 	}
 	//Store event stats in DB
 	var statObj events.EventStats
-	statObj.EventId = eventId
+	statObj.EventId = txEvt.EventId
 	dbObj, err := DbHdl.GetEventObjectFromDb(statObj, statObj.GetKey())
 	if err != nil {
 		//Event stat does not exist in db. Create one.
@@ -232,7 +230,7 @@ func GetEvents(evtObj events.EventObj, dbHdl dbutils.DBIntf, logger logging.Logg
 		sort.Sort(KeyObjSlice(keySlice))
 		for _, keyObj := range keySlice {
 			var dbData EventDBData
-			logger.Info(fmt.Sprintln("keyObj.Key:", keyObj.Key))
+			logger.Debug(fmt.Sprintln("keyObj.Key:", keyObj.Key))
 			data, err := dbHdl.GetValFromDB(keyObj.Key, "Data")
 			if err != nil {
 				logger.Err(fmt.Sprintln("Error getting the value from DB", err))
@@ -245,12 +243,13 @@ func GetEvents(evtObj events.EventObj, dbHdl dbutils.DBIntf, logger logging.Logg
 			}
 			str := strings.Split(keyObj.Key, "#")
 			obj := events.Event{
-				OwnerName:   str[1],
-				EventName:   str[2],
-				TimeStamp:   str[5],
-				Description: dbData.Description,
-				SrcObjName:  str[3],
-				SrcObjKey:   dbData.SrcObjKey,
+				OwnerName:      str[1],
+				EventName:      str[2],
+				TimeStamp:      str[5],
+				Description:    dbData.Description,
+				SrcObjName:     str[3],
+				SrcObjKey:      dbData.SrcObjKey,
+				AdditionalData: dbData.AdditionalData,
 			}
 			evt = append(evt, obj)
 		}
