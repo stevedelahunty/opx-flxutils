@@ -177,15 +177,18 @@ func (logger *Writer) readLogLevelFromDb() error {
 	var err error
 	retryCount := 0
 	ticker := time.NewTicker(DB_CONNECT_TIME_INTERVAL * time.Second)
-	for _ = range ticker.C {
-		retryCount += 1
-		dbHdl, err = redis.Dial("tcp", ":6379")
-		if err != nil {
-			if retryCount%DB_CONNECT_RETRY_LOG_COUNT == 0 {
-				logger.Err(fmt.Sprintln("Failed to dial out to Redis server. Ret    rying connection. Num retries = ", retryCount))
+	dbHdl, err = redis.Dial("tcp", ":6379")
+	if err != nil {
+		for _ = range ticker.C {
+			retryCount += 1
+			dbHdl, err = redis.Dial("tcp", ":6379")
+			if err != nil {
+				if retryCount%DB_CONNECT_RETRY_LOG_COUNT == 0 {
+					logger.Err(fmt.Sprintln("Failed to dial out to Redis server. Ret    rying connection. Num retries = ", retryCount))
+				}
+			} else {
+				break
 			}
-		} else {
-			break
 		}
 	}
 
