@@ -140,3 +140,16 @@ func TestCheckIfInRange(t *testing.T) {
 	}
 	fmt.Println("****************************")
 }
+func TestIsZeroesIPString(t *testing.T) {
+	fmt.Println("****TestIsZeroesIPString()****")
+	ipAddr := "0.0.0.0"
+	isZeroes, err := IsZerosIPString(ipAddr)
+	fmt.Println("isZeroes:", isZeroes, " err:", err, " for ipAddr:", ipAddr)
+	ipAddr = "10.10.10.10"
+	isZeroes, err = IsZerosIPString(ipAddr)
+	fmt.Println("isZeroes:", isZeroes, " err:", err, " for ipAddr:", ipAddr)
+	ipAddr = "0:0:0:0:0:0:0:0"
+	isZeroes, err = IsZerosIPString(ipAddr)
+	fmt.Println("isZeroes:", isZeroes, " err:", err, " for ipAddr:", ipAddr)
+	fmt.Println("*******************************")
+}
