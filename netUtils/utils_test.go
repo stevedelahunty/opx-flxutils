@@ -153,3 +153,42 @@ func TestIsZeroesIPString(t *testing.T) {
 	fmt.Println("isZeroes:", isZeroes, " err:", err, " for ipAddr:", ipAddr)
 	fmt.Println("*******************************")
 }
+
+func TestCheckIPv4Address(t *testing.T) {
+	ip := "10.1.10.1/24"
+	fmt.Println("****TestCheckIPv4Address()****")
+	if IsIPv4Addr(ip) == false {
+		t.Error(ip, "is ipv4 address")
+	}
+	if IsIPv6Addr(ip) == true {
+		t.Error(ip, "is not ipv6 address")
+	}
+
+	if IsIPv4Addr("10.1.10.20") != true {
+		t.Error("10.1.10.20 should fail the check")
+	}
+
+	if IsIPv6Addr("10.1.10.20") == true {
+		t.Error("10.1.10.20 is ipv4 address not ipv6")
+	}
+	fmt.Println("****************************")
+}
+
+func TestCheckIPv6Address(t *testing.T) {
+	ip := "2003::2/64"
+	fmt.Println("****TestCheckIPv6Address()****")
+	if IsIPv6Addr(ip) == false {
+		t.Error(ip, "is ipv6 address")
+	}
+
+	if IsIPv4Addr(ip) == true {
+		t.Error(ip, "is not ipv4 address")
+	}
+	if IsIPv6Addr("2003::2") != true {
+		t.Error("2003::2 should fail the check")
+	}
+	if IsIPv4Addr("2003::2") == true {
+		t.Error("2003::2 is ipv6 address not ipv4")
+	}
+	fmt.Println("****************************")
+}
