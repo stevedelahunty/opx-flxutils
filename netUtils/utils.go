@@ -208,3 +208,41 @@ func CheckIfInRange(testIPAddr, ipAddr string, lowPrefixLen int, highPrefixLen i
 	}
 	return false
 }
+
+func IsIPv6Addr(ipAddr string) bool {
+	ip, _, err := net.ParseCIDR(ipAddr)
+	if err != nil {
+		ip = net.ParseIP(ipAddr)
+		if ip == nil {
+			return false
+		}
+	}
+	ip1 := ip.To4()
+	if ip1 == nil {
+		return true
+	}
+	ip2 := ip.To16()
+	if len(ip1) == len(ip2) {
+		return true
+	}
+	return false
+}
+
+func IsIPv4Addr(ipAddr string) bool {
+	ip, _, err := net.ParseCIDR(ipAddr)
+	if err != nil {
+		ip = net.ParseIP(ipAddr)
+		if ip == nil {
+			return false
+		}
+	}
+	ip1 := ip.To4()
+	if ip1 == nil {
+		return false
+	}
+	ip2 := ip.To16()
+	if len(ip1) != len(ip2) {
+		return true
+	}
+	return false
+}
