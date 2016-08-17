@@ -525,6 +525,11 @@ func (db *PolicyEngineDB) UpdateApplyPolicy(info ApplyPolicyInfo, apply bool) {
 	for i := 0; i < len(info.Conditions); i++ {
 		conditions = append(conditions, info.Conditions[i])
 	}
+	var policy Policy
+	policyInfoGet := db.PolicyDB.Get(patriciaDB.Prefix(applyPolicy.Name))
+	if policyInfoGet != nil {
+		policy = policyInfoGet.(Policy)
+	}
 	exportType, importType, _ := db.PolicyActionType(action.ActionType)
 	db.Logger.Info("exportType:", exportType, " importType:", importType)
 	if importType {
@@ -533,13 +538,16 @@ func (db *PolicyEngineDB) UpdateApplyPolicy(info ApplyPolicyInfo, apply bool) {
 			db.ImportPolicyPrecedenceMap = make(map[int]string)
 		}
 		db.ImportPolicyPrecedenceMap[int(applyPolicy.Precedence)] = applyPolicy.Name
+		policy.ImportPolicy = true
 	} else if exportType {
 		db.Logger.Info("Adding ", applyPolicy.Name, " as export policy")
 		if db.ExportPolicyPrecedenceMap == nil {
 			db.ExportPolicyPrecedenceMap = make(map[int]string)
 		}
 		db.ExportPolicyPrecedenceMap[int(applyPolicy.Precedence)] = applyPolicy.Name
+		policy.ExportPolicy = true
 	}
+	db.PolicyDB.Set(patriciaDB.Prefix(applyPolicy.Name), policy)
 	if db.ApplyPolicyMap[applyPolicy.Name] == nil {
 		db.ApplyPolicyMap[applyPolicy.Name] = make([]ApplyPolicyInfo, 0)
 	}

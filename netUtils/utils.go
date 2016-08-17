@@ -101,7 +101,7 @@ func IsZerosIPString(ipAddr string) (bool, error) {
 	} else {
 		return IsZeros(ip), nil
 	}
-	fmt.Println("ip:", ip, "len(ip):", len(ip), "ip[12:15]:", ip[12:15], " net.IP(ipAddr):", net.IP(ipAddr))
+	//fmt.Println("ip:", ip, "len(ip):", len(ip), "ip[12:15]:", ip[12:15], " net.IP(ipAddr):", net.IP(ipAddr))
 	return IsZeros(ip), nil
 }
 func IsIPv4Mask(mask net.IP) bool {
