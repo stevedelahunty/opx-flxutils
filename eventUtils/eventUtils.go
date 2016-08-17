@@ -165,6 +165,7 @@ func publishTxEvents(txEvt *TxEvent) error {
 		return nil
 	}
 	//Store raw event in DB
+	evt.Enable = true
 	evt.OwnerId = evtEnt.OwnerId
 	evt.OwnerName = evtEnt.OwnerName
 	evt.EvtId = txEvt.EventId

@@ -53,7 +53,7 @@ func (e DBNotConnectedError) Error() string {
 
 type DBUtil struct {
 	redis.Conn
-	logger  *logging.Writer
+	logger  logging.LoggerIntf
 	network string
 	address string
 	DbLock  sync.RWMutex
@@ -85,7 +85,7 @@ type DBIntf interface {
 	GetObjKeyFromUUID(uuid string) (string, error)
 }
 
-func NewDBUtil(logger *logging.Writer) *DBUtil {
+func NewDBUtil(logger logging.LoggerIntf) *DBUtil {
 	return &DBUtil{
 		logger:  logger,
 		network: "tcp",
