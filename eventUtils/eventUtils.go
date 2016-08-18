@@ -54,7 +54,8 @@ type EventBase struct {
 
 type Event struct {
 	EventBase
-	SrcObjKey interface{}
+	SrcObjKey      interface{}
+	AdditionalData interface{}
 }
 
 var EventMap map[events.EventId]EventDetails
@@ -178,6 +179,7 @@ func publishTxEvents(txEvt *TxEvent) error {
 	}
 	evt.SrcObjName = evtEnt.SrcObjName
 	evt.SrcObjKey = txEvt.Key
+	evt.AdditionalData = txEvt.AdditionalData
 	msg, _ := json.Marshal(*evt)
 	keyStr := fmt.Sprintf("Events#%s#%s#%s#%v#%s#%d#", evt.OwnerName, evt.EventName, evt.SrcObjName, txEvt.Key, evt.TimeStamp.String(), evt.TimeStamp.UnixNano())
 	Logger.Info(fmt.Sprintln("Key Str :", keyStr))
