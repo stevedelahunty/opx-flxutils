@@ -152,7 +152,7 @@ func (asicdClientMgr *MockAsicdClientMgr) GetSwitchMAC(paramsPath string) string
 	return "00:00:00:00:00:00"
 }
 
-func (asicdClientMgr *MockAsicdClientMgr) CreateLag(hashType int32, ports string) (hwAggId int32, err error) {
+func (asicdClientMgr *MockAsicdClientMgr) CreateLag(ifname string, hashType int32, ports string) (hwAggId int32, err error) {
 	return -1, err
 }
 

@@ -710,15 +710,15 @@ func (asicdClientMgr *FSAsicdClientMgr) CreateLag(ifName string, hashType int32,
 		asicdmutex.Lock()
 		hwAggId, err = asicdClientMgr.ClientHdl.CreateLag(ifName, hashType, ports)
 		asicdmutex.Unlock()
-		return hwAggId, err
+		return ifindex, err
 	}
 	return -1, err
 }
 
-func (asicdClientMgr *FSAsicdClientMgr) DeleteLag(hwAggId int32) (err error) {
+func (asicdClientMgr *FSAsicdClientMgr) DeleteLag(ifIndex int32) (err error) {
 	if asicdClientMgr.ClientHdl != nil {
 		asicdmutex.Lock()
-		_, err = asicdClientMgr.ClientHdl.DeleteLag(hwAggId)
+		_, err = asicdClientMgr.ClientHdl.DeleteLag(ifIndex)
 		asicdmutex.Unlock()
 	}
 	return err

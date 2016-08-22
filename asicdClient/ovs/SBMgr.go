@@ -149,7 +149,7 @@ func (asicdClientMgr *OvsAsicdClientMgr) GetSwitchMAC(paramsPath string) string 
 	return "00:00:00:00:00:00"
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) CreateLag(hashType int32, ports string) (hwAggId int32, err error) {
+func (asicdClientMgr *OvsAsicdClientMgr) CreateLag(ifname string, hashType int32, ports string) (hwAggId int32, err error) {
 	return -1, err
 }
 
