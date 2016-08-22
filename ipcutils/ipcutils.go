@@ -35,6 +35,7 @@ type IPCClientBase struct {
 	Address            string
 	TTransport         thrift.TTransport
 	PtrProtocolFactory *thrift.TBinaryProtocolFactory
+	Enabled            bool
 	IsConnected        bool
 	ApiHandlerMutex    sync.RWMutex
 }
@@ -81,5 +82,13 @@ func (clnt *IPCClientBase) CloseIPCHandles() error {
 		return err
 	}
 	clnt.IsConnected = false
+	return nil
+}
+
+func (clnt *IPCClientBase) PreConfigValidation(obj objects.ConfigObj) error {
+	return nil
+}
+
+func (clnt *IPCClientBase) PostConfigProcessing(obj objects.ConfigObj) error {
 	return nil
 }
