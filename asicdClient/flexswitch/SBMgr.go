@@ -705,12 +705,12 @@ func (asicdClientMgr *FSAsicdClientMgr) GetSwitchMAC(paramsPath string) string {
 	return cfgFile.SwitchMac
 }
 
-func (asicdClientMgr *FSAsicdClientMgr) CreateLag(ifName string, hashType int32, ports string) (hwAggId int32, err error) {
+func (asicdClientMgr *FSAsicdClientMgr) CreateLag(ifName string, hashType int32, ports string) (ifIndex int32, err error) {
 	if asicdClientMgr.ClientHdl != nil {
 		asicdmutex.Lock()
-		hwAggId, err = asicdClientMgr.ClientHdl.CreateLag(ifName, hashType, ports)
+		ifIndex, err = asicdClientMgr.ClientHdl.CreateLag(ifName, hashType, ports)
 		asicdmutex.Unlock()
-		return ifindex, err
+		return ifIndex, err
 	}
 	return -1, err
 }
