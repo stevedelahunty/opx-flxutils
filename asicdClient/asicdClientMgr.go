@@ -66,7 +66,7 @@ type AsicdClientIntf interface {
 	// BPDU Guard detection
 	BPDUGuardDetected(ifindex int32, enable bool) error
 
-	CreateLag(hashType int32, ports string) (int32, error)
+	CreateLag(ifname string, hashType int32, ports string) (int32, error)
 	DeleteLag(ifIndex int32) error
 	UpdateLag(ifIndex, hashType int32, ports string) error
 }
