@@ -163,3 +163,19 @@ func (asicdClientMgr *MockAsicdClientMgr) DeleteLag(hwAggId int32) (err error) {
 func (asicdClientMgr *MockAsicdClientMgr) UpdateLag(ifIndex, hashType int32, ports string) (err error) {
 	return err
 }
+
+func (asicdClientMgr *MockAsicdClientMgr) EnablePacketReception(mac string, vlan int, ifindex int32) (err error) {
+	return err
+}
+
+func (asicdClientMgr *MockAsicdClientMgr) DisablePacketReception(mac string, vlan int, ifindex int32) (err error) {
+	return err
+}
+
+func (asicdClientMgr *MockAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIndex int32) (err error) {
+	return err
+}
+
+func (asicdClientMgr *MockAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIndex int32) (err error) {
+	return err
+}
