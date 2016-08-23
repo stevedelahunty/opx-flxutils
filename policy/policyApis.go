@@ -407,6 +407,11 @@ func (db *PolicyEngineDB) ValidatePolicyStatementCreate(cfg PolicyStmtConfig) (e
 
 func (db *PolicyEngineDB) CreatePolicyStatement(cfg PolicyStmtConfig) (err error) {
 	db.Logger.Info("CreatePolicyStatement")
+	err = db.ValidatePolicyStatementCreate(cfg)
+	if err != nil {
+		db.Logger.Err("Validation failed for policy statement creation with err:", err)
+		return err
+	}
 	policyStmt := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.Name))
 	var i int
 	if policyStmt == nil {
@@ -472,6 +477,11 @@ func (db *PolicyEngineDB) ValidatePolicyStatementDelete(cfg PolicyStmtConfig) (e
 }
 func (db *PolicyEngineDB) DeletePolicyStatement(cfg PolicyStmtConfig) (err error) {
 	db.Logger.Info("DeletePolicyStatement for name ", cfg.Name)
+	err = db.ValidatePolicyStatementDelete(cfg)
+	if err != nil {
+		db.Logger.Err("Validation failed for policy statement deletion with err:", err)
+		return err
+	}
 	ok := db.PolicyStmtDB.Match(patriciaDB.Prefix(cfg.Name))
 	if !ok {
 		err = errors.New("No policy statement with this name found")
@@ -521,6 +531,29 @@ func (db *PolicyEngineDB) DeletePolicyStatement(cfg PolicyStmtConfig) (err error
 	}
 	return err
 }
+func (db *PolicyEngineDB) UpdateUndoApplyPolicy(info ApplyPolicyInfo, traverseAndReverse bool) {
+	db.Logger.Info("UpdateUndoApplyPolicy")
+	if db.ApplyPolicyMap == nil {
+		db.Logger.Err("Apply policyMap nil")
+		return
+	}
+	applyPolicy := info.ApplyPolicy
+	list := db.ApplyPolicyMap[applyPolicy.Name]
+	if list == nil || len(list) == 0 {
+		db.Logger.Err("Policy not applied")
+		return
+	}
+	if traverseAndReverse {
+		policyInfoGet := db.PolicyDB.Get(patriciaDB.Prefix(applyPolicy.Name))
+		if policyInfoGet != nil {
+			var policy Policy
+			policy = policyInfoGet.(Policy)
+			db.PolicyEngineTraverseAndReversePolicy(policy)
+		}
+	}
+	return
+}
+
 func (db *PolicyEngineDB) UpdateApplyPolicy(info ApplyPolicyInfo, apply bool) {
 	db.Logger.Info("ApplyPolicy")
 	applyPolicy := info.ApplyPolicy
@@ -564,6 +597,7 @@ func (db *PolicyEngineDB) UpdateApplyPolicy(info ApplyPolicyInfo, apply bool) {
 		db.PolicyEngineTraverseAndApplyPolicy(info)
 	}
 }
+
 func (db *PolicyEngineDB) ValidatePolicyDefinitionCreate(cfg PolicyDefinitionConfig) (err error) {
 	db.Logger.Err("ValidatePolicyDefinitionCreate")
 	policy := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
@@ -584,7 +618,8 @@ func (db *PolicyEngineDB) ValidatePolicyDefinitionCreate(cfg PolicyDefinitionCon
 			return err
 		}
 		stmt := Item.(PolicyStmt)
-		for cds := 0; cds < len(stmt.Actions); cds++ {
+		db.Logger.Info("stmt info:", stmt)
+		for cds := 0; cds < len(stmt.Conditions); cds++ {
 			if !db.ConditionCheckForPolicyType(stmt.Conditions[cds], cfg.PolicyType) {
 				db.Logger.Err("Trying to add statement with incompatible condition ", stmt.Conditions[cds], " to this policy of policyType: ", cfg.PolicyType)
 				return errors.New("Incompatible condition type ")
@@ -596,6 +631,11 @@ func (db *PolicyEngineDB) ValidatePolicyDefinitionCreate(cfg PolicyDefinitionCon
 }
 func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (err error) {
 	db.Logger.Info("CreatePolicyDefinition")
+	err = db.ValidatePolicyDefinitionCreate(cfg)
+	if err != nil {
+		db.Logger.Err("Validation failed for policy definition creation with err:", err)
+		return err
+	}
 	policy := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
 	var i int
 	if policy == nil {
@@ -685,6 +725,11 @@ func (db *PolicyEngineDB) ValidatePolicyDefinitionDelete(cfg PolicyDefinitionCon
 }
 func (db *PolicyEngineDB) DeletePolicyDefinition(cfg PolicyDefinitionConfig) (err error) {
 	db.Logger.Info("DeletePolicyDefinition for name ", cfg.Name)
+	err = db.ValidatePolicyDefinitionDelete(cfg)
+	if err != nil {
+		db.Logger.Err("Validation failed for policy definition deletion with err:", err)
+		return err
+	}
 	ok := db.PolicyDB.Match(patriciaDB.Prefix(cfg.Name))
 	if !ok {
 		err = errors.New("No policy with this name found")

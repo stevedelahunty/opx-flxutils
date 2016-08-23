@@ -620,15 +620,19 @@ func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(info ApplyPolicyInf
 		}*/
 }
 
-func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicy(policy Policy) {
-	db.Logger.Info("PolicyEngineTraverseAndReversePolicy -  reverse policy ", policy.Name)
-	if policy.ExportPolicy || policy.ImportPolicy {
-		db.Logger.Info("Reversing import/export policy ")
-		db.TraverseAndReversePolicyFunc(policy)
-	} else if policy.GlobalPolicy {
-		db.Logger.Info("Need to reverse global policy")
-		db.PolicyEngineReverseGlobalPolicy(policy)
+func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicy(info Policy) {
+	db.Logger.Info("PolicyEngineTraverseAndReversePolicy -  reverse policy ", info.Name)
+	if db.TraverseAndReversePolicyFunc != nil {
+		db.Logger.Info("Calling PolicyEngineTraverseAndReversePolicy function")
+		db.TraverseAndReversePolicyFunc(info)
 	}
+	/*	if policy.ExportPolicy || policy.ImportPolicy {
+			db.Logger.Info("Reversing import/export policy ")
+			db.TraverseAndReversePolicyFunc(info)
+		} else if policy.GlobalPolicy {
+			db.Logger.Info("Need to reverse global policy")
+			db.PolicyEngineReverseGlobalPolicy(info)
+		}*/
 }
 
 func (db *PolicyEngineDB) PolicyEngineFilter(entity PolicyEngineFilterEntityParams, policyPath int, params interface{}) {
