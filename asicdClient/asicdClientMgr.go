@@ -69,6 +69,13 @@ type AsicdClientIntf interface {
 	CreateLag(ifname string, hashType int32, ports string) (int32, error)
 	DeleteLag(ifIndex int32) error
 	UpdateLag(ifIndex, hashType int32, ports string) error
+
+	EnablePacketReception(mac string, vlan int, ifindex int32) error
+	DisablePacketReception(mac string, vlan int, ifindex int32) error
+
+	// Distributed Relay (MLAG) Ipp actions when in Time Sharing Mode
+	IppIngressEgressDrop(srcIfIndex, dstIfIndex int32) error
+	IppIngressEgressPass(srcIfIndex, dstIfIndex int32) error
 }
 
 func NewAsicdClientInit(plugin string, paramsFile string, asicdHdl commonDefs.AsicdClientStruct) AsicdClientIntf {
