@@ -250,6 +250,11 @@ func (db *PolicyEngineDB) ValidateConditionConfigCreate(inCfg PolicyConditionCon
 }
 func (db *PolicyEngineDB) CreatePolicyCondition(cfg PolicyConditionConfig) (val bool, err error) {
 	db.Logger.Info(fmt.Sprintln("CreatePolicyCondition"))
+	err = db.ValidateConditionConfigCreate(cfg)
+	if err != nil {
+		db.Logger.Err("Validation failed for policy condition creation with err:", err)
+		return false, err
+	}
 	switch cfg.ConditionType {
 	case "MatchDstIpPrefix":
 		val, err = db.CreatePolicyDstIpMatchPrefixSetCondition(cfg)
@@ -285,6 +290,11 @@ func (db *PolicyEngineDB) ValidateConditionConfigDelete(cfg PolicyConditionConfi
 }
 func (db *PolicyEngineDB) DeletePolicyCondition(cfg PolicyConditionConfig) (val bool, err error) {
 	db.Logger.Info(fmt.Sprintln("DeletePolicyCondition"))
+	err = db.ValidateConditionConfigDelete(cfg)
+	if err != nil {
+		db.Logger.Err("Validation failed for policy condition deletion with err:", err)
+		return false, err
+	}
 	conditionItem := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Name))
 	if conditionItem == nil {
 		db.Logger.Err(fmt.Sprintln("Condition ", cfg.Name, "not found in the DB"))

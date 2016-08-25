@@ -78,6 +78,10 @@ type ApplyPolicyInfo struct {
 	Action      PolicyAction
 	Conditions  []string //extra condition names
 }
+type ApplyPolicyMapInfo struct {
+	Count    int
+	InfoList []ApplyPolicyInfo
+}
 type LocalDB struct {
 	Prefix     patriciaDB.Prefix
 	IsValid    bool
@@ -139,7 +143,7 @@ type PolicyEngineDB struct {
 	ProtocolPolicyListDB            map[string][]string //policystmt names assoociated with every protocol type
 	ImportPolicyPrecedenceMap       map[int]string
 	ExportPolicyPrecedenceMap       map[int]string
-	ApplyPolicyMap                  map[string][]ApplyPolicyInfo
+	ApplyPolicyMap                  map[string]ApplyPolicyMapInfo
 	PolicyEntityMap                 map[PolicyEntityMapIndex]PolicyStmtMap
 	DefaultImportPolicyActionFunc   Policyfunc
 	DefaultExportPolicyActionFunc   Policyfunc
@@ -212,7 +216,7 @@ func NewPolicyEngineDB(logger *logging.Writer) (policyEngineDB *PolicyEngineDB) 
 	policyEngineDB.ProtocolPolicyListDB = make(map[string][]string)
 	policyEngineDB.ImportPolicyPrecedenceMap = make(map[int]string)
 	policyEngineDB.ExportPolicyPrecedenceMap = make(map[int]string)
-	policyEngineDB.ApplyPolicyMap = make(map[string][]ApplyPolicyInfo)
+	policyEngineDB.ApplyPolicyMap = make(map[string]ApplyPolicyMapInfo)
 	policyEngineDB.ConditionCheckfuncMap = make(map[int]PolicyConditionCheckfunc)
 	policyEngineDB.ValidConditionsForPolicyTypeMap = make(map[string][]int)
 	policyEngineDB.ValidActionsForPolicyTypeMap = make(map[string][]int)
