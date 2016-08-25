@@ -690,11 +690,12 @@ func (asicdClientMgr *FSAsicdClientMgr) BPDUGuardDetected(ifindex int32, enable 
 func (asicdClientMgr *FSAsicdClientMgr) GetSwitchMAC(paramsPath string) string {
 	var cfgFile CfgFileJson
 
-	asicdconffilename := paramsPath + "asicd.conf"
+	asicdconffilename := paramsPath + pluginCommon.ASICD_CONFIG_FILE
 
 	cfgFileData, err := ioutil.ReadFile(asicdconffilename)
 	if err != nil {
-		Logger.Err("Error reading config file - asicd.conf. Using defaults (linux plugin only)")
+		Logger.Err("Error reading config file -", pluginCommon.ASICD_CONFIG_FILE,
+			". Using defaults (linux plugin only)")
 		return "00:00:00:00:00:00"
 	}
 	err = json.Unmarshal(cfgFileData, &cfgFile)

@@ -211,6 +211,7 @@ type IPv6IntfNotifyMsg struct {
 	MsgType uint8
 	IpAddr  string
 	IfIndex int32
+	IntfRef string
 }
 
 type AsicdNotificationHdl interface {
