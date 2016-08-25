@@ -689,11 +689,12 @@ func (asicdClientMgr *FSAsicdClientMgr) BPDUGuardDetected(ifindex int32, enable 
 func (asicdClientMgr *FSAsicdClientMgr) GetSwitchMAC(paramsPath string) string {
 	var cfgFile CfgFileJson
 
-	asicdconffilename := paramsPath + "asicd.conf"
+	asicdconffilename := paramsPath + pluginCommon.ASICD_CONFIG_FILE
 
 	cfgFileData, err := ioutil.ReadFile(asicdconffilename)
 	if err != nil {
-		Logger.Err("Error reading config file - asicd.conf. Using defaults (linux plugin only)")
+		Logger.Err("Error reading config file -", pluginCommon.ASICD_CONFIG_FILE,
+			". Using defaults (linux plugin only)")
 		return "00:00:00:00:00:00"
 	}
 	err = json.Unmarshal(cfgFileData, &cfgFile)
@@ -705,12 +706,12 @@ func (asicdClientMgr *FSAsicdClientMgr) GetSwitchMAC(paramsPath string) string {
 	return cfgFile.SwitchMac
 }
 
-func (asicdClientMgr *FSAsicdClientMgr) CreateLag(ifName string, hashType int32, ports string) (ifIndex int32, err error) {
+func (asicdClientMgr *FSAsicdClientMgr) CreateLag(ifName string, hashType int32, ports string) (ifindex int32, err error) {
 	if asicdClientMgr.ClientHdl != nil {
 		asicdmutex.Lock()
-		ifIndex, err = asicdClientMgr.ClientHdl.CreateLag(ifName, hashType, ports)
+		ifindex, err = asicdClientMgr.ClientHdl.CreateLag(ifName, hashType, ports)
 		asicdmutex.Unlock()
-		return ifIndex, err
+		return ifindex, err
 	}
 	return -1, err
 }
@@ -730,5 +731,93 @@ func (asicdClientMgr *FSAsicdClientMgr) UpdateLag(ifIndex, hashType int32, ports
 		_, err = asicdClientMgr.ClientHdl.UpdateLag(ifIndex, hashType, ports)
 		asicdmutex.Unlock()
 	}
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) EnablePacketReception(mac string, vlan int, ifindex int32) (err error) {
+	if asicdClientMgr.ClientHdl != nil {
+		asicdmutex.Lock()
+		cfg := &asicdInt.RsvdProtocolMacConfig{
+			MacAddr:     mac,
+			MacAddrMask: "FF:FF:FF:FF:FF:FF",
+		}
+		_, err = asicdClientMgr.ClientHdl.EnablePacketReception(cfg)
+		asicdmutex.Unlock()
+	}
+	return err
+
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) DisablePacketReception(mac string, vlan int, ifindex int32) (err error) {
+	if asicdClientMgr.ClientHdl != nil {
+		asicdmutex.Lock()
+		cfg := &asicdInt.RsvdProtocolMacConfig{
+			MacAddr:     mac,
+			MacAddrMask: "FF:FF:FF:FF:FF:FF",
+		}
+		_, err = asicdClientMgr.ClientHdl.DisablePacketReception(cfg)
+		asicdmutex.Unlock()
+	}
+	return err
+
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIndex int32) (err error) {
+
+	if asicdClientMgr.ClientHdl != nil {
+		asicdmutex.Lock()
+		aclName := "IPPInOutBlock"
+		ruleName := fmt.Sprintf("%s(%d)(%d)", aclName, srcIfIndex, dstIfIndex)
+		rule := &asicdServices.AclRule{
+			RuleName: ruleName,
+			SrcPort:  srcIfIndex,
+			DstPort:  dstIfIndex,
+		}
+
+		_, err = asicdClientMgr.ClientHdl.CreateAclRule(rule)
+		if err != nil {
+			asicdmutex.Unlock()
+			return err
+		}
+		acl := &asicdServices.Acl{
+			AclName:      aclName,
+			RuleNameList: []string{ruleName},
+			Direction:    "DOWN",
+		}
+
+		_, err = asicdClientMgr.ClientHdl.CreateAcl(acl)
+		asicdmutex.Unlock()
+	}
+
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIndex int32) (err error) {
+
+	if asicdClientMgr.ClientHdl != nil {
+		asicdmutex.Lock()
+		aclName := "IPPInOutBlock"
+		ruleName := fmt.Sprintf("%s(%d)(%d)", aclName, srcIfIndex, dstIfIndex)
+		rule := &asicdServices.AclRule{
+			RuleName: ruleName,
+			SrcPort:  srcIfIndex,
+			DstPort:  dstIfIndex,
+		}
+
+		_, err = asicdClientMgr.ClientHdl.CreateAclRule(rule)
+		if err != nil {
+			asicdmutex.Unlock()
+			return err
+		}
+		acl := &asicdServices.Acl{
+			AclName:      aclName,
+			RuleNameList: []string{ruleName},
+			Direction:    "DOWN",
+		}
+
+		_, err = asicdClientMgr.ClientHdl.CreateAcl(acl)
+		asicdmutex.Unlock()
+	}
+
 	return err
 }

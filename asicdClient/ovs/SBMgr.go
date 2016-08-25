@@ -160,3 +160,19 @@ func (asicdClientMgr *OvsAsicdClientMgr) DeleteLag(hwAggId int32) (err error) {
 func (asicdClientMgr *OvsAsicdClientMgr) UpdateLag(ifIndex, hashType int32, ports string) (err error) {
 	return err
 }
+
+func (asicdClientMgr *OvsAsicdClientMgr) EnablePacketReception(mac string, vlan int, ifindex int32) (err error) {
+	return err
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) DisablePacketReception(mac string, vlan int, ifindex int32) (err error) {
+	return err
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIndex int32) (err error) {
+	return err
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIndex int32) (err error) {
+	return err
+}
