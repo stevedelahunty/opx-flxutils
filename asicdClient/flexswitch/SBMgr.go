@@ -30,7 +30,6 @@ import (
 	"asicdServices"
 	"encoding/json"
 	"fmt"
-	"git.apache.org/thrift.git/lib/go/thrift"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -39,6 +38,8 @@ import (
 	"utils/commonDefs"
 	"utils/ipcutils"
 	"utils/logging"
+
+	"git.apache.org/thrift.git/lib/go/thrift"
 )
 
 type AsicdClient struct {
@@ -761,12 +762,13 @@ func (asicdClientMgr *FSAsicdClientMgr) DisablePacketReception(mac string, vlan 
 
 }
 
+// TODO change this to pass in the Intf
 func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIndex int32) (err error) {
 
 	if asicdClientMgr.ClientHdl != nil {
 		asicdmutex.Lock()
 		aclName := "IPPInOutBlock"
-		ruleName := fmt.Sprintf("%s(%d)(%d)", aclName, srcIfIndex, dstIfIndex)
+		ruleName := fmt.Sprintf("%sfpPort%dfpPort%d", aclName, srcIfIndex, dstIfIndex)
 		rule := &asicdServices.AclRule{
 			RuleName: ruleName,
 			SrcPort:  srcIfIndex,
@@ -781,6 +783,7 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIn
 		acl := &asicdServices.Acl{
 			AclName:      aclName,
 			RuleNameList: []string{ruleName},
+			IntfList:     []string{fmt.Sprintf("fpPort%d", dstIfIndex)},
 			Direction:    "DOWN",
 		}
 
