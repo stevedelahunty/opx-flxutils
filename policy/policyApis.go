@@ -640,7 +640,7 @@ func (db *PolicyEngineDB) UpdateApplyPolicy(info ApplyPolicyInfo, apply bool) {
 	db.Logger.Info("After adding applyinfo:", pInfo.InfoList, "Count:", pInfo.Count)
 	db.ApplyPolicyMap[applyPolicy.Name] = pInfo
 	//}
-	if apply {
+	if apply && policyInfoGet != nil {
 		db.PolicyEngineTraverseAndApplyPolicy(info)
 	}
 }
@@ -747,6 +747,16 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 			return err
 		}
 		db.LocalPolicyDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
+		if db.Global == false {
+			//apply if there are unapplied list for this policy if this is a non global engine
+			db.Logger.Debug("New policy ", cfg.Name, " defined, apply any unapplied policy info for this")
+			policyMapInfo, ok := db.ApplyPolicyMap[cfg.Name]
+			if ok {
+				for _, info := range policyMapInfo.InfoList {
+					db.PolicyEngineTraverseAndApplyPolicy(info)
+				}
+			}
+		}
 	} else {
 		db.Logger.Err("Duplicate Policy definition name")
 		err = errors.New("Duplicate policy definition")
