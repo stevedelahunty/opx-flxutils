@@ -684,6 +684,10 @@ func (db *PolicyEngineDB) PolicyEngineFilter(entity PolicyEngineFilterEntityPara
 				}
 				//db.Logger.Info("getting policy ", idx, " from entity.PolicyList")
 				policyInfo = db.PolicyDB.Get(patriciaDB.Prefix(entity.PolicyList[idx]))
+				if policyInfo == nil {
+					db.Logger.Info("policy nil for ", entity.PolicyList[idx], " during delete path of policyengin filter")
+					continue
+				}
 				idx++
 				if policyInfo.(Policy).ExportPolicy && policyPath == policyCommonDefs.PolicyPath_Import || policyInfo.(Policy).ImportPolicy && policyPath == policyCommonDefs.PolicyPath_Export {
 					//		db.Logger.Info("policy ", policyInfo.(Policy).Name, " not the same type as the policypath -", policyPath_Str)
@@ -714,13 +718,15 @@ func (db *PolicyEngineDB) PolicyEngineFilter(entity PolicyEngineFilterEntityPara
 		}
 		policy := policyInfo.(Policy)
 		localPolicyDB := *db.LocalPolicyDB
-		if localPolicyDB != nil && localPolicyDB[policy.LocalDBSliceIdx].IsValid == false {
-			//db.Logger.Info("Invalid policy at localDB slice idx ", policy.LocalDBSliceIdx)
-			continue
+		if localPolicyDB != nil {
+			if len(localPolicyDB) > int(policy.LocalDBSliceIdx) && localPolicyDB[policy.LocalDBSliceIdx].IsValid == false {
+				//db.Logger.Info("Invalid policy at localDB slice idx ", policy.LocalDBSliceIdx)
+				continue
+			}
 		}
 		info, ok := db.ApplyPolicyMap[policy.Name]
 		if !ok || info.Count == 0 {
-			//db.Logger.Info("no application for this policy ", policy.Name)
+			db.Logger.Info("no application for this policy ", policy.Name)
 			continue
 		}
 		applyList := info.InfoList

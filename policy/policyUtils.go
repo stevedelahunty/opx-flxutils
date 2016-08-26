@@ -157,6 +157,7 @@ type PolicyEngineDB struct {
 	TraverseAndReversePolicyFunc    EntityTraverseAndReversePolicyfunc
 	ValidConditionsForPolicyTypeMap map[string][]int //map of policyType to list of valid conditions
 	ValidActionsForPolicyTypeMap    map[string][]int //map of policyType to list of valid actions
+	Global                          bool             //this variable is to say whether this engine is for storing the policies only (true)) or the actual engine : default is false, meaning it is an application engine
 }
 
 func (db *PolicyEngineDB) buildPolicyConditionCheckfuncMap() {
@@ -225,6 +226,7 @@ func NewPolicyEngineDB(logger *logging.Writer) (policyEngineDB *PolicyEngineDB) 
 	policyEngineDB.buildPolicyValidActionsForPolicyTypeMap()
 	policyEngineDB.ActionfuncMap = make(map[int]Policyfunc)
 	policyEngineDB.UndoActionfuncMap = make(map[int]UndoActionfunc)
+	policyEngineDB.Global = false
 	return policyEngineDB
 }
 
