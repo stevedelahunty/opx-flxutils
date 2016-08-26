@@ -25,6 +25,7 @@
 package netUtils
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net"
@@ -131,9 +132,11 @@ func GetNetworkPrefix(destNetIp net.IP, networkMask net.IP) (destNet patriciaDB.
 		fmt.Println("err when getting prefixLen, err= ", err)
 		return destNet, errors.New(fmt.Sprintln("Invalid networkmask ", networkMask))
 	}
+	//	fmt.Println("prefixLen for :", networkMask, ":", prefixLen)
 	var netIp net.IP
 	vdestMask := net.IPMask(networkMask)
 	if IsIPv4Mask(net.IP(vdestMask)) {
+		//	fmt.Println("v4,vdestMask[12:16]:", vdestMask[12:16])
 		netIp = destNetIp.Mask(vdestMask[12:16])
 	} else {
 		netIp = destNetIp.Mask(vdestMask)
@@ -143,6 +146,7 @@ func GetNetworkPrefix(destNetIp net.IP, networkMask net.IP) (destNet patriciaDB.
 		numbytes++
 	}
 	destNet = make([]byte, numbytes)
+	//fmt.Println("numbytes:", numbytes, " netIp:", netIp)
 	for i := 0; i < numbytes; i++ {
 		destNet[i] = netIp[i]
 	}
@@ -175,19 +179,36 @@ func CheckIfInRange(testIPAddr, ipAddr string, lowPrefixLen int, highPrefixLen i
 		fmt.Println("error parsing address:", testIPAddr)
 		return false
 	}
+
 	if lowPrefixLen == -1 && highPrefixLen == -1 {
-		_, cidrnet, err := net.ParseCIDR(ipAddr)
+		/*
+			_, cidrnet, err := net.ParseCIDR(ipAddr)
+			if err != nil {
+				fmt.Println("Error parsing cidr addr ", ipAddr)
+				return false
+			}
+			if cidrnet.Contains(testAddr) == true {
+				fmt.Println(cidrnet, " contains ip:", testAddr)
+				return true
+			} else {
+				fmt.Println(cidrnet, " does not contain ip:", testAddr)
+				return false
+			}
+		*/
+		testIpPrefix, err := GetNetworkPrefixFromCIDR(testIPAddr)
 		if err != nil {
-			fmt.Println("Error parsing cidr addr ", ipAddr)
+			fmt.Println("Invalid ipPrefix for the route ", testAddr)
 			return false
 		}
-		if cidrnet.Contains(testAddr) == true {
-			//fmt.Println(cidrnet, " contains ip:", testAddr)
+		ipPrefix, err := GetNetworkPrefixFromCIDR(ipAddr)
+		if err != nil {
+			fmt.Println("Invalid ipPrefix for the route ", ipAddr)
+			return false
+		}
+		if bytes.Equal(testIpPrefix, ipPrefix) {
 			return true
-		} else {
-			fmt.Println(cidrnet, " does not contain ip:", testAddr)
-			return false
 		}
+		return false
 	}
 	baseAddr, _, err := net.ParseCIDR(ipAddr)
 	if err != nil {
