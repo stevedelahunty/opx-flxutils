@@ -52,7 +52,7 @@ func TestInitNetUtils(t *testing.T) {
 	IPRangeData = append(IPRangeData, IPRange{"192.168.2.1/31", "192.168.0.0/16", 16, 32})
 	IPRangeData = append(IPRangeData, IPRange{"192.167.2.1/31", "192.168.0.0/16", 16, 32})
 	IPRangeData = append(IPRangeData, IPRange{"192.168.1.1/31", "200.1.1.0", 24, 32})
-	IPRangeData = append(IPRangeData, IPRange{"192.168.0.1/31", "192.168.0.0/26", -1, -1})
+	IPRangeData = append(IPRangeData, IPRange{"192.168.0.7/31", "192.168.0.0/26", -1, -1})
 	IPRangeData = append(IPRangeData, IPRange{"2003::11:1:10:1/127", "5001:6000:7000::0/48", 48, 128})
 	IPRangeData = append(IPRangeData, IPRange{"2003::11:1:10:1/127", "2003:11:1::0/64", 64, 128})
 	IPRangeData = append(IPRangeData, IPRange{"2003::11:1:10:1/127", "2003::0/64", 64, 128})
@@ -60,6 +60,11 @@ func TestInitNetUtils(t *testing.T) {
 	IPRangeData = append(IPRangeData, IPRange{"5001:6000:7000::11:1:10:1/127", "5001:6000:7000::0/48", 48, 128})
 	IPRangeData = append(IPRangeData, IPRange{"2001::172:16:0:29/127", "2001::172:16:0:0/96", -1, -1})
 	IPRangeData = append(IPRangeData, IPRange{"2000::192:16:0:29/127", "2000::192:16:0:0/96", -1, -1})
+	IPRangeData = append(IPRangeData, IPRange{"fe80::e0:ecff:fe26:a7f0/128", "fe80::/10", -1, -1})
+	IPRangeData = append(IPRangeData, IPRange{"fe80::e0:ecff:fe26:a7f0/128", "fe80::/10", 10, 128})
+	IPRangeData = append(IPRangeData, IPRange{"1000:192:168::3/128", "1000::/16", 16, 128})
+	IPRangeData = append(IPRangeData, IPRange{"192.168.0.2/31", "192.168.0.3/31", -1, -1})
+	IPRangeData = append(IPRangeData, IPRange{"192.168.0.90/31", "192.168.0.0/26", 26, 32})
 }
 func TestGetNetworkPrefix(t *testing.T) {
 	fmt.Println("****TestGetNetworkPrefix****")
