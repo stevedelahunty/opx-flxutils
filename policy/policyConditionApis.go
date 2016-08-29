@@ -137,9 +137,13 @@ func (db *PolicyEngineDB) CreatePolicyPrefixSet(cfg PolicyPrefixSetConfig) (val 
 		db.Logger.Info("Defining a new policy prefix set with name ", cfg.Name)
 		prefixList := make([]PolicyPrefix, 0)
 		matchInfoList := make([]MatchPrefixConditionInfo, 0)
+		db.Logger.Info("cfg.PrefixList:", cfg.PrefixList)
 		for _, prefix := range cfg.PrefixList {
+			db.Logger.Info("range over cfg.PrefixList, current prefix:", prefix)
 			prefixList = append(prefixList, prefix)
 			var conditionInfo MatchPrefixConditionInfo
+			conditionInfo.HighRange = -1
+			conditionInfo.LowRange = -1
 			if len(prefix.IpPrefix) != 0 {
 				conditionInfo.UsePrefixSet = false
 				conditionInfo.Prefix.IpPrefix = prefix.IpPrefix
@@ -171,6 +175,7 @@ func (db *PolicyEngineDB) CreatePolicyPrefixSet(cfg PolicyPrefixSetConfig) (val 
 				matchInfoList = append(matchInfoList, conditionInfo)
 			}
 		}
+		db.Logger.Info("insert prefix set with prefixList:", prefixList, " matchInfoList:", matchInfoList)
 		if ok := db.PolicyPrefixSetDB.Insert(patriciaDB.Prefix(cfg.Name), PolicyPrefixSet{Name: cfg.Name, PrefixList: prefixList, MatchInfoList: matchInfoList}); ok != true {
 			db.Logger.Info(" return value not ok")
 			err = errors.New("Error creating policy prefix set in the DB")
@@ -366,6 +371,7 @@ func (db *PolicyEngineDB) ValidateConditionConfigCreate(inCfg PolicyConditionCon
 		break
 	case "MatchDstIpPrefix":
 		cfg := inCfg.MatchDstIpPrefixConditionInfo
+		db.Logger.Info("ValidateConditionConfigCreate:cfg.PrefixSet:", cfg.PrefixSet, " len(cfg.PrefixSet):", len(cfg.PrefixSet))
 		if len(cfg.PrefixSet) == 0 && len(cfg.Prefix.IpPrefix) == 0 {
 			db.Logger.Err(fmt.Sprintln("Empty prefix set/nil prefix"))
 			err = errors.New("Empty prefix set/nil prefix")
