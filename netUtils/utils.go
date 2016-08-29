@@ -146,8 +146,8 @@ func GetNetworkPrefix(destNetIp net.IP, networkMask net.IP) (destNet patriciaDB.
 		numbytes++
 	}
 	destNet = make([]byte, numbytes)
-	//fmt.Println("numbytes:", numbytes, " netIp:", netIp)
-	for i := 0; i < numbytes; i++ {
+	fmt.Println("numbytes:", numbytes, " netIp:", netIp, " len(netIp):", len(netIp))
+	for i := 0; i < numbytes && i < len(netIp); i++ {
 		destNet[i] = netIp[i]
 	}
 	return destNet, err
