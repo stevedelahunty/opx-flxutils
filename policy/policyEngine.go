@@ -245,7 +245,24 @@ func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, ipPrefix patriciaDB.Pre
 func (db *PolicyEngineDB) FindPrefixMatch(ipAddr string, condition PolicyCondition) (match bool) {
 	db.Logger.Info("ipAddr : ", ipAddr, " condition.IpPrefix: ", condition.ConditionInfo.(MatchPrefixConditionInfo).IpPrefix, " conditionInfo,MaskLengthRange: ", condition.ConditionInfo.(MatchPrefixConditionInfo).Prefix.IpPrefix)
 	conditionInfo := condition.ConditionInfo.(MatchPrefixConditionInfo)
-	match = netUtils.CheckIfInRange(ipAddr, conditionInfo.Prefix.IpPrefix, conditionInfo.LowRange, conditionInfo.HighRange)
+	if conditionInfo.UsePrefixSet {
+		db.Logger.Info("FindPrefixMatch:use prefixset")
+		item := db.PolicyPrefixSetDB.Get(patriciaDB.Prefix(conditionInfo.PrefixSet))
+		if item != nil {
+			prefixSet := item.(PolicyPrefixSet)
+			for _, matchInfo := range prefixSet.MatchInfoList {
+				match = netUtils.CheckIfInRange(ipAddr, matchInfo.Prefix.IpPrefix, matchInfo.LowRange, matchInfo.HighRange)
+				if match {
+					db.Logger.Info("Matched prefix for:", matchInfo.Prefix.IpPrefix, matchInfo.LowRange, matchInfo.HighRange)
+					break
+				}
+			}
+		} else {
+			db.Logger.Err("prefix set ", conditionInfo.PrefixSet, " not found")
+		}
+	} else {
+		match = netUtils.CheckIfInRange(ipAddr, conditionInfo.Prefix.IpPrefix, conditionInfo.LowRange, conditionInfo.HighRange)
+	}
 	/*	if conditionInfo.LowRange == -1 && conditionInfo.HighRange == -1 {
 		_, ipNet, err := net.ParseCIDR(condition.ConditionInfo.(MatchPrefixConditionInfo).Prefix.IpPrefix)
 		if err != nil {
