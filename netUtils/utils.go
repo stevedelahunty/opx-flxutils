@@ -141,6 +141,10 @@ func GetNetworkPrefix(destNetIp net.IP, networkMask net.IP) (destNet patriciaDB.
 	} else {
 		netIp = destNetIp.Mask(vdestMask)
 	}
+	if netIp == nil {
+		fmt.Println("netip nil ")
+		return destNet, errors.New("netIp nil")
+	}
 	numbytes := prefixLen / 8
 	if (prefixLen % 8) != 0 {
 		numbytes++
