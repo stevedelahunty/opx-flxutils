@@ -768,8 +768,8 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIn
 
 	if asicdClientMgr.ClientHdl != nil {
 		asicdmutex.Lock()
-		aclName := "IPPInOutBlock"
-		ruleName := fmt.Sprintf("%sfpPort%dfpPort%d", aclName, srcIfIndex+1, dstIfIndex+1)
+		aclName := fmt.Sprintf("IPPInOutBlockfpPort%d", dstIfIndex+1)
+		ruleName := fmt.Sprintf("%sfpPort%d", aclName, srcIfIndex+1)
 		rule := &asicdServices.AclRule{
 			RuleName: ruleName,
 			SrcPort:  srcIfIndex,
@@ -784,8 +784,8 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIn
 		acl := &asicdServices.Acl{
 			AclName:      aclName,
 			RuleNameList: []string{ruleName},
-			IntfList:     []string{fmt.Sprintf("fpPort%d", dstIfIndex)},
-			Direction:    "DOWN",
+			IntfList:     []string{fmt.Sprintf("fpPort%d", dstIfIndex+1)},
+			Direction:    "OUT",
 		}
 
 		_, err = asicdClientMgr.ClientHdl.CreateAcl(acl)
@@ -799,8 +799,8 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIn
 
 	if asicdClientMgr.ClientHdl != nil {
 		asicdmutex.Lock()
-		aclName := "IPPInOutBlock"
-		ruleName := fmt.Sprintf("%sfpPort%dfpPort%d", aclName, srcIfIndex+1, dstIfIndex+1)
+		aclName := fmt.Sprintf("IPPInOutBlockfpPort%d", dstIfIndex+1)
+		ruleName := fmt.Sprintf("%sfpPort%d", aclName, srcIfIndex+1)
 		rule := &asicdServices.AclRule{
 			RuleName: ruleName,
 			SrcPort:  srcIfIndex,
@@ -815,7 +815,8 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIn
 		acl := &asicdServices.Acl{
 			AclName:      aclName,
 			RuleNameList: []string{ruleName},
-			Direction:    "DOWN",
+			IntfList:     []string{fmt.Sprintf("fpPort%d", dstIfIndex+1)},
+			Direction:    "OUT",
 		}
 
 		_, err = asicdClientMgr.ClientHdl.CreateAcl(acl)
