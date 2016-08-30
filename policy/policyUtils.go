@@ -172,6 +172,9 @@ func (db *PolicyEngineDB) buildPolicyValidConditionsForPolicyTypeMap() {
 	db.Logger.Info("buildPolicyValidConditionsForPolicyTypeMap")
 	db.ValidConditionsForPolicyTypeMap["ALL"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch,
 		policyCommonDefs.PolicyConditionTypeProtocolMatch, policyCommonDefs.PolicyConditionTypeNeighborMatch}
+	db.ValidConditionsForPolicyTypeMap["BGP"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch,
+		policyCommonDefs.PolicyConditionTypeNeighborMatch}
+	db.ValidConditionsForPolicyTypeMap["OSPF"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch}
 }
 func (db *PolicyEngineDB) buildPolicyValidActionsForPolicyTypeMap() {
 	db.Logger.Info("buildPolicyValidActionsForPolicyTypeMap")
