@@ -130,6 +130,8 @@ type GetPolicyEnityMapIndexFunc func(entity PolicyEngineFilterEntityParams, poli
 
 type PolicyEngineDB struct {
 	Logger                          *logging.Writer //*log.Logger
+	PolicyPrefixSetDB               *patriciaDB.Trie
+	LocalPolicyPrefixSetDB          *LocalDBSlice
 	PolicyConditionsDB              *patriciaDB.Trie
 	LocalPolicyConditionsDB         *LocalDBSlice
 	PolicyActionsDB                 *patriciaDB.Trie
@@ -195,6 +197,11 @@ func NewPolicyEngineDB(logger *logging.Writer) (policyEngineDB *PolicyEngineDB) 
 	LocalPolicyActionsDB := make([]LocalDB, 0)
 	localActionSlice := LocalDBSlice(LocalPolicyActionsDB)
 	policyEngineDB.LocalPolicyActionsDB = &localActionSlice
+
+	policyEngineDB.PolicyPrefixSetDB = patriciaDB.NewTrie()
+	LocalPolicyPrefixSetDB := make([]LocalDB, 0)
+	localPrefixSetSlice := LocalDBSlice(LocalPolicyPrefixSetDB)
+	policyEngineDB.LocalPolicyPrefixSetDB = &localPrefixSetSlice
 
 	policyEngineDB.PolicyConditionsDB = patriciaDB.NewTrie()
 	LocalPolicyConditionsDB := make([]LocalDB, 0)
