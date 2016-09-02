@@ -130,6 +130,8 @@ type GetPolicyEnityMapIndexFunc func(entity PolicyEngineFilterEntityParams, poli
 
 type PolicyEngineDB struct {
 	Logger                          *logging.Writer //*log.Logger
+	PolicyPrefixSetDB               *patriciaDB.Trie
+	LocalPolicyPrefixSetDB          *LocalDBSlice
 	PolicyConditionsDB              *patriciaDB.Trie
 	LocalPolicyConditionsDB         *LocalDBSlice
 	PolicyActionsDB                 *patriciaDB.Trie
@@ -170,6 +172,9 @@ func (db *PolicyEngineDB) buildPolicyValidConditionsForPolicyTypeMap() {
 	db.Logger.Info("buildPolicyValidConditionsForPolicyTypeMap")
 	db.ValidConditionsForPolicyTypeMap["ALL"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch,
 		policyCommonDefs.PolicyConditionTypeProtocolMatch, policyCommonDefs.PolicyConditionTypeNeighborMatch}
+	db.ValidConditionsForPolicyTypeMap["BGP"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch,
+		policyCommonDefs.PolicyConditionTypeNeighborMatch}
+	db.ValidConditionsForPolicyTypeMap["OSPF"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch}
 }
 func (db *PolicyEngineDB) buildPolicyValidActionsForPolicyTypeMap() {
 	db.Logger.Info("buildPolicyValidActionsForPolicyTypeMap")
@@ -195,6 +200,11 @@ func NewPolicyEngineDB(logger *logging.Writer) (policyEngineDB *PolicyEngineDB) 
 	LocalPolicyActionsDB := make([]LocalDB, 0)
 	localActionSlice := LocalDBSlice(LocalPolicyActionsDB)
 	policyEngineDB.LocalPolicyActionsDB = &localActionSlice
+
+	policyEngineDB.PolicyPrefixSetDB = patriciaDB.NewTrie()
+	LocalPolicyPrefixSetDB := make([]LocalDB, 0)
+	localPrefixSetSlice := LocalDBSlice(LocalPolicyPrefixSetDB)
+	policyEngineDB.LocalPolicyPrefixSetDB = &localPrefixSetSlice
 
 	policyEngineDB.PolicyConditionsDB = patriciaDB.NewTrie()
 	LocalPolicyConditionsDB := make([]LocalDB, 0)
