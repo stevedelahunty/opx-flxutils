@@ -30,7 +30,6 @@ import (
 	"asicdServices"
 	"encoding/json"
 	"fmt"
-	"git.apache.org/thrift.git/lib/go/thrift"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -39,6 +38,8 @@ import (
 	"utils/commonDefs"
 	"utils/ipcutils"
 	"utils/logging"
+
+	"git.apache.org/thrift.git/lib/go/thrift"
 )
 
 type AsicdClient struct {
@@ -762,12 +763,13 @@ func (asicdClientMgr *FSAsicdClientMgr) DisablePacketReception(mac string, vlan 
 
 }
 
+// TODO change this to pass in the Intf
 func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIndex int32) (err error) {
 
 	if asicdClientMgr.ClientHdl != nil {
 		asicdmutex.Lock()
-		aclName := "IPPInOutBlock"
-		ruleName := fmt.Sprintf("%s(%d)(%d)", aclName, srcIfIndex, dstIfIndex)
+		aclName := fmt.Sprintf("IPPInOutBlockfpPort%d", dstIfIndex+1)
+		ruleName := fmt.Sprintf("%sfpPort%d", aclName, srcIfIndex+1)
 		rule := &asicdServices.AclRule{
 			RuleName: ruleName,
 			SrcPort:  srcIfIndex,
@@ -782,7 +784,8 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIn
 		acl := &asicdServices.Acl{
 			AclName:      aclName,
 			RuleNameList: []string{ruleName},
-			Direction:    "DOWN",
+			IntfList:     []string{fmt.Sprintf("fpPort%d", dstIfIndex+1)},
+			Direction:    "OUT",
 		}
 
 		_, err = asicdClientMgr.ClientHdl.CreateAcl(acl)
@@ -796,8 +799,8 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIn
 
 	if asicdClientMgr.ClientHdl != nil {
 		asicdmutex.Lock()
-		aclName := "IPPInOutBlock"
-		ruleName := fmt.Sprintf("%s(%d)(%d)", aclName, srcIfIndex, dstIfIndex)
+		aclName := fmt.Sprintf("IPPInOutBlockfpPort%d", dstIfIndex+1)
+		ruleName := fmt.Sprintf("%sfpPort%d", aclName, srcIfIndex+1)
 		rule := &asicdServices.AclRule{
 			RuleName: ruleName,
 			SrcPort:  srcIfIndex,
@@ -812,7 +815,8 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIn
 		acl := &asicdServices.Acl{
 			AclName:      aclName,
 			RuleNameList: []string{ruleName},
-			Direction:    "DOWN",
+			IntfList:     []string{fmt.Sprintf("fpPort%d", dstIfIndex+1)},
+			Direction:    "OUT",
 		}
 
 		_, err = asicdClientMgr.ClientHdl.CreateAcl(acl)
