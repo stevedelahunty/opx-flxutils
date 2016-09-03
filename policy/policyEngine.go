@@ -181,7 +181,7 @@ func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilter
 		} else { //if entity.CreatePath == true or neither create/delete is valid - in case this function is called a a part of policy create{
 			db.Logger.Info("action to be applied", action.ActionType)
 			if db.ActionfuncMap[action.ActionType] != nil {
-				db.ActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params)
+				db.ActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params, policyStmt)
 			}
 			addActionToList = true
 		}
@@ -593,7 +593,7 @@ func (db *PolicyEngineDB) PolicyEngineApplyGlobalPolicyStmt(policy Policy, polic
 		}
 		actionInfo := actionItem.(PolicyAction)
 		if db.ActionfuncMap[actionInfo.ActionType] != nil {
-			db.ActionfuncMap[actionInfo.ActionType](actionInfo.ActionInfo, conditionInfoList, nil)
+			db.ActionfuncMap[actionInfo.ActionType](actionInfo.ActionInfo, conditionInfoList, nil, policyStmt)
 		}
 	}
 }
@@ -761,12 +761,12 @@ func (db *PolicyEngineDB) PolicyEngineFilter(entity PolicyEngineFilterEntityPara
 		if policyPath == policyCommonDefs.PolicyPath_Import {
 			//db.Logger.Info("Applying default import policy")
 			if db.DefaultImportPolicyActionFunc != nil {
-				db.DefaultImportPolicyActionFunc(nil, nil, params)
+				db.DefaultImportPolicyActionFunc(nil, nil, params, PolicyStmt{})
 			}
 		} else if policyPath == policyCommonDefs.PolicyPath_Export {
 			//db.Logger.Info("Applying default export policy")
 			if db.DefaultExportPolicyActionFunc != nil {
-				db.DefaultExportPolicyActionFunc(nil, nil, params)
+				db.DefaultExportPolicyActionFunc(nil, nil, params, PolicyStmt{})
 			}
 		}
 	}
