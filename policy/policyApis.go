@@ -676,6 +676,7 @@ func (db *PolicyEngineDB) ValidatePolicyDefinitionCreate(cfg PolicyDefinitionCon
 	}
 	return err
 }
+
 func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (err error) {
 	db.Logger.Info("CreatePolicyDefinition")
 	err = db.ValidatePolicyDefinitionCreate(cfg)
@@ -833,6 +834,138 @@ func (db *PolicyEngineDB) DeletePolicyDefinition(cfg PolicyDefinitionConfig) (er
 		if policyInfo.ImportPolicy {
 			if db.ImportPolicyPrecedenceMap != nil {
 				delete(db.ImportPolicyPrecedenceMap, int(policyInfo.Precedence))
+			}
+		}
+	}
+	return err
+}
+func (db *PolicyEngineDB) ValidatePolicyDefinitionUpdate(cfg PolicyDefinitionConfig) (err error) {
+	db.Logger.Info("ValidatePolicyDefinitionUpdate")
+	policy := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
+	if policy == nil {
+		db.Logger.Err("Update add for a policy definition not created")
+		return errors.New(fmt.Sprintln("Invalid update operation for a policy:", cfg.Name, " not created"))
+	}
+	return nil
+}
+func (db *PolicyEngineDB) UpdateAddPolicyDefinition(cfg PolicyDefinitionConfig) (err error) {
+	db.Logger.Info("UpdateAddPolicyDefinition")
+	err = db.ValidatePolicyDefinitionUpdate(cfg)
+	if err != nil {
+		db.Logger.Err("Validation failed for policy definition update add with err:", err)
+		return err
+	}
+	policy := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
+	var i int
+	if policy != nil {
+		db.Logger.Info("Updating policy with name ", cfg.Name)
+		updatePolicy := policy.(Policy)
+		db.Logger.Info("Update Add to add ", len(cfg.PolicyDefinitionStatements), " number of statements")
+		for i = 0; i < len(cfg.PolicyDefinitionStatements); i++ {
+			var stmt PolicyStmt
+			db.Logger.Info("Adding statement ", cfg.PolicyDefinitionStatements[i].Statement, " at precedence id ", cfg.PolicyDefinitionStatements[i].Precedence)
+			if updatePolicy.PolicyStmtPrecedenceMap[int(cfg.PolicyDefinitionStatements[i].Precedence)] != "" {
+				db.Logger.Info(" Cannot add multiple statements at the same priority level during create")
+				//undo the statement mappings for the statements already added to this policy
+				for idx := 0; idx < i; idx++ {
+					Item := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.PolicyDefinitionStatements[idx].Statement))
+					if Item != nil {
+						stmt = Item.(PolicyStmt)
+						err = db.UpdateStatements(updatePolicy, stmt, del)
+						if err != nil {
+							db.Logger.Info("updateStatements returned err ", err)
+							err = errors.New("error with updateStatements")
+						}
+					} else {
+						db.Logger.Err("Statement ", cfg.PolicyDefinitionStatements[idx].Statement, " not defined")
+						err = errors.New("stmt name not defined")
+					}
+					err = db.UpdateGlobalStatementTable(updatePolicy.Name, cfg.PolicyDefinitionStatements[idx].Statement, del)
+					if err != nil {
+						db.Logger.Info("UpdateGlobalStatementTable returned err ", err)
+						err = errors.New("Error with UpdateGlobalStatementTable")
+					}
+				}
+				return errors.New(" Cannot add multiple statements at the same priority level during create")
+			}
+			updatePolicy.PolicyStmtPrecedenceMap[int(cfg.PolicyDefinitionStatements[i].Precedence)] = cfg.PolicyDefinitionStatements[i].Statement
+			Item := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.PolicyDefinitionStatements[i].Statement))
+			if Item != nil {
+				stmt = Item.(PolicyStmt)
+				err = db.UpdateStatements(updatePolicy, stmt, add)
+				if err != nil {
+					db.Logger.Info("updateStatements returned err ", err)
+					err = errors.New("error with updateStatements")
+				}
+			} else {
+				db.Logger.Err("Statement ", cfg.PolicyDefinitionStatements[i].Statement, " not defined")
+				err = errors.New("stmt name not defined")
+			}
+			err = db.UpdateGlobalStatementTable(updatePolicy.Name, cfg.PolicyDefinitionStatements[i].Statement, add)
+			if err != nil {
+				db.Logger.Info("UpdateGlobalStatementTable returned err ", err)
+				err = errors.New("Error with UpdateGlobalStatementTable")
+			}
+		}
+		if db.Global == false {
+			//apply if there are unapplied list for this policy if this is a non global engine
+			db.Logger.Debug("Policy ", updatePolicy, " updated, apply any policy info for this")
+			policyMapInfo, ok := db.ApplyPolicyMap[cfg.Name]
+			if ok {
+				for _, info := range policyMapInfo.InfoList {
+					db.PolicyEngineTraverseAndApplyPolicy(info)
+				}
+			}
+			db.Logger.Debug("Policy after traverse and apply:", updatePolicy)
+		}
+	} else {
+		db.Logger.Err("Update add for a policy definition not created")
+		return errors.New(fmt.Sprintln("Invalid update operation for a policy:", cfg.Name, " not created"))
+	}
+	return nil
+}
+func (db *PolicyEngineDB) UpdateRemovePolicyDefinition(cfg PolicyDefinitionConfig) (err error) {
+	db.Logger.Info("UpdateRemovePolicyDefinition for name ", cfg.Name)
+	err = db.ValidatePolicyDefinitionUpdate(cfg)
+	if err != nil {
+		db.Logger.Err("Validation failed for policy definition update with err:", err)
+		return err
+	}
+	policyInfoGet := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
+	if policyInfoGet != nil {
+		policyInfo := policyInfoGet.(Policy)
+		stmtList := make([]string, 0)
+		for _, remStmt := range cfg.PolicyDefinitionStatements {
+			stmtList = append(stmtList, remStmt.Statement)
+		}
+		if db.Global == false {
+			db.Logger.Debug("UpdateRemovePolicyDefinition: policy:", policyInfo)
+			policyMapInfo, ok := db.ApplyPolicyMap[cfg.Name]
+			if ok {
+				for _, info := range policyMapInfo.InfoList {
+					db.PolicyEngineTraverseAndReversePolicyStmts(info, stmtList)
+				}
+			}
+			db.Logger.Debug("After traverse and reverse:", policyInfo)
+		}
+		var stmt PolicyStmt
+		for _, v := range cfg.PolicyDefinitionStatements {
+			err = db.UpdateGlobalStatementTable(policyInfo.Name, v.Statement, del)
+			if err != nil {
+				db.Logger.Info("UpdateGlobalStatementTable returned err ", err)
+				err = errors.New("UpdateGlobalStatementTable returned err")
+			}
+			Item := db.PolicyStmtDB.Get(patriciaDB.Prefix(v.Statement))
+			if Item != nil {
+				stmt = Item.(PolicyStmt)
+				err = db.UpdateStatements(policyInfo, stmt, del)
+				if err != nil {
+					db.Logger.Info("updateStatements returned err ", err)
+					err = errors.New("UpdateStatements returned err")
+				}
+			} else {
+				db.Logger.Err("Statement ", v, " not defined")
+				err = errors.New("statement name not defined")
 			}
 		}
 	}

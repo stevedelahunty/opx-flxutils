@@ -64,6 +64,10 @@ type PolicyEngineFilterEntityParams struct {
 	PolicyList       []string
 	PolicyHitCounter int
 }
+type PolicyStmtUpdateInfo struct {
+	ApplyPolicy ApplyPolicyInfo
+	StmtList    []string
+}
 
 //struct sent to the application for updating its local maps/DBs
 type PolicyDetails struct {

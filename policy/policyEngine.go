@@ -121,7 +121,7 @@ func (db *PolicyEngineDB) PolicyEngineUndoActionsPolicyStmt(policy Policy, polic
 		}
 	}
 }
-func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFilterEntityParams, policy Policy, params interface{}) bool {
+func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFilterEntityParams, policy Policy, stmtList []string, params interface{}) bool {
 	db.Logger.Info("policyEngineUndoPolicyForRoute - policy name ", policy.Name, "  route: ", entity.DestNetIp, " type:", entity.RouteProtocol)
 	if db.GetPolicyEntityMapIndex == nil {
 		return false
@@ -136,8 +136,20 @@ func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFil
 		db.Logger.Info("Unexpected:None of the policy statements of this policy have been applied on this route")
 		return false
 	}
+	undoStmtMap := make(map[string]bool)
+	for _, undoStmt := range stmtList {
+		undoStmtMap[undoStmt] = true
+	}
 	for stmt, conditionsAndActionsList := range policyStmtMap.PolicyStmtMap {
 		db.Logger.Info("Applied policyStmtName ", stmt)
+		//if the undo stmt list is non zero, then this is not the case for policy delete but for policy update
+		if stmtList != nil && len(stmtList) > 0 {
+			_, ok := undoStmtMap[stmt]
+			if !ok {
+				db.Logger.Info("this statement ", stmt, " is not the one to be removed from the policy")
+				continue
+			}
+		}
 		policyStmt := db.PolicyStmtDB.Get(patriciaDB.Prefix(stmt))
 		if policyStmt == nil {
 			db.Logger.Info("Invalid policyStmt")
@@ -154,14 +166,15 @@ func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFil
 	}
 	return true
 }
-func (db *PolicyEngineDB) PolicyEngineUndoApplyPolicyForEntity(entity PolicyEngineFilterEntityParams, info ApplyPolicyInfo, params interface{}) bool {
+func (db *PolicyEngineDB) PolicyEngineUndoApplyPolicyForEntity(entity PolicyEngineFilterEntityParams, updateInfo PolicyStmtUpdateInfo, params interface{}) bool {
+	info := updateInfo.ApplyPolicy
 	match, _ := db.PolicyEngineMatchConditions(entity, info.Conditions, "all")
 	db.Logger.Info("In PolicyEngineUndoApplyPolicyForEntity, match = ", match)
 	if !match {
 		db.Logger.Info("Apply Policy conditions dont match for this entity")
 		return false
 	}
-	return db.PolicyEngineUndoPolicyForEntity(entity, info.ApplyPolicy, params)
+	return db.PolicyEngineUndoPolicyForEntity(entity, info.ApplyPolicy, updateInfo.StmtList, params)
 }
 func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilterEntityParams, action PolicyAction,
 	conditionInfoList []interface{}, params interface{}, policyStmt PolicyStmt) (policyActionList []PolicyAction) {
@@ -651,12 +664,26 @@ func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(info ApplyPolicyInf
 			db.PolicyEngineApplyGlobalPolicy(policy)
 		}*/
 }
+func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicyStmts(info ApplyPolicyInfo, stmtList []string) {
+	db.Logger.Info("PolicyEngineTraverseAndReversePolicyStmts -policy:", info.ApplyPolicy.Name)
+	updateStmtInfo := PolicyStmtUpdateInfo{
+		ApplyPolicy: info,
+		StmtList:    stmtList,
+	}
+	if db.TraverseAndReversePolicyFunc != nil {
+		db.TraverseAndReversePolicyFunc(updateStmtInfo)
+	}
+}
 
 func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicy(info ApplyPolicyInfo) {
 	db.Logger.Info("PolicyEngineTraverseAndReversePolicy -  reverse policy ", info.ApplyPolicy.Name)
 	if db.TraverseAndReversePolicyFunc != nil {
 		db.Logger.Info("Calling PolicyEngineTraverseAndReversePolicy function")
-		db.TraverseAndReversePolicyFunc(info)
+		updateStmtInfo := PolicyStmtUpdateInfo{
+			ApplyPolicy: info,
+			StmtList:    make([]string, 0),
+		}
+		db.TraverseAndReversePolicyFunc(updateStmtInfo)
 	}
 	/*	if policy.ExportPolicy || policy.ImportPolicy {
 			db.Logger.Info("Reversing import/export policy ")

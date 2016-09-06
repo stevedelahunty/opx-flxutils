@@ -180,7 +180,7 @@ func CheckIfInRange(testIPAddr, ipAddr string, lowPrefixLen int, highPrefixLen i
 	//testAddr := net.ParseIP(testIPAddr)
 	testAddr, _, err := net.ParseCIDR(testIPAddr)
 	if err != nil {
-		fmt.Println("error parsing address:", testIPAddr)
+		fmt.Println("error parsing test address:", testIPAddr)
 		return false
 	}
 
@@ -216,7 +216,7 @@ func CheckIfInRange(testIPAddr, ipAddr string, lowPrefixLen int, highPrefixLen i
 	}
 	baseAddr, _, err := net.ParseCIDR(ipAddr)
 	if err != nil {
-		fmt.Println("error parsing address:", ipAddr)
+		fmt.Println("error parsing base address:", ipAddr)
 		return false
 	}
 	for idx := lowPrefixLen; idx <= highPrefixLen; idx++ {
