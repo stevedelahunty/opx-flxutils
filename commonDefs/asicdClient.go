@@ -162,6 +162,7 @@ type L2IntfStateNotifyMsg struct {
 type L3IntfStateNotifyMsg struct {
 	MsgType uint8
 	IpAddr  string
+	IpType  int
 	IfIndex int32
 	IfState uint8
 }
