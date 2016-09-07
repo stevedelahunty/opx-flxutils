@@ -825,3 +825,70 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIn
 
 	return err
 }
+
+func (asicdClientMgr *FSAsicdClientMgr) IppVlanConversationSet(vlan uint16, ifindex int32) error {
+
+	// get the vlan info
+	vlanInfo, err := asicdClientMgr.ClientHdl.GetBulkVlan(asicdInt.Int(vlan), asicdInt.Int(vlan))
+	if err != nil {
+		return err
+	}
+
+	// append the port to the vlan
+	for i := vlanInfo.StartIdx; i < (vlanInfo.StartIdx + vlanInfo.Count); i++ {
+		vlancfg := vlanInfo.VlanList[i]
+		for _, ifndx := range vlancfg.IfIndexList {
+			if ifndx == ifindex {
+				return nil
+			}
+		}
+		oldvlancfg := &asicdServices.Vlan{
+			VlanId: int32(vlan),
+		}
+		newvlancfg := &asicdServices.Vlan{
+			VlanId: int32(vlan),
+		}
+		patchList := []*asicdServices.PatchOpInfo{&asicdServices.PatchOpInfo{
+			Op:    "add",
+			Path:  "IntfList",
+			Value: fmt.Sprintf("%s", ifindex),
+		}}
+		_, err = asicdClientMgr.ClientHdl.UpdateVlan(oldvlancfg, newvlancfg, nil, patchList)
+		//(1: Vlan origconfig, 2: Vlan newconfig, 3: list<bool> attrset, 4: list<PatchOpInfo> op)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) IppVlanConversationClear(vlan uint16, ifindex int32) (err error) {
+	// get the vlan info
+	vlanInfo, err := asicdClientMgr.ClientHdl.GetBulkVlan(asicdInt.Int(vlan), asicdInt.Int(vlan))
+	if err != nil {
+		return err
+	}
+
+	// append the port to the vlan
+	for i := vlanInfo.StartIdx; i < (vlanInfo.StartIdx + vlanInfo.Count); i++ {
+		vlancfg := vlanInfo.VlanList[i]
+		for _, ifndx := range vlancfg.IfIndexList {
+			if ifndx == ifindex {
+				oldvlancfg := &asicdServices.Vlan{
+					VlanId: int32(vlan),
+				}
+				newvlancfg := &asicdServices.Vlan{
+					VlanId: int32(vlan),
+				}
+				patchList := []*asicdServices.PatchOpInfo{&asicdServices.PatchOpInfo{
+					Op:    "remove",
+					Path:  "IntfList",
+					Value: fmt.Sprintf("%s", ifindex),
+				}}
+				_, err = asicdClientMgr.ClientHdl.UpdateVlan(oldvlancfg, newvlancfg, nil, patchList)
+				break
+			}
+		}
+	}
+	return err
+}
