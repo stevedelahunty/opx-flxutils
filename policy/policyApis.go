@@ -593,7 +593,7 @@ func (db *PolicyEngineDB) UpdateUndoApplyPolicy(info ApplyPolicyInfo, traverseAn
 }
 
 func (db *PolicyEngineDB) UpdateApplyPolicy(info ApplyPolicyInfo, apply bool) {
-	db.Logger.Info("ApplyPolicy")
+	db.Logger.Info("ApplyPolicy, apply:", apply)
 	applyPolicy := info.ApplyPolicy
 	action := info.Action
 	conditions := make([]string, 0)
