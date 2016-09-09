@@ -531,6 +531,49 @@ func (db *PolicyEngineDB) DeletePolicyStatement(cfg PolicyStmtConfig) (err error
 	}
 	return err
 }
+func (db *PolicyEngineDB) UpdateAddPolicyStmt(cfg PolicyStmtConfig) (err error) {
+	func_mesg := "UpdateAddPolicyStmt for " + cfg.Name
+	db.Logger.Debug(func_mesg)
+	policyStmt := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.Name))
+	var i int
+	if policyStmt != nil {
+		db.Logger.Info(func_mesg, " Updating policy name ", cfg.Name, " to add ", len(cfg.Conditions), " number of Conditions")
+		updatePolicyStmt := policyStmt.(PolicyStmt)
+		for i = 0; i < len(cfg.Conditions); i++ {
+			var condition PolicyCondition
+			db.Logger.Info(func_mesg, " Adding condition ", cfg.Conditions[i], " to policy stmt", updatePolicyStmt.Name)
+			Item := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Conditions[i]))
+			if Item != nil {
+				condition = Item.(PolicyCondition)
+				err = db.UpdateConditions(updatePolicyStmt, condition.Name, add)
+				if err != nil {
+					db.Logger.Info(func_mesg, " updateConditions returned err ", err)
+					err = errors.New("error with updateConditions")
+				}
+			} else {
+				db.Logger.Err(func_mesg, " Condition ", cfg.Conditions[i], " not defined")
+				err = errors.New("condition name not defined")
+			}
+		}
+		db.PolicyStmtDB.Set(patriciaDB.Prefix(cfg.Name), updatePolicyStmt)
+		if db.Global == false {
+			//re-apply if there are any applied list for this policy if this is a non global engine
+			for _, policy := range updatePolicyStmt.PolicyList {
+				db.Logger.Debug(func_mesg, " re-apply Policy ", policy)
+				policyMapInfo, ok := db.ApplyPolicyMap[policy]
+				if ok {
+					for _, info := range policyMapInfo.InfoList {
+						db.PolicyEngineTraverseAndApplyPolicy(info)
+					}
+				}
+			}
+		}
+	} else {
+		db.Logger.Err(func_mesg, " Update add for a policy satement not created")
+		return errors.New(fmt.Sprintln("Invalid update operation for a policyStmt:", cfg.Name, " not created"))
+	}
+	return nil
+}
 func (db *PolicyEngineDB) UpdateUndoApplyPolicy(info ApplyPolicyInfo, traverseAndReverse bool) {
 	db.Logger.Info("UpdateUndoApplyPolicy")
 	if db.ApplyPolicyMap == nil {
