@@ -546,6 +546,7 @@ func (db *PolicyEngineDB) UpdateUndoApplyPolicy(info ApplyPolicyInfo, traverseAn
 	if traverseAndReverse {
 		policyInfoGet := db.PolicyDB.Get(patriciaDB.Prefix(applyPolicy.Name))
 		if policyInfoGet != nil {
+			db.Logger.Info("In UpdateUndoApplyPolicy, info.ApplyPolicy:", info.ApplyPolicy)
 			db.PolicyEngineTraverseAndReversePolicy(info)
 		}
 	}
@@ -637,14 +638,14 @@ func (db *PolicyEngineDB) UpdateApplyPolicy(info ApplyPolicyInfo, apply bool) {
 	db.Logger.Info("Adding applypolicy info to:", pInfo.InfoList)
 	pInfo.InfoList = append(pInfo.InfoList, ApplyPolicyInfo{applyPolicy, action, conditions})
 	pInfo.Count++
-	db.Logger.Info("After adding applyinfo:", pInfo.InfoList, "Count:", pInfo.Count)
+	//	db.Logger.Info("After adding applyinfo:", pInfo.InfoList, "Count:", pInfo.Count)
 	db.ApplyPolicyMap[applyPolicy.Name] = pInfo
 	//}
 	if apply && policyInfoGet != nil {
 		db.PolicyEngineTraverseAndApplyPolicy(info)
 	}
+	//	db.Logger.Info("At the end of UpdateApplyPolicy, info.ApplyPolicy:", info.ApplyPolicy)
 }
-
 func (db *PolicyEngineDB) ValidatePolicyDefinitionCreate(cfg PolicyDefinitionConfig) (err error) {
 	db.Logger.Err("ValidatePolicyDefinitionCreate")
 	policy := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
@@ -858,35 +859,14 @@ func (db *PolicyEngineDB) UpdateAddPolicyDefinition(cfg PolicyDefinitionConfig) 
 	policy := db.PolicyDB.Get(patriciaDB.Prefix(cfg.Name))
 	var i int
 	if policy != nil {
-		db.Logger.Info("Updating policy with name ", cfg.Name)
+		db.Logger.Info("Updating policy name ", cfg.Name, " to add ", len(cfg.PolicyDefinitionStatements), " number of statements")
 		updatePolicy := policy.(Policy)
-		db.Logger.Info("Update Add to add ", len(cfg.PolicyDefinitionStatements), " number of statements")
 		for i = 0; i < len(cfg.PolicyDefinitionStatements); i++ {
 			var stmt PolicyStmt
-			db.Logger.Info("Adding statement ", cfg.PolicyDefinitionStatements[i].Statement, " at precedence id ", cfg.PolicyDefinitionStatements[i].Precedence)
+			db.Logger.Info("Adding statement ", cfg.PolicyDefinitionStatements[i].Statement, " at precedence id ", cfg.PolicyDefinitionStatements[i].Precedence, "to policy", updatePolicy.Name)
 			if updatePolicy.PolicyStmtPrecedenceMap[int(cfg.PolicyDefinitionStatements[i].Precedence)] != "" {
-				db.Logger.Info(" Cannot add multiple statements at the same priority level during create")
-				//undo the statement mappings for the statements already added to this policy
-				for idx := 0; idx < i; idx++ {
-					Item := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.PolicyDefinitionStatements[idx].Statement))
-					if Item != nil {
-						stmt = Item.(PolicyStmt)
-						err = db.UpdateStatements(updatePolicy, stmt, del)
-						if err != nil {
-							db.Logger.Info("updateStatements returned err ", err)
-							err = errors.New("error with updateStatements")
-						}
-					} else {
-						db.Logger.Err("Statement ", cfg.PolicyDefinitionStatements[idx].Statement, " not defined")
-						err = errors.New("stmt name not defined")
-					}
-					err = db.UpdateGlobalStatementTable(updatePolicy.Name, cfg.PolicyDefinitionStatements[idx].Statement, del)
-					if err != nil {
-						db.Logger.Info("UpdateGlobalStatementTable returned err ", err)
-						err = errors.New("Error with UpdateGlobalStatementTable")
-					}
-				}
-				return errors.New(" Cannot add multiple statements at the same priority level during create")
+				db.Logger.Err("policy add update: Already a statement ", updatePolicy.PolicyStmtPrecedenceMap[int(cfg.PolicyDefinitionStatements[i].Precedence)], " at the priority:", cfg.PolicyDefinitionStatements[i].Precedence)
+				return errors.New(fmt.Sprintln("policy add update: Already a statement ", updatePolicy.PolicyStmtPrecedenceMap[int(cfg.PolicyDefinitionStatements[i].Precedence)], " at the priority:", cfg.PolicyDefinitionStatements[i].Precedence))
 			}
 			updatePolicy.PolicyStmtPrecedenceMap[int(cfg.PolicyDefinitionStatements[i].Precedence)] = cfg.PolicyDefinitionStatements[i].Statement
 			Item := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.PolicyDefinitionStatements[i].Statement))
@@ -907,12 +887,14 @@ func (db *PolicyEngineDB) UpdateAddPolicyDefinition(cfg PolicyDefinitionConfig) 
 				err = errors.New("Error with UpdateGlobalStatementTable")
 			}
 		}
+		db.PolicyDB.Set(patriciaDB.Prefix(cfg.Name), updatePolicy)
 		if db.Global == false {
 			//apply if there are unapplied list for this policy if this is a non global engine
 			db.Logger.Debug("Policy ", updatePolicy, " updated, apply any policy info for this")
 			policyMapInfo, ok := db.ApplyPolicyMap[cfg.Name]
 			if ok {
 				for _, info := range policyMapInfo.InfoList {
+					info.ApplyPolicy = updatePolicy
 					db.PolicyEngineTraverseAndApplyPolicy(info)
 				}
 			}
@@ -943,6 +925,8 @@ func (db *PolicyEngineDB) UpdateRemovePolicyDefinition(cfg PolicyDefinitionConfi
 			policyMapInfo, ok := db.ApplyPolicyMap[cfg.Name]
 			if ok {
 				for _, info := range policyMapInfo.InfoList {
+					info.ApplyPolicy = policyInfo
+					db.Logger.Info("UpdateRemovePolicyDefinition: call traverseAndReverse , applypolicyInfo policy info:", info.ApplyPolicy, " current policy:", policyInfo)
 					db.PolicyEngineTraverseAndReversePolicyStmts(info, stmtList)
 				}
 			}
@@ -950,6 +934,7 @@ func (db *PolicyEngineDB) UpdateRemovePolicyDefinition(cfg PolicyDefinitionConfi
 		}
 		var stmt PolicyStmt
 		for _, v := range cfg.PolicyDefinitionStatements {
+			db.Logger.Info("Removing statement ", v.Statement, " at precedence id ", v.Precedence, " from policy ", policyInfo.Name)
 			err = db.UpdateGlobalStatementTable(policyInfo.Name, v.Statement, del)
 			if err != nil {
 				db.Logger.Info("UpdateGlobalStatementTable returned err ", err)
@@ -967,7 +952,9 @@ func (db *PolicyEngineDB) UpdateRemovePolicyDefinition(cfg PolicyDefinitionConfi
 				db.Logger.Err("Statement ", v, " not defined")
 				err = errors.New("statement name not defined")
 			}
+			policyInfo.PolicyStmtPrecedenceMap[int(v.Precedence)] = ""
 		}
+		db.PolicyDB.Set(patriciaDB.Prefix(cfg.Name), policyInfo)
 	}
 	return err
 }

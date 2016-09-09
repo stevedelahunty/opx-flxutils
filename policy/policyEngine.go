@@ -140,6 +140,7 @@ func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFil
 	for _, undoStmt := range stmtList {
 		undoStmtMap[undoStmt] = true
 	}
+	ret := true
 	for stmt, conditionsAndActionsList := range policyStmtMap.PolicyStmtMap {
 		db.Logger.Info("Applied policyStmtName ", stmt)
 		//if the undo stmt list is non zero, then this is not the case for policy delete but for policy update
@@ -147,6 +148,8 @@ func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFil
 			_, ok := undoStmtMap[stmt]
 			if !ok {
 				db.Logger.Info("this statement ", stmt, " is not the one to be removed from the policy")
+				//return value should be false, so the policy is not deleted from the entity
+				ret = false
 				continue
 			}
 		}
@@ -164,7 +167,7 @@ func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFil
 			}
 		}
 	}
-	return true
+	return ret
 }
 func (db *PolicyEngineDB) PolicyEngineUndoApplyPolicyForEntity(entity PolicyEngineFilterEntityParams, updateInfo PolicyStmtUpdateInfo, params interface{}) bool {
 	info := updateInfo.ApplyPolicy
@@ -473,10 +476,20 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 	if db.IsEntityPresentFunc != nil {
 		*deleted = !(db.IsEntityPresentFunc(params))
 	}
+	policyInfoGet := db.PolicyDB.Get(patriciaDB.Prefix(policy.Name))
+	if policyInfoGet != nil {
+		policyInfo := policyInfoGet.(Policy)
+		db.Logger.Info("PolicyEngineApplyPolicyStmt, before updateEntityDB db.Global:", db.Global, " policyInfo:", policyInfo)
+	}
 	db.AddPolicyEntityMapEntry(*entity, policy.Name, policyStmt.Name, conditionList, actionList)
 	if db.UpdateEntityDB != nil {
 		policyDetails := PolicyDetails{Policy: policy.Name, PolicyStmt: policyStmt.Name, ConditionList: conditionList, ActionList: actionList, EntityDeleted: *deleted}
 		db.UpdateEntityDB(policyDetails, params)
+	}
+	policyInfoGet = db.PolicyDB.Get(patriciaDB.Prefix(policy.Name))
+	if policyInfoGet != nil {
+		policyInfo := policyInfoGet.(Policy)
+		db.Logger.Info("PolicyEngineApplyPolicyStmt, after updateEntityDB db.Global:", db.Global, " policyInfo:", policyInfo)
 	}
 }
 
