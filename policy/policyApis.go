@@ -391,6 +391,10 @@ func (db *PolicyEngineDB) ValidatePolicyStatementCreate(cfg PolicyStmtConfig) (e
 		err = errors.New("Cannot have more than 1 action in a policy")
 		return err
 	}
+	if cfg.MatchConditions != "all" && cfg.MatchConditions != "any" {
+		db.Logger.Err("Invalid matchConditions option")
+		return errors.New("Invalid stmt matchconditions option")
+	}
 	if cfg.Actions[0] != "permit" && cfg.Actions[0] != "deny" {
 		db.Logger.Err("Invalid stmt actions, can only be one of permit/deny")
 		return errors.New("Invalid stmt actions")
@@ -531,14 +535,56 @@ func (db *PolicyEngineDB) DeletePolicyStatement(cfg PolicyStmtConfig) (err error
 	}
 	return err
 }
-func (db *PolicyEngineDB) UpdateAddPolicyStmt(cfg PolicyStmtConfig) (err error) {
-	func_mesg := "UpdateAddPolicyStmt for " + cfg.Name
+func (db *PolicyEngineDB) UpdatePolicyStmtMatchTypeAttr(cfg PolicyStmtConfig) (err error) {
+	func_mesg := "UpdatePolicyStmtMatchTypeAttr for " + cfg.Name
+	db.Logger.Debug(func_mesg)
+	if cfg.MatchConditions != "all" && cfg.MatchConditions != "any" {
+		db.Logger.Err("Invalid matchConditions option")
+		return errors.New("Invalid stmt matchconditions option")
+	}
+	policyStmt := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.Name))
+	if policyStmt != nil {
+		updatePolicyStmt := policyStmt.(PolicyStmt)
+		updatePolicyStmt.MatchConditions = cfg.MatchConditions
+		db.PolicyStmtDB.Set(patriciaDB.Prefix(cfg.Name), updatePolicyStmt)
+		if updatePolicyStmt.Conditions == nil || len(updatePolicyStmt.Conditions) == 0 {
+			return nil
+		}
+		if db.Global == false {
+			//re-apply if there are any applied list for this policy if this is a non global engine
+			for _, policy := range updatePolicyStmt.PolicyList {
+				db.Logger.Debug(func_mesg, " re-apply Policy ", policy)
+				policyMapInfo, ok := db.ApplyPolicyMap[policy]
+				if ok {
+					for _, info := range policyMapInfo.InfoList {
+						//first undo
+						db.PolicyEngineTraverseAndReversePolicy(info, []string{cfg.Name}, nil)
+						db.PolicyEngineTraverseAndApplyPolicy(info, []string{cfg.Name}, nil)
+					}
+				}
+			}
+		}
+	} else {
+		db.Logger.Err(func_mesg, " Update for a policy satement not created")
+		return errors.New(fmt.Sprintln("Invalid update operation for a policyStmt:", cfg.Name, " not created"))
+	}
+	return nil
+}
+
+/*
+   Update PolicyStmt - add conditions
+*/
+func (db *PolicyEngineDB) UpdateAddPolicyStmtConditions(cfg PolicyStmtConfig) (err error) {
+	func_mesg := "UpdateAddPolicyStmtConditions for " + cfg.Name
 	db.Logger.Debug(func_mesg)
 	policyStmt := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.Name))
 	var i int
 	if policyStmt != nil {
 		db.Logger.Info(func_mesg, " Updating policy name ", cfg.Name, " to add ", len(cfg.Conditions), " number of Conditions")
 		updatePolicyStmt := policyStmt.(PolicyStmt)
+		if updatePolicyStmt.Conditions == nil {
+			updatePolicyStmt.Conditions = make([]string, 0)
+		}
 		for i = 0; i < len(cfg.Conditions); i++ {
 			var condition PolicyCondition
 			db.Logger.Info(func_mesg, " Adding condition ", cfg.Conditions[i], " to policy stmt", updatePolicyStmt.Name)
@@ -554,6 +600,7 @@ func (db *PolicyEngineDB) UpdateAddPolicyStmt(cfg PolicyStmtConfig) (err error) 
 				db.Logger.Err(func_mesg, " Condition ", cfg.Conditions[i], " not defined")
 				err = errors.New("condition name not defined")
 			}
+			updatePolicyStmt.Conditions = append(updatePolicyStmt.Conditions, cfg.Conditions[i])
 		}
 		db.PolicyStmtDB.Set(patriciaDB.Prefix(cfg.Name), updatePolicyStmt)
 		if db.Global == false {
@@ -563,13 +610,77 @@ func (db *PolicyEngineDB) UpdateAddPolicyStmt(cfg PolicyStmtConfig) (err error) 
 				policyMapInfo, ok := db.ApplyPolicyMap[policy]
 				if ok {
 					for _, info := range policyMapInfo.InfoList {
-						db.PolicyEngineTraverseAndApplyPolicy(info)
+						db.PolicyEngineTraverseAndApplyPolicy(info, []string{cfg.Name}, nil)
 					}
 				}
 			}
 		}
 	} else {
 		db.Logger.Err(func_mesg, " Update add for a policy satement not created")
+		return errors.New(fmt.Sprintln("Invalid update operation for a policyStmt:", cfg.Name, " not created"))
+	}
+	return nil
+}
+
+/*
+   Update PolicyStmt - remove conditions
+*/
+func (db *PolicyEngineDB) UpdateRemovePolicyStmtConditions(cfg PolicyStmtConfig) (err error) {
+	func_mesg := "UpdateRemovePolicyStmtConditions for " + cfg.Name
+	db.Logger.Debug(func_mesg)
+	policyStmt := db.PolicyStmtDB.Get(patriciaDB.Prefix(cfg.Name))
+	var i int
+	if policyStmt != nil {
+		db.Logger.Info(func_mesg, " Updating policy name ", cfg.Name, " to remove ", len(cfg.Conditions), " number of Conditions")
+		updatePolicyStmt := policyStmt.(PolicyStmt)
+		if db.Global == false {
+			//un-apply if there are any applied list for this policy if this is a non global engine
+			for _, policyName := range updatePolicyStmt.PolicyList {
+				db.Logger.Debug(func_mesg, " un-apply Policy ", policyName)
+				policyMapInfo, ok := db.ApplyPolicyMap[policyName]
+				if ok {
+					policyItem := db.PolicyDB.Get(patriciaDB.Prefix(policyName))
+					if policyItem == nil {
+						db.Logger.Err(func_mesg, " policyItem for ", policyName, " nil for statement")
+						continue
+					}
+					policy := policyItem.(Policy)
+					for _, info := range policyMapInfo.InfoList {
+						info.ApplyPolicy = policy
+						db.Logger.Debug(func_mesg, " passing conditionsList as:", cfg.Conditions, " to traverseAndReverse function")
+						db.PolicyEngineTraverseAndReversePolicy(info, []string{cfg.Name}, cfg.Conditions)
+					}
+				}
+			}
+		}
+		cfgCondMap := make(map[string]bool)
+		for i = 0; i < len(cfg.Conditions); i++ {
+			var condition PolicyCondition
+			db.Logger.Info(func_mesg, " Removing condition ", cfg.Conditions[i], " from policy stmt", updatePolicyStmt.Name)
+			Item := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Conditions[i]))
+			if Item != nil {
+				condition = Item.(PolicyCondition)
+				err = db.UpdateConditions(updatePolicyStmt, condition.Name, add)
+				if err != nil {
+					db.Logger.Info(func_mesg, " updateConditions returned err ", err)
+					err = errors.New("error with updateConditions")
+				}
+				cfgCondMap[cfg.Conditions[i]] = true
+			} else {
+				db.Logger.Err(func_mesg, " Condition ", cfg.Conditions[i], " not defined")
+				err = errors.New("condition name not defined")
+			}
+		}
+		for idx := 0; idx < len(updatePolicyStmt.Conditions); idx++ {
+			if cfgCondMap[updatePolicyStmt.Conditions[idx]] {
+				updatePolicyStmt.Conditions[idx] = updatePolicyStmt.Conditions[len(updatePolicyStmt.Conditions)-1]
+				updatePolicyStmt.Conditions = updatePolicyStmt.Conditions[:len(updatePolicyStmt.Conditions)-1]
+				idx--
+			}
+		}
+		db.PolicyStmtDB.Set(patriciaDB.Prefix(cfg.Name), updatePolicyStmt)
+	} else {
+		db.Logger.Err(func_mesg, " Update remove for a policy satement not created")
 		return errors.New(fmt.Sprintln("Invalid update operation for a policyStmt:", cfg.Name, " not created"))
 	}
 	return nil
@@ -590,7 +701,7 @@ func (db *PolicyEngineDB) UpdateUndoApplyPolicy(info ApplyPolicyInfo, traverseAn
 		policyInfoGet := db.PolicyDB.Get(patriciaDB.Prefix(applyPolicy.Name))
 		if policyInfoGet != nil {
 			db.Logger.Info("In UpdateUndoApplyPolicy, info.ApplyPolicy:", info.ApplyPolicy)
-			db.PolicyEngineTraverseAndReversePolicy(info)
+			db.PolicyEngineTraverseAndReversePolicy(info, nil, nil)
 		}
 	}
 	pInfo := db.ApplyPolicyMap[applyPolicy.Name]
@@ -685,7 +796,7 @@ func (db *PolicyEngineDB) UpdateApplyPolicy(info ApplyPolicyInfo, apply bool) {
 	db.ApplyPolicyMap[applyPolicy.Name] = pInfo
 	//}
 	if apply && policyInfoGet != nil {
-		db.PolicyEngineTraverseAndApplyPolicy(info)
+		db.PolicyEngineTraverseAndApplyPolicy(info, nil, nil)
 	}
 	//	db.Logger.Info("At the end of UpdateApplyPolicy, info.ApplyPolicy:", info.ApplyPolicy)
 }
@@ -798,7 +909,7 @@ func (db *PolicyEngineDB) CreatePolicyDefinition(cfg PolicyDefinitionConfig) (er
 			policyMapInfo, ok := db.ApplyPolicyMap[cfg.Name]
 			if ok {
 				for _, info := range policyMapInfo.InfoList {
-					db.PolicyEngineTraverseAndApplyPolicy(info)
+					db.PolicyEngineTraverseAndApplyPolicy(info, nil, nil)
 				}
 			}
 		}
@@ -892,8 +1003,8 @@ func (db *PolicyEngineDB) ValidatePolicyDefinitionUpdate(cfg PolicyDefinitionCon
 	}
 	return nil
 }
-func (db *PolicyEngineDB) UpdateAddPolicyDefinition(cfg PolicyDefinitionConfig) (err error) {
-	db.Logger.Info("UpdateAddPolicyDefinition")
+func (db *PolicyEngineDB) UpdateAddPolicyDefinitionStmts(cfg PolicyDefinitionConfig) (err error) {
+	db.Logger.Info("UpdateAddPolicyDefinitionStmts")
 	err = db.ValidatePolicyDefinitionUpdate(cfg)
 	if err != nil {
 		db.Logger.Err("Validation failed for policy definition update add with err:", err)
@@ -935,10 +1046,14 @@ func (db *PolicyEngineDB) UpdateAddPolicyDefinition(cfg PolicyDefinitionConfig) 
 			//apply if there are unapplied list for this policy if this is a non global engine
 			db.Logger.Debug("Policy ", updatePolicy, " updated, apply any policy info for this")
 			policyMapInfo, ok := db.ApplyPolicyMap[cfg.Name]
+			stmtList := make([]string, 0)
+			for _, addStmt := range cfg.PolicyDefinitionStatements {
+				stmtList = append(stmtList, addStmt.Statement)
+			}
 			if ok {
 				for _, info := range policyMapInfo.InfoList {
 					info.ApplyPolicy = updatePolicy
-					db.PolicyEngineTraverseAndApplyPolicy(info)
+					db.PolicyEngineTraverseAndApplyPolicy(info, stmtList, nil)
 				}
 			}
 			db.Logger.Debug("Policy after traverse and apply:", updatePolicy)
@@ -949,8 +1064,8 @@ func (db *PolicyEngineDB) UpdateAddPolicyDefinition(cfg PolicyDefinitionConfig) 
 	}
 	return nil
 }
-func (db *PolicyEngineDB) UpdateRemovePolicyDefinition(cfg PolicyDefinitionConfig) (err error) {
-	db.Logger.Info("UpdateRemovePolicyDefinition for name ", cfg.Name)
+func (db *PolicyEngineDB) UpdateRemovePolicyDefinitionStmts(cfg PolicyDefinitionConfig) (err error) {
+	db.Logger.Info("UpdateRemovePolicyDefinitionStmts for name ", cfg.Name)
 	err = db.ValidatePolicyDefinitionUpdate(cfg)
 	if err != nil {
 		db.Logger.Err("Validation failed for policy definition update with err:", err)
@@ -970,7 +1085,7 @@ func (db *PolicyEngineDB) UpdateRemovePolicyDefinition(cfg PolicyDefinitionConfi
 				for _, info := range policyMapInfo.InfoList {
 					info.ApplyPolicy = policyInfo
 					db.Logger.Info("UpdateRemovePolicyDefinition: call traverseAndReverse , applypolicyInfo policy info:", info.ApplyPolicy, " current policy:", policyInfo)
-					db.PolicyEngineTraverseAndReversePolicyStmts(info, stmtList)
+					db.PolicyEngineTraverseAndReversePolicy(info, stmtList, nil)
 				}
 			}
 			db.Logger.Debug("After traverse and reverse:", policyInfo)

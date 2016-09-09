@@ -121,8 +121,8 @@ func (db *PolicyEngineDB) PolicyEngineUndoActionsPolicyStmt(policy Policy, polic
 		}
 	}
 }
-func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFilterEntityParams, policy Policy, stmtList []string, params interface{}) bool {
-	db.Logger.Info("policyEngineUndoPolicyForRoute - policy name ", policy.Name, "  route: ", entity.DestNetIp, " type:", entity.RouteProtocol)
+func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFilterEntityParams, policy Policy, policyEngineApplyInfo PolicyEngineApplyInfo, params interface{}) bool {
+	db.Logger.Info("policyEngineUndoPolicyForRoute - policy name ", policy.Name, "  route: ", entity.DestNetIp, " type:", entity.RouteProtocol, " policyEngineApplyInfo:", policyEngineApplyInfo)
 	if db.GetPolicyEntityMapIndex == nil {
 		return false
 	}
@@ -137,14 +137,18 @@ func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFil
 		return false
 	}
 	undoStmtMap := make(map[string]bool)
-	for _, undoStmt := range stmtList {
+	for _, undoStmt := range policyEngineApplyInfo.StmtList {
 		undoStmtMap[undoStmt] = true
+	}
+	undoConditionsMap := make(map[string]bool)
+	for _, undoCondition := range policyEngineApplyInfo.ConditionsList {
+		undoConditionsMap[undoCondition] = true
 	}
 	ret := true
 	for stmt, conditionsAndActionsList := range policyStmtMap.PolicyStmtMap {
 		db.Logger.Info("Applied policyStmtName ", stmt)
 		//if the undo stmt list is non zero, then this is not the case for policy delete but for policy update
-		if stmtList != nil && len(stmtList) > 0 {
+		if policyEngineApplyInfo.StmtList != nil && len(policyEngineApplyInfo.StmtList) > 0 {
 			_, ok := undoStmtMap[stmt]
 			if !ok {
 				db.Logger.Info("this statement ", stmt, " is not the one to be removed from the policy")
@@ -152,6 +156,23 @@ func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFil
 				ret = false
 				continue
 			}
+		}
+		//if the undo conditions list is non zero, then this is not the case for policy delete but for policy update
+		db.Logger.Debug("PolicyEngineUndoPolicyForEntity - policyStmtMap:", policyStmtMap)
+		for _, condition := range conditionsAndActionsList.ConditionList {
+			if policyEngineApplyInfo.ConditionsList != nil && len(policyEngineApplyInfo.ConditionsList) > 0 {
+				db.Logger.Debug("PolicyEngineUndoPolicyForEntity:checking if condition ", condition.Name, " present in the undoConditionsMap:", undoConditionsMap)
+				_, ok := undoConditionsMap[condition.Name]
+				if !ok {
+					db.Logger.Info("this condition ", condition.Name, " is not the one to be removed from the policy stmt")
+					//return value should be false, so the policy is not deleted from the entity
+					ret = false
+					continue
+				}
+			}
+		}
+		if ret == false {
+			continue
 		}
 		policyStmt := db.PolicyStmtDB.Get(patriciaDB.Prefix(stmt))
 		if policyStmt == nil {
@@ -169,7 +190,7 @@ func (db *PolicyEngineDB) PolicyEngineUndoPolicyForEntity(entity PolicyEngineFil
 	}
 	return ret
 }
-func (db *PolicyEngineDB) PolicyEngineUndoApplyPolicyForEntity(entity PolicyEngineFilterEntityParams, updateInfo PolicyStmtUpdateInfo, params interface{}) bool {
+func (db *PolicyEngineDB) PolicyEngineUndoApplyPolicyForEntity(entity PolicyEngineFilterEntityParams, updateInfo PolicyEngineApplyInfo, params interface{}) bool {
 	info := updateInfo.ApplyPolicy
 	match, _ := db.PolicyEngineMatchConditions(entity, info.Conditions, "all")
 	db.Logger.Info("In PolicyEngineUndoApplyPolicyForEntity, match = ", match)
@@ -177,7 +198,7 @@ func (db *PolicyEngineDB) PolicyEngineUndoApplyPolicyForEntity(entity PolicyEngi
 		db.Logger.Info("Apply Policy conditions dont match for this entity")
 		return false
 	}
-	return db.PolicyEngineUndoPolicyForEntity(entity, info.ApplyPolicy, updateInfo.StmtList, params)
+	return db.PolicyEngineUndoPolicyForEntity(entity, info.ApplyPolicy, updateInfo, params)
 }
 func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilterEntityParams, action PolicyAction,
 	conditionInfoList []interface{}, params interface{}, policyStmt PolicyStmt) (policyActionList []PolicyAction) {
@@ -392,7 +413,7 @@ func (db *PolicyEngineDB) ConditionCheckValid(entity PolicyEngineFilterEntityPar
 	return valid
 }
 func (db *PolicyEngineDB) PolicyEngineMatchConditions(entity PolicyEngineFilterEntityParams, conditions []string, matchConditions string) (match bool, conditionsList []PolicyCondition) {
-	db.Logger.Info("policyEngineMatchConditions, match:", match)
+	db.Logger.Info("policyEngineMatchConditions")
 	var i int
 	allConditionsMatch := true
 	anyConditionsMatch := false
@@ -400,14 +421,14 @@ func (db *PolicyEngineDB) PolicyEngineMatchConditions(entity PolicyEngineFilterE
 	conditionsList = make([]PolicyCondition, 0)
 	for i = 0; i < len(conditions); i++ {
 		addConditiontoList = false
-		db.Logger.Info("Find policy condition number ", i, " name ", conditions[i], " in the condition database")
+		db.Logger.Debug("Find policy condition number ", i, " name ", conditions[i], " in the condition database")
 		conditionItem := db.PolicyConditionsDB.Get(patriciaDB.Prefix(conditions[i]))
 		if conditionItem == nil {
 			db.Logger.Info("Did not find condition ", conditions[i], " in the condition database")
 			continue
 		}
 		condition := conditionItem.(PolicyCondition)
-		db.Logger.Info("policy condition number ", i, "  type ", condition.ConditionType)
+		db.Logger.Debug("policy condition number ", i, "  type ", condition.ConditionType)
 		if db.ConditionCheckfuncMap[condition.ConditionType] != nil {
 			match = db.ConditionCheckfuncMap[condition.ConditionType](entity, condition)
 			db.Logger.Debug("match for condition:", condition.Name, " : ", match)
@@ -438,6 +459,7 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 	policyStmt PolicyStmt, policyPath int, params interface{}, hit *bool, deleted *bool) {
 	policy := info.ApplyPolicy
 	db.Logger.Info("policyEngineApplyPolicyStmt - ", policyStmt.Name)
+	var policyConditionList []PolicyCondition
 	var conditionList []PolicyCondition
 	conditionInfoList := make([]interface{}, 0)
 	var match bool
@@ -446,17 +468,20 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 		*hit = true
 	} else {
 		//match, ret_conditionList := db.PolicyEngineMatchConditions(*entity, policyStmt)
-		match, conditionList = db.PolicyEngineMatchConditions(*entity, policyStmt.Conditions, policyStmt.MatchConditions)
+		match, policyConditionList = db.PolicyEngineMatchConditions(*entity, policyStmt.Conditions, policyStmt.MatchConditions)
 		db.Logger.Info("match = ", match)
 		*hit = match
 		if !match {
 			db.Logger.Info("Stmt Conditions do not match")
 			return
 		}
-		for j := 0; j < len(conditionList); j++ {
-			conditionInfoList = append(conditionInfoList, conditionList[j].ConditionInfo)
+		db.Logger.Debug("PolicyEngineApplyStmt policyConditionList after checking with the policystmt:", policyConditionList)
+		for j := 0; j < len(policyConditionList); j++ {
+			conditionInfoList = append(conditionInfoList, policyConditionList[j].ConditionInfo)
 		}
+		db.Logger.Debug("PolicyEngineApplyStmt conditionInfoList after adding policyConditionList:", conditionInfoList)
 		match, conditionList = db.PolicyEngineMatchConditions(*entity, info.Conditions, "all")
+		db.Logger.Debug("PolicyEngineApplyStmt conditionList after checking with the applyInfo:", conditionList)
 		db.Logger.Info("match = ", match)
 		*hit = match
 		if !match {
@@ -465,7 +490,9 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 		}
 		for j := 0; j < len(conditionList); j++ {
 			conditionInfoList = append(conditionInfoList, conditionList[j].ConditionInfo)
+			policyConditionList = append(policyConditionList, conditionList[j])
 		}
+		db.Logger.Debug("PolicyEngineApplyStmt conditionInfoList after checking with the applyInfo:", conditionInfoList)
 	}
 	actionList := db.PolicyEngineImplementActions(*entity, info.Action, conditionInfoList, params, policyStmt)
 	if db.ActionListHasAction(actionList, policyCommonDefs.PolicyActionTypeRouteDisposition, "Reject") {
@@ -481,7 +508,7 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 		policyInfo := policyInfoGet.(Policy)
 		db.Logger.Info("PolicyEngineApplyPolicyStmt, before updateEntityDB db.Global:", db.Global, " policyInfo:", policyInfo)
 	}
-	db.AddPolicyEntityMapEntry(*entity, policy.Name, policyStmt.Name, conditionList, actionList)
+	db.AddPolicyEntityMapEntry(*entity, policy.Name, policyStmt.Name, policyConditionList, actionList)
 	if db.UpdateEntityDB != nil {
 		policyDetails := PolicyDetails{Policy: policy.Name, PolicyStmt: policyStmt.Name, ConditionList: conditionList, ActionList: actionList, EntityDeleted: *deleted}
 		db.UpdateEntityDB(policyDetails, params)
@@ -493,9 +520,14 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 	}
 }
 
-func (db *PolicyEngineDB) PolicyEngineApplyPolicy(entity *PolicyEngineFilterEntityParams, info ApplyPolicyInfo, policyPath int, params interface{}, hit *bool) {
+func (db *PolicyEngineDB) PolicyEngineApplyPolicy(entity *PolicyEngineFilterEntityParams, info ApplyPolicyInfo, policyEngineApplyInfo PolicyEngineApplyInfo, policyPath int, params interface{}, hit *bool) {
 	db.Logger.Info("policyEngineApplyPolicy - ", info.ApplyPolicy.Name)
 	policy := info.ApplyPolicy
+
+	stmtMap := make(map[string]bool)
+	for _, stmt := range policyEngineApplyInfo.StmtList {
+		stmtMap[stmt] = true
+	}
 	var policyStmtKeys []int
 	deleted := false
 	for k := range policy.PolicyStmtPrecedenceMap {
@@ -505,6 +537,15 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicy(entity *PolicyEngineFilterEnti
 	sort.Ints(policyStmtKeys)
 	for i := 0; i < len(policyStmtKeys); i++ {
 		db.Logger.Info("Key: ", policyStmtKeys[i], " policyStmtName ", policy.PolicyStmtPrecedenceMap[policyStmtKeys[i]])
+		//if the undo stmt list is non zero, then this is not the case for policy delete but for policy update
+		if policyEngineApplyInfo.StmtList != nil && len(policyEngineApplyInfo.StmtList) > 0 {
+			_, ok := stmtMap[policy.PolicyStmtPrecedenceMap[policyStmtKeys[i]]]
+			if !ok {
+				db.Logger.Info("this statement ", policy.PolicyStmtPrecedenceMap[policyStmtKeys[i]], " is not the one to be added to the policy")
+				//return value should be false, so the policy is not deleted from the entity
+				continue
+			}
+		}
 		policyStmt := db.PolicyStmtDB.Get((patriciaDB.Prefix(policy.PolicyStmtPrecedenceMap[policyStmtKeys[i]])))
 		if policyStmt == nil {
 			db.Logger.Info("Invalid policyStmt")
@@ -525,12 +566,13 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicy(entity *PolicyEngineFilterEnti
 }
 func (db *PolicyEngineDB) PolicyEngineApplyForEntity(entity PolicyEngineFilterEntityParams, policyData interface{}, params interface{}) {
 	db.Logger.Info("policyEngineApplyForEntity")
-	info := policyData.(ApplyPolicyInfo)
+	updateInfo := policyData.(PolicyEngineApplyInfo)
+	info := updateInfo.ApplyPolicy
 	policy := info.ApplyPolicy
 	policyHit := false
 	if len(entity.PolicyList) == 0 {
 		db.Logger.Info("This route has no policy applied to it so far, just apply the new policy")
-		db.PolicyEngineApplyPolicy(&entity, info, policyCommonDefs.PolicyPath_All, params, &policyHit)
+		db.PolicyEngineApplyPolicy(&entity, info, updateInfo, policyCommonDefs.PolicyPath_All, params, &policyHit)
 	} else {
 		db.Logger.Info("This route already has policy applied to it - len(route.PolicyList) - ", len(entity.PolicyList))
 
@@ -543,14 +585,14 @@ func (db *PolicyEngineDB) PolicyEngineApplyForEntity(entity PolicyEngineFilterEn
 				oldPolicy := policyInfo.(Policy)
 				if !isPolicyTypeSame(oldPolicy, policy) {
 					db.Logger.Info("The policy type applied currently is not the same as new policy, so apply new policy")
-					db.PolicyEngineApplyPolicy(&entity, info, policyCommonDefs.PolicyPath_All, params, &policyHit)
+					db.PolicyEngineApplyPolicy(&entity, info, updateInfo, policyCommonDefs.PolicyPath_All, params, &policyHit)
 				} else if oldPolicy.Precedence < policy.Precedence {
 					db.Logger.Info("The policy types are same and precedence of the policy applied currently is lower than the new policy, so do nothing")
 					return
 				} else {
 					db.Logger.Info("The new policy's precedence is lower, so undo old policy's actions and apply the new policy")
 					//db.PolicyEngineUndoPolicyForEntity(entity, oldPolicy, params)
-					db.PolicyEngineApplyPolicy(&entity, info, policyCommonDefs.PolicyPath_All, params, &policyHit)
+					db.PolicyEngineApplyPolicy(&entity, info, updateInfo, policyCommonDefs.PolicyPath_All, params, &policyHit)
 				}
 			}
 		}
@@ -660,11 +702,16 @@ func (db *PolicyEngineDB) PolicyEngineApplyGlobalPolicy(policy Policy) {
 	}
 }
 
-func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(info ApplyPolicyInfo) {
+func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(info ApplyPolicyInfo, stmtList []string, conditionsList []string) {
 	db.Logger.Info("PolicyEngineTraverseAndApplyPolicy -  apply policy ", info.ApplyPolicy.Name)
 	if db.TraverseAndApplyPolicyFunc != nil {
 		db.Logger.Info("Calling TraverseAndApplyPolicyFunc function")
-		db.TraverseAndApplyPolicyFunc(info, db.PolicyEngineApplyForEntity)
+		updateStmtInfo := PolicyEngineApplyInfo{
+			ApplyPolicy:    info,
+			StmtList:       stmtList,
+			ConditionsList: conditionsList,
+		}
+		db.TraverseAndApplyPolicyFunc(updateStmtInfo, db.PolicyEngineApplyForEntity)
 	}
 	/*	if policy.ExportPolicy || policy.ImportPolicy {
 			db.Logger.Info("Applying import/export policy to all routes"))
@@ -677,24 +724,27 @@ func (db *PolicyEngineDB) PolicyEngineTraverseAndApplyPolicy(info ApplyPolicyInf
 			db.PolicyEngineApplyGlobalPolicy(policy)
 		}*/
 }
-func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicyStmts(info ApplyPolicyInfo, stmtList []string) {
+
+/*func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicyStmts(info ApplyPolicyInfo, stmtList []string, conditionsList []string) {
 	db.Logger.Info("PolicyEngineTraverseAndReversePolicyStmts -policy:", info.ApplyPolicy.Name)
-	updateStmtInfo := PolicyStmtUpdateInfo{
-		ApplyPolicy: info,
-		StmtList:    stmtList,
+	updateStmtInfo := PolicyEngineApplyInfo{
+		ApplyPolicy:    info,
+		StmtList:       stmtList,
+		ConditionsList: conditionsList,
 	}
 	if db.TraverseAndReversePolicyFunc != nil {
 		db.TraverseAndReversePolicyFunc(updateStmtInfo)
 	}
 }
-
-func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicy(info ApplyPolicyInfo) {
+*/
+func (db *PolicyEngineDB) PolicyEngineTraverseAndReversePolicy(info ApplyPolicyInfo, stmtList []string, conditionsList []string) {
 	db.Logger.Info("PolicyEngineTraverseAndReversePolicy -  reverse policy ", info.ApplyPolicy.Name)
 	if db.TraverseAndReversePolicyFunc != nil {
 		db.Logger.Info("Calling PolicyEngineTraverseAndReversePolicy function")
-		updateStmtInfo := PolicyStmtUpdateInfo{
-			ApplyPolicy: info,
-			StmtList:    make([]string, 0),
+		updateStmtInfo := PolicyEngineApplyInfo{
+			ApplyPolicy:    info,
+			StmtList:       stmtList,
+			ConditionsList: conditionsList,
 		}
 		db.TraverseAndReversePolicyFunc(updateStmtInfo)
 	}
@@ -789,7 +839,7 @@ func (db *PolicyEngineDB) PolicyEngineFilter(entity PolicyEngineFilterEntityPara
 		}
 		applyList := info.InfoList
 		for j := 0; j < len(applyList); j++ {
-			db.PolicyEngineApplyPolicy(&entity, applyList[j], policyPath, params, &policyHit)
+			db.PolicyEngineApplyPolicy(&entity, applyList[j], PolicyEngineApplyInfo{}, policyPath, params, &policyHit)
 			if policyHit {
 				//db.Logger.Info("Policy ", policy.Name, " applied to the route")
 				break
