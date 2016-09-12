@@ -64,6 +64,11 @@ type PolicyEngineFilterEntityParams struct {
 	PolicyList       []string
 	PolicyHitCounter int
 }
+type PolicyEngineApplyInfo struct {
+	ApplyPolicy    ApplyPolicyInfo
+	StmtList       []string
+	ConditionsList []string
+}
 
 //struct sent to the application for updating its local maps/DBs
 type PolicyDetails struct {
@@ -295,11 +300,14 @@ func (db *PolicyEngineDB) AddPolicyEntityMapEntry(entity PolicyEngineFilterEntit
 	}
 	_, ok = policyStmtMap.PolicyStmtMap[policyStmt]
 	if ok {
-		db.Logger.Err("policy statement map for statement ", policyStmt, " already in place for policy ", policy)
+		db.Logger.Err("policy statement map for statement ", policyStmt, " already in place for policy ", policy, " : ", policyStmtMap.PolicyStmtMap[policyStmt])
+		//	conditionsAndActionsList.ConditionList = policyStmtMap.PolicyStmtMap[policyStmt].ConditionList
+		//	conditionsAndActionsList.ActionList = policyStmtMap.PolicyStmtMap[policyStmt].ActionList
 		return
-	}
+	} //else {
 	conditionsAndActionsList.ConditionList = make([]PolicyCondition, 0)
 	conditionsAndActionsList.ActionList = make([]PolicyAction, 0)
+	//}
 	for i := 0; conditionList != nil && i < len(conditionList); i++ {
 		conditionsAndActionsList.ConditionList = append(conditionsAndActionsList.ConditionList, conditionList[i])
 	}
