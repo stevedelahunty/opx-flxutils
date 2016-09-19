@@ -196,19 +196,19 @@ func CheckIfInRange(testIPAddr, ipAddr string, lowPrefixLen int, highPrefixLen i
 
 	testAddr, _, err := net.ParseCIDR(testIPAddr)
 	if err != nil {
-		fmt.Println("error parsing address:", testIPAddr)
+		fmt.Println("error parsing test address:", testIPAddr)
 		return false
 	}
 	if lowPrefixLen == -1 && highPrefixLen == -1 {
 		//exact case
 		if testPrefixLen != basePrefixLen {
-			fmt.Println("Prefix len ", testPrefixLen, "is not the exact prefix as", basePrefixLen, " for ", testIPAddr, " and ", ipAddr)
+			//fmt.Println("Prefix len ", testPrefixLen, "is not the exact prefix as", basePrefixLen, " for ", testIPAddr, " and ", ipAddr)
 			return false
 		}
 	} else {
 		//for a range
 		if testPrefixLen > highPrefixLen || testPrefixLen < lowPrefixLen {
-			fmt.Println("Prefix len ", testPrefixLen, " not with range for ", lowPrefixLen, " and", highPrefixLen, " for ", testIPAddr, " and ", ipAddr)
+			//fmt.Println("Prefix len ", testPrefixLen, " not with range for ", lowPrefixLen, " and", highPrefixLen, " for ", testIPAddr, " and ", ipAddr)
 			return false
 		}
 	}

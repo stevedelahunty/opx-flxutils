@@ -58,28 +58,28 @@ func MyCaller(id int) string {
 
 func (my *MyLock) Unlock() {
 	for idx := 1; idx < 6; idx++ {
-		my.Logger.Info("Releasing Write Lock caller:", MyCaller(idx))
+		my.Logger.Debug("Releasing Write Lock caller:", MyCaller(idx))
 	}
 	my.RWMutex.Unlock()
 }
 
 func (my *MyLock) Lock() {
 	for idx := 1; idx < 6; idx++ {
-		my.Logger.Info("Acquiring Write Lock caller:", MyCaller(idx))
+		my.Logger.Debug("Acquiring Write Lock caller:", MyCaller(idx))
 	}
 	my.RWMutex.Lock()
 }
 
 func (my *MyLock) RUnlock() {
 	for idx := 1; idx < 6; idx++ {
-		my.Logger.Info("Releasing Reader Lock caller:", MyCaller(idx))
+		my.Logger.Debug("Releasing Reader Lock caller:", MyCaller(idx))
 	}
 	my.RWMutex.RUnlock()
 }
 
 func (my *MyLock) RLock() {
 	for idx := 1; idx < 6; idx++ {
-		my.Logger.Info("Acquiring Reader Lock caller:", MyCaller(idx))
+		my.Logger.Debug("Acquiring Reader Lock caller:", MyCaller(idx))
 	}
 	my.RWMutex.RLock()
 }

@@ -83,6 +83,7 @@ type DBIntf interface {
 	DeleteUUIDToObjKeyMap(uuid, objKey string) error
 	GetUUIDFromObjKey(objKey string) (string, error)
 	GetObjKeyFromUUID(uuid string) (string, error)
+	MergeDbObjKeys(obj, dbObj objects.ConfigObj) (objects.ConfigObj, error)
 }
 
 func NewDBUtil(logger logging.LoggerIntf) *DBUtil {
@@ -353,4 +354,10 @@ func (db *DBUtil) GetObjKeyFromUUID(uuid string) (string, error) {
 	}
 	objKey = strings.TrimRight(objKey, "UUID")
 	return objKey, nil
+}
+
+func (db *DBUtil) MergeDbObjKeys(obj, dbObj objects.ConfigObj) (objects.ConfigObj, error) {
+	defer db.DbLock.Unlock()
+	db.DbLock.Lock()
+	return obj.MergeDbObjKeys(dbObj)
 }
