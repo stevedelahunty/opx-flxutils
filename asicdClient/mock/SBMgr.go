@@ -179,3 +179,10 @@ func (asicdClientMgr *MockAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIf
 func (asicdClientMgr *MockAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIndex int32) (err error) {
 	return err
 }
+
+func (asicdClientMgr *MockAsicdClientMgr) IppVlanConversationSet(vlan uint16, ifindex int32) (err error) {
+	return err
+}
+func (asicdClientMgr *MockAsicdClientMgr) IppVlanConversationClear(vlan uint16, ifindex int32) (err error) {
+	return err
+}

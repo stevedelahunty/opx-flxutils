@@ -76,6 +76,8 @@ type AsicdClientIntf interface {
 	// Distributed Relay (MLAG) Ipp actions when in Time Sharing Mode
 	IppIngressEgressDrop(srcIfIndex, dstIfIndex int32) error
 	IppIngressEgressPass(srcIfIndex, dstIfIndex int32) error
+	IppVlanConversationSet(vlan uint16, ifindex int32) error
+	IppVlanConversationClear(vlan uint16, ifindex int32) error
 }
 
 func NewAsicdClientInit(plugin string, paramsFile string, asicdHdl commonDefs.AsicdClientStruct) AsicdClientIntf {

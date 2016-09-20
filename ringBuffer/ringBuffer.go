@@ -139,3 +139,14 @@ func (rB *RingBuffer) GetEntryFromRingBuffer(idx int) interface{} {
 	ptr := rB.Modulo(idx)
 	return rB.buffer[ptr]
 }
+
+func (rB *RingBuffer) FlushRingBuffer() {
+	rB.verifyInit()
+	if rB.wPtr == -1 {
+		return
+	}
+
+	rB.wPtr = -1
+	rB.rPtr = 0
+	return
+}

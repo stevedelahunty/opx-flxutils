@@ -176,3 +176,10 @@ func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfI
 func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIndex int32) (err error) {
 	return err
 }
+
+func (asicdClientMgr *OvsAsicdClientMgr) IppVlanConversationSet(vlan uint16, ifindex int32) (err error) {
+	return err
+}
+func (asicdClientMgr *OvsAsicdClientMgr) IppVlanConversationClear(vlan uint16, ifindex int32) (err error) {
+	return err
+}
