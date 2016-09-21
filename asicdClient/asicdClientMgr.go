@@ -62,7 +62,7 @@ type AsicdClientIntf interface {
 	// set forwarding/learning/blocked state
 	SetStgPortState(stgid int32, ifindex int32, state int) error
 	// Flush the macs associated with this stg
-	FlushStgFdb(stgid int32) error
+	FlushStgFdb(stgid, ifindex int32) error
 	// BPDU Guard detection
 	BPDUGuardDetected(ifindex int32, enable bool) error
 

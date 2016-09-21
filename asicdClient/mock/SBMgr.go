@@ -140,7 +140,7 @@ func (asicdClientMgr *MockAsicdClientMgr) SetStgPortState(stgid int32, ifindex i
 	return nil
 }
 
-func (asicdClientMgr *MockAsicdClientMgr) FlushStgFdb(stgid int32) error {
+func (asicdClientMgr *MockAsicdClientMgr) FlushStgFdb(stgid, ifindex int32) error {
 	return nil
 }
 
