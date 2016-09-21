@@ -137,7 +137,7 @@ func (asicdClientMgr *OvsAsicdClientMgr) SetStgPortState(stgid int32, ifindex in
 	return nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) FlushStgFdb(stgid int32) error {
+func (asicdClientMgr *OvsAsicdClientMgr) FlushStgFdb(stgid, ifindex int32) error {
 	return nil
 }
 
