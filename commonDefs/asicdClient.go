@@ -150,6 +150,7 @@ const (
 	NOTIFY_IPV4NBR_MAC_MOVE                 // 16
 	NOTIFY_IPV4_ROUTE_CREATE_FAILURE        // 17
 	NOTIFY_IPV4_ROUTE_DELETE_FAILURE        // 18
+	NOTIFY_PORT_CONFIG_MODE_CHANGE          // 19
 )
 
 type AsicdNotification map[uint8]bool
@@ -220,6 +221,12 @@ type IPv6IntfNotifyMsg struct {
 	IpAddr  string
 	IfIndex int32
 	IntfRef string
+}
+
+type PortConfigModeChgNotifyMsg struct {
+	IfIndex int32
+	OldMode string
+	NewMode string
 }
 
 type AsicdNotificationHdl interface {
