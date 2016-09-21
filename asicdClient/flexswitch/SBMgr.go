@@ -663,10 +663,10 @@ func (asicdClientMgr *FSAsicdClientMgr) SetStgPortState(stgid int32, ifindex int
 	return nil
 }
 
-func (asicdClientMgr *FSAsicdClientMgr) FlushStgFdb(stgid int32) error {
+func (asicdClientMgr *FSAsicdClientMgr) FlushStgFdb(stgid, ifindex int32) error {
 	if asicdClientMgr.ClientHdl != nil {
 		asicdmutex.Lock()
-		_, err := asicdClientMgr.ClientHdl.FlushFdbStgGroup(stgid)
+		err := asicdClientMgr.ClientHdl.FlushFdbStgGroup(stgid, ifindex)
 		asicdmutex.Unlock()
 		return err
 	}
