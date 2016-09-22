@@ -122,7 +122,7 @@ func (slice *LocalDBSlice) updateLocalDB(prefix patriciaDB.Prefix, op int) {
 	*slice = tempSlice
 }
 
-type Policyfunc func(actionInfo interface{}, conditionInfo []interface{}, params interface{})
+type Policyfunc func(actionInfo interface{}, conditionInfo []interface{}, params interface{}, policyStmt PolicyStmt)
 type PolicyConditionCheckfunc func(entity PolicyEngineFilterEntityParams, condition PolicyCondition) bool
 type UndoActionfunc func(actionInfo interface{}, conditionList []interface{}, params interface{}, policyStmt PolicyStmt)
 type PolicyCheckfunc func(params interface{}) bool
