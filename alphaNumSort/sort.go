@@ -67,3 +67,18 @@ func computeWeight(str string) float64 {
 	}
 	return wt
 }
+
+func Less(s1, s2 string) int {
+	wt1 := computeWeight(s1)
+	wt2 := computeWeight(s2)
+	if wt1 < wt2 {
+		//2 is Greater
+		return -1
+	} else if wt1 == wt2 {
+		//Equal
+		return 0
+	} else {
+		//2 is Lesser
+		return 1
+	}
+}
