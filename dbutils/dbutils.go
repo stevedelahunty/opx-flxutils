@@ -63,11 +63,13 @@ type DBIntf interface {
 	Connect() error
 	Disconnect()
 	StoreObjectInDb(objects.ConfigObj) error
+	StoreObjectDefaultInDb(objects.ConfigObj) error
 	DeleteObjectFromDb(objects.ConfigObj) error
 	GetObjectFromDb(objects.ConfigObj, string) (objects.ConfigObj, error)
 	GetKey(objects.ConfigObj) string
 	GetAllObjFromDb(objects.ConfigObj) ([]objects.ConfigObj, error)
 	CompareObjectsAndDiff(objects.ConfigObj, map[string]bool, objects.ConfigObj) ([]bool, error)
+	CompareObjectDefaultAndDiff(objects.ConfigObj, objects.ConfigObj) ([]bool, error)
 	UpdateObjectInDb(objects.ConfigObj, objects.ConfigObj, []bool) error
 	MergeDbAndConfigObj(objects.ConfigObj, objects.ConfigObj, []bool) (objects.ConfigObj, error)
 	GetBulkObjFromDb(obj objects.ConfigObj, startIndex, count int64) (error, int64, int64, bool, []objects.ConfigObj)
@@ -136,6 +138,12 @@ func (db *DBUtil) StoreObjectInDb(obj objects.ConfigObj) error {
 	return obj.StoreObjectInDb(db.Conn)
 }
 
+func (db *DBUtil) StoreObjectDefaultInDb(obj objects.ConfigObj) error {
+	defer db.DbLock.Unlock()
+	db.DbLock.Lock()
+	return obj.StoreObjectDefaultInDb(db.Conn)
+}
+
 func (db *DBUtil) DeleteObjectFromDb(obj objects.ConfigObj) error {
 	if db.Conn == nil {
 		return DBNotConnectedError{db.network, db.address}
@@ -194,6 +202,16 @@ func (db *DBUtil) CompareObjectsAndDiff(obj objects.ConfigObj, updateKeys map[st
 	defer db.DbLock.Unlock()
 	db.DbLock.Lock()
 	return obj.CompareObjectsAndDiff(updateKeys, inObj)
+}
+
+func (db *DBUtil) CompareObjectDefaultAndDiff(obj objects.ConfigObj, inObj objects.ConfigObj) (
+	[]bool, error) {
+	if db.Conn == nil {
+		return make([]bool, 0), DBNotConnectedError{db.network, db.address}
+	}
+	defer db.DbLock.Unlock()
+	db.DbLock.Lock()
+	return obj.CompareObjectDefaultAndDiff(inObj)
 }
 
 func (db *DBUtil) UpdateObjectInDb(obj, inObj objects.ConfigObj, attrSet []bool) error {
