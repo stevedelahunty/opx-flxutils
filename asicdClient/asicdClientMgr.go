@@ -78,6 +78,8 @@ type AsicdClientIntf interface {
 	IppIngressEgressPass(srcIfIndex, dstIfIndex int32) error
 	IppVlanConversationSet(vlan uint16, ifindex int32) error
 	IppVlanConversationClear(vlan uint16, ifindex int32) error
+
+	IsLoopbackType(ifIndex int32) bool
 }
 
 func NewAsicdClientInit(plugin string, paramsFile string, asicdHdl commonDefs.AsicdClientStruct) AsicdClientIntf {

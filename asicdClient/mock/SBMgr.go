@@ -186,3 +186,6 @@ func (asicdClientMgr *MockAsicdClientMgr) IppVlanConversationSet(vlan uint16, if
 func (asicdClientMgr *MockAsicdClientMgr) IppVlanConversationClear(vlan uint16, ifindex int32) (err error) {
 	return err
 }
+func (asicdClientMgr *MockAsicdClientMgr) IsLoopbackType(ifIndex int32) bool {
+	return true
+}

@@ -892,3 +892,11 @@ func (asicdClientMgr *FSAsicdClientMgr) IppVlanConversationClear(vlan uint16, if
 	}
 	return err
 }
+
+func (asicdClientMgr *FSAsicdClientMgr) IsLoopbackType(ifIndex int32) bool {
+	if pluginCommon.GetTypeFromIfIndex(ifIndex) == commonDefs.IfTypeLoopback {
+		return true
+	}
+
+	return false
+}
