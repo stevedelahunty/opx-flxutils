@@ -183,3 +183,7 @@ func (asicdClientMgr *OvsAsicdClientMgr) IppVlanConversationSet(vlan uint16, ifi
 func (asicdClientMgr *OvsAsicdClientMgr) IppVlanConversationClear(vlan uint16, ifindex int32) (err error) {
 	return err
 }
+
+func (asicdClientMgr *OvsAsicdClientMgr) IsLoopbackType(ifindex int32) bool {
+	return true
+}
