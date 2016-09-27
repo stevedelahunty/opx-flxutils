@@ -172,11 +172,11 @@ func (asicdClientMgr *MockAsicdClientMgr) DisablePacketReception(mac string, vla
 	return err
 }
 
-func (asicdClientMgr *MockAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIndex int32) (err error) {
+func (asicdClientMgr *MockAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIndex string) (err error) {
 	return err
 }
 
-func (asicdClientMgr *MockAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIndex int32) (err error) {
+func (asicdClientMgr *MockAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIndex string) (err error) {
 	return err
 }
 
