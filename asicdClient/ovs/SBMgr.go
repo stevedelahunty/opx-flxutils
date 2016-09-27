@@ -169,11 +169,11 @@ func (asicdClientMgr *OvsAsicdClientMgr) DisablePacketReception(mac string, vlan
 	return err
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIndex int32) (err error) {
+func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIndex string) (err error) {
 	return err
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIndex int32) (err error) {
+func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIndex string) (err error) {
 	return err
 }
 
