@@ -176,11 +176,12 @@ type IPv6L3IntfStateNotifyMsg struct {
 }
 
 type VlanNotifyMsg struct {
-	MsgType    uint8
-	VlanId     uint16
-	VlanName   string
-	TagPorts   []int32
-	UntagPorts []int32
+	MsgType     uint8
+	VlanId      uint16
+	VlanIfIndex int32
+	VlanName    string
+	TagPorts    []int32
+	UntagPorts  []int32
 }
 
 type LogicalIntfNotifyMsg struct {

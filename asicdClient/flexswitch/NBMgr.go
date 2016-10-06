@@ -118,11 +118,12 @@ func processVlanNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Writer)
 		return msg, err
 	}
 	msg = commonDefs.VlanNotifyMsg{
-		MsgType:    rxMsgType,
-		VlanId:     vlanMsg.VlanId,
-		VlanName:   vlanMsg.VlanName,
-		TagPorts:   vlanMsg.TagPorts,
-		UntagPorts: vlanMsg.UntagPorts,
+		MsgType:     rxMsgType,
+		VlanId:      vlanMsg.VlanId,
+		VlanIfIndex: vlanMsg.VlanIfIndex,
+		VlanName:    vlanMsg.VlanName,
+		TagPorts:    vlanMsg.TagPorts,
+		UntagPorts:  vlanMsg.UntagPorts,
 	}
 	return msg, nil
 }
