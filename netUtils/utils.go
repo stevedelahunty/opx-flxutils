@@ -267,3 +267,30 @@ func IsIPv4Addr(ipAddr string) bool {
 	}
 	return false
 }
+
+func inc(ip net.IP) {
+	for j := len(ip) - 1; j >= 0; j-- {
+		ip[j]++
+		if ip[j] > 0 {
+			break
+		}
+	}
+}
+
+func IsNetworkOrBroadCastAddress(ipAddr string) bool {
+	ip, ipnet, err := net.ParseCIDR(ipAddr)
+	if err != nil {
+		return true
+	}
+
+	var ips []string
+	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
+		ips = append(ips, ip.String())
+	}
+	netmask := strings.Split(ipAddr, "/")
+	if ipAddr == string(ips[0]+"/"+netmask[1]) || ipAddr == string(ips[len(ips)-1]+"/"+netmask[1]) {
+		return true
+	}
+
+	return false
+}
