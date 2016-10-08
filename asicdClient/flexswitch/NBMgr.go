@@ -54,6 +54,7 @@ var AsicdMsgMap map[uint8]processMsg = map[uint8]processMsg{
 	asicdCommonDefs.NOTIFY_LAG_DELETE:                processLagNotifyMsg,
 	asicdCommonDefs.NOTIFY_LAG_UPDATE:                processLagNotifyMsg,
 	asicdCommonDefs.NOTIFY_IPV4NBR_MAC_MOVE:          processIPv4NbrMacMoveNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV6NBR_MAC_MOVE:          processIPv6NbrMacMoveNotifyMsg,
 	asicdCommonDefs.NOTIFY_IPV4_ROUTE_CREATE_FAILURE: processIPv4RouteAddDelNotifyMsg,
 	asicdCommonDefs.NOTIFY_IPV4_ROUTE_DELETE_FAILURE: processIPv4RouteAddDelNotifyMsg,
 	asicdCommonDefs.NOTIFY_PORT_CONFIG_MODE_CHANGE:   processPortConfigModeChgNotifyMsg,
@@ -207,6 +208,22 @@ func processIPv4NbrMacMoveNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *loggi
 		return msg, err
 	}
 	msg = commonDefs.IPv4NbrMacMoveNotifyMsg{
+		MsgType: rxMsgType,
+		IpAddr:  macMoveMsg.IpAddr,
+		IfIndex: macMoveMsg.IfIndex,
+	}
+	return msg, err
+}
+
+func processIPv6NbrMacMoveNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (commonDefs.AsicdNotifyMsg, error) {
+	var macMoveMsg asicdCommonDefs.IPv6NbrMacMoveNotifyMsg
+	var msg commonDefs.AsicdNotifyMsg
+	err := json.Unmarshal(rxMsg, &macMoveMsg)
+	if err != nil {
+		logger.Err(fmt.Sprintln("Unable to unmashal Mac Move:", rxMsg))
+		return msg, err
+	}
+	msg = commonDefs.IPv6NbrMacMoveNotifyMsg{
 		MsgType: rxMsgType,
 		IpAddr:  macMoveMsg.IpAddr,
 		IfIndex: macMoveMsg.IfIndex,
