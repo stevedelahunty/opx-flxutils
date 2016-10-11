@@ -264,7 +264,6 @@ func processMtuChgNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Write
 	msg = commonDefs.PortConfigMtuChangeNotifyMsg{
 		IfIndex: mtuChgMsg.IfIndex,
 		Mtu:     mtuChgMsg.Mtu,
-		IfType:  mtuChgMsg.IfType,
 	}
 	return msg, nil
 }
