@@ -158,6 +158,7 @@ func processIPv4IntfNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Wri
 		MsgType: rxMsgType,
 		IpAddr:  ipv4Msg.IpAddr,
 		IfIndex: ipv4Msg.IfIndex,
+		IntfRef: ipv4Msg.IntfRef,
 	}
 
 	return msg, nil
