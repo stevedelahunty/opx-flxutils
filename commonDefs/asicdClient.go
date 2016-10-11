@@ -238,6 +238,11 @@ type PortConfigModeChgNotifyMsg struct {
 	NewMode string
 }
 
+type PortConfigMtuChangeNotifyMsg struct {
+	IfIndex int32
+	Mtu     int32
+}
+
 type AsicdNotificationHdl interface {
 	ProcessNotification(msg AsicdNotifyMsg)
 }
