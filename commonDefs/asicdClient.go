@@ -209,6 +209,7 @@ type IPv4IntfNotifyMsg struct {
 	MsgType uint8
 	IpAddr  string
 	IfIndex int32
+	IntfRef string
 }
 
 type IPv4NbrMacMoveNotifyMsg struct {
