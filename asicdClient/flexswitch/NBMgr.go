@@ -158,6 +158,7 @@ func processIPv4IntfNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Wri
 		MsgType: rxMsgType,
 		IpAddr:  ipv4Msg.IpAddr,
 		IfIndex: ipv4Msg.IfIndex,
+		IntfRef: ipv4Msg.IntfRef,
 	}
 
 	return msg, nil
@@ -248,6 +249,22 @@ func processPortConfigModeChgNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *lo
 		IfIndex: portCfgChgMsg.IfIndex,
 		OldMode: portCfgChgMsg.OldMode,
 		NewMode: portCfgChgMsg.NewMode,
+	}
+	return msg, nil
+}
+
+func processMtuChgNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (commonDefs.AsicdNotifyMsg, error) {
+	var mtuChgMsg asicdCommonDefs.PortConfigMtuChgNotigyMsg
+	var msg commonDefs.AsicdNotifyMsg
+
+	err := json.Unmarshal(rxMsg, &mtuChgMsg)
+	if err != nil {
+		logger.Err(fmt.Sprintln("Unable to unmashal  PortConfigMtuChgNotigyMsg:", rxMsg))
+		return msg, err
+	}
+	msg = commonDefs.PortConfigMtuChangeNotifyMsg{
+		IfIndex: mtuChgMsg.IfIndex,
+		Mtu:     mtuChgMsg.Mtu,
 	}
 	return msg, nil
 }

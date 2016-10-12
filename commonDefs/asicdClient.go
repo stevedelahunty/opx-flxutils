@@ -209,6 +209,7 @@ type IPv4IntfNotifyMsg struct {
 	MsgType uint8
 	IpAddr  string
 	IfIndex int32
+	IntfRef string
 }
 
 type IPv4NbrMacMoveNotifyMsg struct {
@@ -236,6 +237,11 @@ type PortConfigModeChgNotifyMsg struct {
 	IfIndex int32
 	OldMode string
 	NewMode string
+}
+
+type PortConfigMtuChangeNotifyMsg struct {
+	IfIndex int32
+	Mtu     int32
 }
 
 type AsicdNotificationHdl interface {
