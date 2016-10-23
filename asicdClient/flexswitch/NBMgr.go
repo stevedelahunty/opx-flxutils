@@ -212,6 +212,7 @@ func processIPv4NbrMacMoveNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *loggi
 		MsgType: rxMsgType,
 		IpAddr:  macMoveMsg.IpAddr,
 		IfIndex: macMoveMsg.IfIndex,
+		VlanId:  macMoveMsg.VlanId,
 	}
 	return msg, err
 }
@@ -228,6 +229,7 @@ func processIPv6NbrMacMoveNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *loggi
 		MsgType: rxMsgType,
 		IpAddr:  macMoveMsg.IpAddr,
 		IfIndex: macMoveMsg.IfIndex,
+		VlanId:  macMoveMsg.VlanId,
 	}
 	return msg, err
 }
