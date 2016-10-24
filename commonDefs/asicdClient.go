@@ -100,6 +100,21 @@ type PortStateGetInfo struct {
 	PortStateList []PortState
 }
 
+type Lag struct {
+	LagIfIndex  int32
+	HashType    int32
+	IfIndexList []int32
+	LagName     string
+}
+
+type LagGetInfo struct {
+	StartIdx int32
+	EndIdx   int32
+	Count    int32
+	More     bool
+	LagList  []Lag
+}
+
 type Vlan struct {
 	VlanId           int32
 	IfIndexList      []int32
