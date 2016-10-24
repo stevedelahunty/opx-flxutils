@@ -85,6 +85,11 @@ func (asicdClientMgr *MockAsicdClientMgr) GetBulkVlanState(curMark, count int) (
 	return nil, nil
 }
 
+func (asicdClientMgr *MockAsicdClientMgr) GetBulkLag(curMark, count int) (*commonDefs.LagGetInfo, error) {
+	fmt.Println("Lag Get info", curMark, count, asicdClientMgr.Val)
+	return nil, nil
+}
+
 func (asicdClientMgr *MockAsicdClientMgr) GetBulkVlan(curMark, count int) (*commonDefs.VlanGetInfo, error) {
 	fmt.Println("Vlan Get info", curMark, count, asicdClientMgr.Val)
 	return nil, nil
