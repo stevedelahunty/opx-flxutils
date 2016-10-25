@@ -13,25 +13,25 @@
 //	 See the License for the specific language governing permissions and
 //	 limitations under the License.
 //
-// _______  __       __________   ___      _______.____    __    ____  __  .___________.  ______  __    __  
-// |   ____||  |     |   ____\  \ /  /     /       |\   \  /  \  /   / |  | |           | /      ||  |  |  | 
-// |  |__   |  |     |  |__   \  V  /     |   (----` \   \/    \/   /  |  | `---|  |----`|  ,----'|  |__|  | 
-// |   __|  |  |     |   __|   >   <       \   \      \            /   |  |     |  |     |  |     |   __   | 
-// |  |     |  `----.|  |____ /  .  \  .----)   |      \    /\    /    |  |     |  |     |  `----.|  |  |  | 
-// |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__| 
-//                                                                                                           
+// _______  __       __________   ___      _______.____    __    ____  __  .___________.  ______  __    __
+// |   ____||  |     |   ____\  \ /  /     /       |\   \  /  \  /   / |  | |           | /      ||  |  |  |
+// |  |__   |  |     |  |__   \  V  /     |   (----` \   \/    \/   /  |  | `---|  |----`|  ,----'|  |__|  |
+// |   __|  |  |     |   __|   >   <       \   \      \            /   |  |     |  |     |  |     |   __   |
+// |  |     |  `----.|  |____ /  .  \  .----)   |      \    /\    /    |  |     |  |     |  `----.|  |  |  |
+// |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
+//
 
 package patriciaDB
 
 import (
 	"bytes"
 	"errors"
-//	"fmt"
+	//	"fmt"
 	"io"
-	"strings"
 	"log"
-	"os"
 	"log/syslog"
+	"os"
+	"strings"
 )
 
 const (
@@ -39,32 +39,32 @@ const (
 	DefaultMaxChildrenPerSparseNode = 2
 )
 
-type    Prefix      []byte
-type	Item        interface{}
-type	VisitorFunc func(prefix Prefix, item Item) error
+type Prefix []byte
+type Item interface{}
+type VisitorFunc func(prefix Prefix, item Item) error
 type UpdateFunc func(prefix Prefix, item Item, handle Item) error
-var logger *log.Logger
 
+var logger *log.Logger
 
 type Trie struct {
 	prefix Prefix
 	item   Item
 
-//	maxPrefixPerNode         int8
-//	maxChildrenPerSparseNode int8
+	//	maxPrefixPerNode         int8
+	//	maxChildrenPerSparseNode int8
 
 	children childList
 }
 
 func NewTrie() *Trie {
 	if logger == nil {
-	  logger = log.New(os.Stdout, "Patricia trie :", log.Ldate|log.Ltime|log.Lshortfile)
+		logger = log.New(os.Stdout, "Patricia trie :", log.Ldate|log.Ltime|log.Lshortfile)
 
-	  syslogger, err := syslog.New(syslog.LOG_NOTICE|syslog.LOG_INFO|syslog.LOG_DAEMON, "RIBD")
-	  if err == nil {
-		syslogger.Info("### Patricia trie initailized")
-		logger.SetOutput(syslogger)
-	  }
+		syslogger, err := syslog.New(syslog.LOG_NOTICE|syslog.LOG_INFO|syslog.LOG_DAEMON, "RIBD")
+		if err == nil {
+			syslogger.Info("### Patricia trie initailized")
+			logger.SetOutput(syslogger)
+		}
 	}
 
 	trie := &Trie{}
@@ -75,10 +75,9 @@ func NewTrie() *Trie {
 	if trie.maxChildrenPerSparseNode <= 0 {
 		trie.maxChildrenPerSparseNode = DefaultMaxChildrenPerSparseNode
 	}*/
-	trie.children = newSparseChildList(DefaultMaxChildrenPerSparseNode)//trie.maxChildrenPerSparseNode)
+	trie.children = newSparseChildList(DefaultMaxChildrenPerSparseNode) //trie.maxChildrenPerSparseNode)
 	return trie
 }
-
 
 // Item returns the item stored in the root of this trie.
 func (trie *Trie) Item() Item {
@@ -112,88 +111,87 @@ func (trie *Trie) Get(key Prefix) (item Item) {
 }
 
 func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
-	var root *Trie 
+	var root *Trie
 	var inpPrefix = prefix
 	var leftover, prefixLeftover Prefix
-    //trie.dump();
+	//trie.dump()
 	root = trie
 	var prefixlen, lastNonNilPrefix int
 	//logger.Println("get longest prefixnode")
 	for {
 		// Compute what part of prefix matches.
-	    //logger.Println("prefix  = ", prefix, " root.prefix= ",  root.prefix)
-        if(len(prefix) < len(root.prefix)) {
+		//logger.Println("prefix  = ", prefix, " root.prefix= ", root.prefix)
+		if len(prefix) < len(root.prefix) {
 			break
 		}
 		common := root.longestCommonPrefixLength(prefix)
-        prefixlen = prefixlen + common
-		//logger.Println("common: ", common, "  prefixLen : ",prefixlen)
-	    node := trie.Get(inpPrefix[:prefixlen])
-        if(node != nil) {
-	      lastNonNilPrefix = prefixlen
+		prefixlen = prefixlen + common
+		//logger.Println("common: ", common, "  prefixLen : ", prefixlen)
+		node := trie.Get(inpPrefix[:prefixlen])
+		if node != nil {
+			lastNonNilPrefix = prefixlen
 		}
 		prefix = prefix[common:]
 
 		// We used up the whole prefix, subtree found.
 		if len(prefix) == 0 {
 			//logger.Println("len(prefix) == 0?")
-		//	found = true
+			//	found = true
 			leftover = root.prefix[common:]
 			break
 		}
 
 		// Partial match means that there is no subtree matching prefix.
 		if common < len(root.prefix) {
-			if common == 0 && prefixlen == 0{
+			if common == 0 && prefixlen == 0 {
 				//logger.Println("common:0, prefixlen=0, no match")
 				break
 			}
-           //prefixlen = prefixlen - common
- 			leftover = root.prefix[common:]
+			//prefixlen = prefixlen - common
+			leftover = root.prefix[common:]
 			prefixLeftover = inpPrefix[prefixlen:]
-			//logger.Println("leftover = ", leftover, " len(leftover) = ", len(leftover), " prefixLeftover = ", prefixLeftover," len(prefixleftover) = ", len(prefixLeftover))
-	        if len(prefixLeftover) != len(leftover) {
+			//logger.Println("leftover = ", leftover, " len(leftover) = ", len(leftover), " prefixLeftover = ", prefixLeftover, " len(prefixleftover) = ", len(prefixLeftover))
+			if len(prefixLeftover) < len(leftover) {
 				break
-			} else {
+			} else if len(prefixLeftover) == len(leftover) || len(leftover) == 1 {
 				found := true
-				for i:=0;i<len(leftover);i++ {
+				for i := 0; i < len(leftover); i++ {
 					lti := uint(leftover[i])
 					prti := uint(prefixLeftover[i])
 					if lti > prti {
 						//logger.Println("lti ", lti, " > ", prti)
 						found = false
 						break
-					} 
+					}
 				}
 				if found {
 					//logger.Println("found == true, get node with prefix ", root.prefix)
-				   node = root.Item()
-			       return node
+					node = root.Item()
+					return node
 				}
-		     }
+			}
 		}
 
 		// There is some prefix left, move to the children.
-		   child,_ := root.children.nextWithLongestPrefixMatch(prefix[0])
-		   if child == nil {
+		child, _ := root.children.nextWithLongestPrefixMatch(prefix[0])
+		if child == nil {
 			//logger.Println("No child found for root ", root.prefix)
 			// There is nowhere to continue, there is no subtree matching prefix.
-			  break
-		   }
+			break
+		}
 
-//		parent = root
+		//		parent = root
 		root = child
 	}
-//	logger.Println("After for loop, prefixlen = ", prefixlen)
-//	logger.Println("leftover = ", leftover, " prefixLeftover = ", prefixLeftover)
+	//	logger.Println("After for loop, prefixlen = ", prefixlen)
+	//	logger.Println("leftover = ", leftover, " prefixLeftover = ", prefixLeftover)
 	node := trie.Get(inpPrefix[:lastNonNilPrefix])
-    if(node != nil) {
-	   return node
+	if node != nil {
+		return node
 	} else {
 		return nil
 	}
 }
-
 
 // Match returns what Get(prefix) != nil would return. The same warning as for
 // Get applies here as well.
@@ -214,7 +212,6 @@ func (trie *Trie) Visit(visitor VisitorFunc) error {
 func (trie *Trie) VisitAndUpdate(visitor UpdateFunc, handle Item) error {
 	return trie.walkAndUpdate(nil, visitor, handle)
 }
-
 
 // Delete deletes the item represented by the given prefix.
 //
@@ -281,7 +278,7 @@ func (trie *Trie) empty() bool {
 
 func (trie *Trie) reset() {
 	trie.prefix = nil
-	trie.children = newSparseChildList(DefaultMaxPrefixPerNode)//trie.maxPrefixPerNode)
+	trie.children = newSparseChildList(DefaultMaxPrefixPerNode) //trie.maxPrefixPerNode)
 }
 
 func (trie *Trie) put(key Prefix, item Item, replace bool) (inserted bool) {
@@ -297,12 +294,12 @@ func (trie *Trie) put(key Prefix, item Item, replace bool) (inserted bool) {
 	)
 
 	if node.prefix == nil {
-		if len(key) <= DefaultMaxPrefixPerNode {//trie.maxPrefixPerNode {
+		if len(key) <= DefaultMaxPrefixPerNode { //trie.maxPrefixPerNode {
 			node.prefix = key
 			goto InsertItem
 		}
-		node.prefix = key[:DefaultMaxPrefixPerNode]//trie.maxPrefixPerNode]
-		key = key[DefaultMaxPrefixPerNode:]//trie.maxPrefixPerNode:]
+		node.prefix = key[:DefaultMaxPrefixPerNode] //trie.maxPrefixPerNode]
+		key = key[DefaultMaxPrefixPerNode:]         //trie.maxPrefixPerNode:]
 		goto AppendChild
 	}
 
@@ -346,14 +343,14 @@ AppendChild:
 	// This loop starts with empty node.prefix that needs to be filled.
 	for len(key) != 0 {
 		child := NewTrie()
-		if len(key) <= DefaultMaxPrefixPerNode{//trie.maxPrefixPerNode {
+		if len(key) <= DefaultMaxPrefixPerNode { //trie.maxPrefixPerNode {
 			child.prefix = key
 			node.children = node.children.add(child)
 			node = child
 			goto InsertItem
 		} else {
-			child.prefix = key[:DefaultMaxPrefixPerNode]//:trie.maxPrefixPerNode]
-			key = key[DefaultMaxPrefixPerNode:]//trie.maxPrefixPerNode:]
+			child.prefix = key[:DefaultMaxPrefixPerNode] //:trie.maxPrefixPerNode]
+			key = key[DefaultMaxPrefixPerNode:]          //trie.maxPrefixPerNode:]
 			node.children = node.children.add(child)
 			node = child
 		}
@@ -384,7 +381,7 @@ func (trie *Trie) compact() *Trie {
 	}
 
 	// Make sure the combined prefixes fit into a single node.
-	if len(trie.prefix)+len(child.prefix) > DefaultMaxPrefixPerNode {//trie.maxPrefixPerNode {
+	if len(trie.prefix)+len(child.prefix) > DefaultMaxPrefixPerNode { //trie.maxPrefixPerNode {
 		return trie
 	}
 
@@ -430,7 +427,6 @@ func (trie *Trie) findSubtree(prefix Prefix) (parent *Trie, root *Trie, found bo
 		root = child
 	}
 }
-
 
 func (trie *Trie) walkAndUpdate(actualRootPrefix Prefix, visitor UpdateFunc, handle Item) error {
 	var prefix Prefix
