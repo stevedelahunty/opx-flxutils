@@ -67,6 +67,7 @@ func TestInitNetUtils(t *testing.T) {
 	IPRangeData = append(IPRangeData, IPRange{"192.168.0.2/31", "192.168.0.3/31", -1, -1, true})
 	IPRangeData = append(IPRangeData, IPRange{"192.168.0.90/31", "192.168.0.0/26", 26, 32, false})
 	IPRangeData = append(IPRangeData, IPRange{"192.168.0.10/32", "192.168.0.0/24", 31, 32, true})
+	IPRangeData = append(IPRangeData, IPRange{"172.31.5.39/32", "172.31.14.148/20", 20, 32, true})
 }
 func TestGetNetworkPrefix(t *testing.T) {
 	fmt.Println("****TestGetNetworkPrefix****")
@@ -88,6 +89,14 @@ func TestGetNetworkPrefixFromStrings(t *testing.T) {
 	prefix, err = GetNetowrkPrefixFromStrings(ip, mask)
 	ip = "2000::192:16:0:19"
 	mask = "255.255.255.254"
+	prefix, err = GetNetowrkPrefixFromStrings(ip, mask)
+	fmt.Println("prefix:", prefix, " err:", err)
+	ip = "2222:22:1:1::"
+	mask = "ffff:ffff:ffff:ffff::"
+	prefix, err = GetNetowrkPrefixFromStrings(ip, mask)
+	fmt.Println("prefix:", prefix, " err:", err)
+	ip = "2222:22:1:2::"
+	mask = "ffff:ffff:ffff:ffff::"
 	prefix, err = GetNetowrkPrefixFromStrings(ip, mask)
 	fmt.Println("prefix:", prefix, " err:", err)
 	fmt.Println("****************")
@@ -221,4 +230,11 @@ func TestCheckIPv6Address(t *testing.T) {
 		t.Error("2003::2 is ipv6 address not ipv4")
 	}
 	fmt.Println("****************************")
+}
+func TestGetCIDR(t *testing.T) {
+	fmt.Println("****TestGetCIDR()****")
+	ipAddr := "40.1.10.0"
+	mask := "255.255.255.0"
+	cidrAddr, err := GetCIDR(ipAddr, mask)
+	fmt.Println("cidrAddr:", cidrAddr, " err:", err, " for ipAddr:", ipAddr, " mask:", mask)
 }
