@@ -67,7 +67,7 @@ func TestInitNetUtils(t *testing.T) {
 	IPRangeData = append(IPRangeData, IPRange{"192.168.0.2/31", "192.168.0.3/31", -1, -1, true})
 	IPRangeData = append(IPRangeData, IPRange{"192.168.0.90/31", "192.168.0.0/26", 26, 32, false})
 	IPRangeData = append(IPRangeData, IPRange{"192.168.0.10/32", "192.168.0.0/24", 31, 32, true})
-	IPRangeData = append(IPRangeData, IPRange{"172.31.5.39/32", "172.31.14.148/20", 20, 32, true})
+	IPRangeData = append(IPRangeData, IPRange{"172.32.3.39/32", "172.31.14.148/20", 20, 32, true})
 }
 func TestGetNetworkPrefix(t *testing.T) {
 	fmt.Println("****TestGetNetworkPrefix****")

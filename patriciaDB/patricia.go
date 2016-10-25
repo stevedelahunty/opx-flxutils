@@ -153,7 +153,7 @@ func (trie *Trie) GetLongestPrefixNode(prefix Prefix) (item Item) {
 			//logger.Println("leftover = ", leftover, " len(leftover) = ", len(leftover), " prefixLeftover = ", prefixLeftover, " len(prefixleftover) = ", len(prefixLeftover))
 			if len(prefixLeftover) < len(leftover) {
 				break
-			} else {
+			} else if len(prefixLeftover) == len(leftover) || len(leftover) == 1 {
 				found := true
 				for i := 0; i < len(leftover); i++ {
 					lti := uint(leftover[i])
