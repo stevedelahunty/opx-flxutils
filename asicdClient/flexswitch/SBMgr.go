@@ -353,6 +353,26 @@ func (asicdClientMgr *FSAsicdClientMgr) GetBulkVlan(curMark, count int) (*common
 	return &vlanInfo, nil
 }
 
+func (asicdClientMgr *FSAsicdClientMgr) GetBulkLag(curMark, count int) (*commonDefs.LagGetInfo, error) {
+	bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkLag(asicdInt.Int(curMark), asicdInt.Int(count))
+	if bulkInfo == nil {
+		return nil, err
+	}
+	var lagInfo commonDefs.LagGetInfo
+	lagInfo.StartIdx = int32(bulkInfo.StartIdx)
+	lagInfo.EndIdx = int32(bulkInfo.EndIdx)
+	lagInfo.Count = int32(bulkInfo.Count)
+	lagInfo.More = bulkInfo.More
+	lagInfo.LagList = make([]commonDefs.Lag, int(lagInfo.Count))
+	for idx := 0; idx < int(lagInfo.Count); idx++ {
+		lagInfo.LagList[idx].LagIfIndex = bulkInfo.LagList[idx].LagIfIndex
+		lagInfo.LagList[idx].HashType = bulkInfo.LagList[idx].HashType
+		lagInfo.LagList[idx].LagName = bulkInfo.LagList[idx].LagName
+		lagInfo.LagList[idx].IfIndexList = append(lagInfo.LagList[idx].IfIndexList, bulkInfo.LagList[idx].IfIndexList...)
+	}
+	return &lagInfo, nil
+}
+
 func GetAsicdThriftClientHdl(paramsFile string, logger *logging.Writer) *asicdServices.ASICDServicesClient {
 	var asicdClient AsicdClient
 	Logger = logger
