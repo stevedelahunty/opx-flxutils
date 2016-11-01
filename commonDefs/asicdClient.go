@@ -145,7 +145,7 @@ type VlanStateGetInfo struct {
 }
 
 const (
-	//Notification msgs
+	//Notification msgs copied from asicd
 	NOTIFY_L2INTF_STATE_CHANGE       = iota // 0
 	NOTIFY_IPV4_L3INTF_STATE_CHANGE         // 1
 	NOTIFY_IPV6_L3INTF_STATE_CHANGE         // 2
@@ -174,6 +174,12 @@ const (
 	NOTIFY_MPLSINTF_CREATE                  // 24
 	NOTIFY_MPLSINTF_DELETE                  // 25
 	NOTIFY_PORT_CONFIG_MODE_CHANGE          // 26
+)
+
+const (
+	// state values copied from asicd
+	INTF_STATE_DOWN = 0
+	INTF_STATE_UP   = 1
 )
 
 type AsicdNotification map[uint8]bool
