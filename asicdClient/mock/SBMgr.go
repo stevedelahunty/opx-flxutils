@@ -194,3 +194,27 @@ func (asicdClientMgr *MockAsicdClientMgr) IppVlanConversationClear(vlan uint16, 
 func (asicdClientMgr *MockAsicdClientMgr) IsLoopbackType(ifIndex int32) bool {
 	return true
 }
+
+func (asicdClientMgr *MockAsicdClientMgr) CreateVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}
+
+func (asicdClientMgr *MockAsicdClientMgr) CreateVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}
+
+func (asicdClientMgr *MockAsicdClientMgr) UpdateVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}
+
+func (asicdClientMgr *MockAsicdClientMgr) UpdateVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}
+
+func (asicdClientMgr *MockAsicdClientMgr) DeleteVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}
+
+func (asicdClientMgr *MockAsicdClientMgr) DeleteVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}

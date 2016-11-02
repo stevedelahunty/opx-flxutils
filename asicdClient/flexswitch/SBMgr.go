@@ -30,6 +30,7 @@ import (
 	"asicdServices"
 	"encoding/json"
 	"fmt"
+	"git.apache.org/thrift.git/lib/go/thrift"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -38,8 +39,6 @@ import (
 	"utils/commonDefs"
 	"utils/ipcutils"
 	"utils/logging"
-
-	"git.apache.org/thrift.git/lib/go/thrift"
 )
 
 type AsicdClient struct {
@@ -917,6 +916,57 @@ func (asicdClientMgr *FSAsicdClientMgr) IsLoopbackType(ifIndex int32) bool {
 	if pluginCommon.GetTypeFromIfIndex(ifIndex) == commonDefs.IfTypeLoopback {
 		return true
 	}
-
 	return false
+}
+
+func createVirtualV4Obj(intRef, ipAddr, macAddr string, enable bool) *asicdServices.SubIPv4Intf {
+	obj := asicdServices.NewSubIPv4Intf()
+	obj.IntfRef = intRef
+	obj.Type = pluginCommon.SUB_INTF_VIRTUAL_TYPE
+	obj.IpAddr = ipAddr
+	obj.MacAddr = macAddr
+	obj.Enable = enable
+
+	return obj
+}
+
+func createVirtualV6Obj(intRef, ipAddr, macAddr string, enable bool) *asicdServices.SubIPv6Intf {
+	obj := asicdServices.NewSubIPv6Intf()
+	obj.IntfRef = intRef
+	obj.Type = pluginCommon.SUB_INTF_VIRTUAL_TYPE
+	obj.IpAddr = ipAddr
+	obj.MacAddr = macAddr
+	obj.Enable = enable
+
+	return obj
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) CreateVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.CreateSubIPv4Intf(createVirtualV4Obj(intRef, ipAddr, macAddr, enable))
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) CreateVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.CreateSubIPv6Intf(createVirtualV6Obj(intRef, ipAddr, macAddr, enable))
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) UpdateVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.UpdateVirtualIPv4Intf(intRef, pluginCommon.SUB_INTF_VIRTUAL_TYPE, ipAddr, macAddr, enable)
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) UpdateVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.UpdateVirtualIPv6Intf(intRef, pluginCommon.SUB_INTF_VIRTUAL_TYPE, ipAddr, macAddr, enable)
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) DeleteVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.DeleteSubIPv4Intf(createVirtualV4Obj(intRef, ipAddr, macAddr, enable))
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) DeleteVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.DeleteSubIPv6Intf(createVirtualV6Obj(intRef, ipAddr, macAddr, enable))
+	return err
 }
