@@ -82,6 +82,11 @@ func (asicdClientMgr *OvsAsicdClientMgr) GetBulkVlanState(curMark, count int) (*
 	return nil, nil
 }
 
+func (asicdClientMgr *OvsAsicdClientMgr) GetBulkLag(curMark, count int) (*commonDefs.LagGetInfo, error) {
+	fmt.Println("Lag Get info", curMark, count, asicdClientMgr.Val)
+	return nil, nil
+}
+
 func (asicdClientMgr *OvsAsicdClientMgr) GetBulkVlan(curMark, count int) (*commonDefs.VlanGetInfo, error) {
 	fmt.Println("Vlan Get info", curMark, count, asicdClientMgr.Val)
 	return nil, nil
@@ -137,7 +142,7 @@ func (asicdClientMgr *OvsAsicdClientMgr) SetStgPortState(stgid int32, ifindex in
 	return nil
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) FlushStgFdb(stgid int32) error {
+func (asicdClientMgr *OvsAsicdClientMgr) FlushStgFdb(stgid, ifindex int32) error {
 	return nil
 }
 
@@ -169,11 +174,11 @@ func (asicdClientMgr *OvsAsicdClientMgr) DisablePacketReception(mac string, vlan
 	return err
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIndex int32) (err error) {
+func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIndex string) (err error) {
 	return err
 }
 
-func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIndex int32) (err error) {
+func (asicdClientMgr *OvsAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIndex string) (err error) {
 	return err
 }
 
@@ -182,4 +187,8 @@ func (asicdClientMgr *OvsAsicdClientMgr) IppVlanConversationSet(vlan uint16, ifi
 }
 func (asicdClientMgr *OvsAsicdClientMgr) IppVlanConversationClear(vlan uint16, ifindex int32) (err error) {
 	return err
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) IsLoopbackType(ifindex int32) bool {
+	return true
 }

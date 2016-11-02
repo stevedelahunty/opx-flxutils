@@ -21,60 +21,61 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package eventUtils
+package alphaNumSort
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
+	"math"
+	"sort"
 )
-
-type FaultDetail struct {
-	RaiseFault       bool
-	ClearingEventId  int
-	ClearingDaemonId int
-	AlarmSeverity    string
-}
-
-type EventStruct struct {
-	EventId     int
-	EventName   string
-	Description string
-	SrcObjName  string
-	EventEnable bool
-	IsFault     bool
-	Fault       FaultDetail
-}
-
-type DaemonEvent struct {
-	DaemonId          int
-	DaemonName        string
-	DaemonEventEnable bool
-	EventBufferSize   int
-	EventList         []EventStruct
-}
-
-type EventJson struct {
-	DaemonEvents []DaemonEvent
-}
 
 const (
-	EventDir string = "/etc/flexswitch/"
+	MAX_CHAR_ASCII_VAL = 123 //ASCII value of 'z' + 1
 )
 
-func ParseEventsJson() (evtJson EventJson, err error) {
-	eventsFile := EventDir + "events.json"
-	bytes, err := ioutil.ReadFile(eventsFile)
-	if err != nil {
-		err := errors.New(fmt.Sprintln("Error in reading ", eventsFile, " file."))
-		return evtJson, err
+/* Simple sort routine that sorts alpha numeric strings
+   containing the following runes (0-9, a-z, A-Z, _).
+*/
+func Sort(strList []string) []string {
+	if (strList == nil) || (len(strList) == 1) {
+		return strList
 	}
 
-	err = json.Unmarshal(bytes, &evtJson)
-	if err != nil {
-		err := errors.New(fmt.Sprintln("Errors in unmarshalling json file: ", eventsFile))
-		return evtJson, err
+	var outList []string = make([]string, len(strList))
+	var strMap map[float64]string = make(map[float64]string)
+	for _, str := range strList {
+		wt := computeWeight(str)
+		strMap[wt] = str
 	}
-	return evtJson, err
+	keySlice := make([]float64, len(strMap))
+	idx := 0
+	for key, _ := range strMap {
+		keySlice[idx] = key
+		idx++
+	}
+	sort.Float64s(keySlice)
+	for idx, key := range keySlice {
+		outList[idx] = strMap[key]
+	}
+	return outList
+}
+
+func Compare(s1, s2 string) int {
+	wt1 := computeWeight(s1)
+	wt2 := computeWeight(s2)
+	if wt1 < wt2 {
+		return -1
+	} else if wt1 == wt2 {
+		return 0
+	} else {
+		return 1
+	}
+}
+
+/* Computes weight of give string. Max char ascii val ('z') = 122 */
+func computeWeight(str string) float64 {
+	var wt float64
+	for idx, val := range str {
+		wt += math.Pow(float64(MAX_CHAR_ASCII_VAL), float64(idx)) * float64(val)
+	}
+	return wt
 }

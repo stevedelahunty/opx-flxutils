@@ -63,16 +63,19 @@ type DBIntf interface {
 	Connect() error
 	Disconnect()
 	StoreObjectInDb(objects.ConfigObj) error
+	StoreObjectDefaultInDb(objects.ConfigObj) error
 	DeleteObjectFromDb(objects.ConfigObj) error
 	GetObjectFromDb(objects.ConfigObj, string) (objects.ConfigObj, error)
 	GetKey(objects.ConfigObj) string
 	GetAllObjFromDb(objects.ConfigObj) ([]objects.ConfigObj, error)
 	CompareObjectsAndDiff(objects.ConfigObj, map[string]bool, objects.ConfigObj) ([]bool, error)
+	CompareObjectDefaultAndDiff(objects.ConfigObj, objects.ConfigObj) ([]bool, error)
 	UpdateObjectInDb(objects.ConfigObj, objects.ConfigObj, []bool) error
 	MergeDbAndConfigObj(objects.ConfigObj, objects.ConfigObj, []bool) (objects.ConfigObj, error)
 	GetBulkObjFromDb(obj objects.ConfigObj, startIndex, count int64) (error, int64, int64, bool, []objects.ConfigObj)
 	Publish(string, interface{}, interface{})
 	StoreValInDb(interface{}, interface{}, interface{}) error
+	DeleteValFromDb(interface{}) error
 	GetAllKeys(interface{}) (interface{}, error)
 	GetValFromDB(key interface{}, field interface{}) (val interface{}, err error)
 	StoreEventObjectInDb(events.EventObj) error
@@ -83,6 +86,7 @@ type DBIntf interface {
 	DeleteUUIDToObjKeyMap(uuid, objKey string) error
 	GetUUIDFromObjKey(objKey string) (string, error)
 	GetObjKeyFromUUID(uuid string) (string, error)
+	MergeDbObjKeys(obj, dbObj objects.ConfigObj) (objects.ConfigObj, error)
 }
 
 func NewDBUtil(logger logging.LoggerIntf) *DBUtil {
@@ -133,6 +137,12 @@ func (db *DBUtil) StoreObjectInDb(obj objects.ConfigObj) error {
 	defer db.DbLock.Unlock()
 	db.DbLock.Lock()
 	return obj.StoreObjectInDb(db.Conn)
+}
+
+func (db *DBUtil) StoreObjectDefaultInDb(obj objects.ConfigObj) error {
+	defer db.DbLock.Unlock()
+	db.DbLock.Lock()
+	return obj.StoreObjectDefaultInDb(db.Conn)
 }
 
 func (db *DBUtil) DeleteObjectFromDb(obj objects.ConfigObj) error {
@@ -193,6 +203,16 @@ func (db *DBUtil) CompareObjectsAndDiff(obj objects.ConfigObj, updateKeys map[st
 	defer db.DbLock.Unlock()
 	db.DbLock.Lock()
 	return obj.CompareObjectsAndDiff(updateKeys, inObj)
+}
+
+func (db *DBUtil) CompareObjectDefaultAndDiff(obj objects.ConfigObj, inObj objects.ConfigObj) (
+	[]bool, error) {
+	if db.Conn == nil {
+		return make([]bool, 0), DBNotConnectedError{db.network, db.address}
+	}
+	defer db.DbLock.Unlock()
+	db.DbLock.Lock()
+	return obj.CompareObjectDefaultAndDiff(inObj)
 }
 
 func (db *DBUtil) UpdateObjectInDb(obj, inObj objects.ConfigObj, attrSet []bool) error {
@@ -270,6 +290,17 @@ func (db *DBUtil) StoreValInDb(key interface{}, val interface{}, field interface
 	}
 	err := errors.New("DB Connection handler is nil")
 	return err
+}
+
+func (db *DBUtil) DeleteValFromDb(key interface{}) error {
+	defer db.DbLock.Unlock()
+	db.DbLock.Lock()
+	_, err := db.Do("DEL", key)
+	if err != nil {
+		db.logger.Err(fmt.Sprintln("Failed to delete entry with key ", key, "entry in db ", err))
+		return err
+	}
+	return nil
 }
 
 func (db *DBUtil) GetAllKeys(pattern interface{}) (val interface{}, err error) {
@@ -353,4 +384,10 @@ func (db *DBUtil) GetObjKeyFromUUID(uuid string) (string, error) {
 	}
 	objKey = strings.TrimRight(objKey, "UUID")
 	return objKey, nil
+}
+
+func (db *DBUtil) MergeDbObjKeys(obj, dbObj objects.ConfigObj) (objects.ConfigObj, error) {
+	defer db.DbLock.Unlock()
+	db.DbLock.Lock()
+	return obj.MergeDbObjKeys(dbObj)
 }

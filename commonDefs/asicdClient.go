@@ -100,6 +100,21 @@ type PortStateGetInfo struct {
 	PortStateList []PortState
 }
 
+type Lag struct {
+	LagIfIndex  int32
+	HashType    int32
+	IfIndexList []int32
+	LagName     string
+}
+
+type LagGetInfo struct {
+	StartIdx int32
+	EndIdx   int32
+	Count    int32
+	More     bool
+	LagList  []Lag
+}
+
 type Vlan struct {
 	VlanId           int32
 	IfIndexList      []int32
@@ -130,25 +145,41 @@ type VlanStateGetInfo struct {
 }
 
 const (
-	//Notification msgs
+	//Notification msgs copied from asicd
 	NOTIFY_L2INTF_STATE_CHANGE       = iota // 0
-	NOTIFY_L3INTF_STATE_CHANGE              // 1
-	NOTIFY_VLAN_CREATE                      // 2
-	NOTIFY_VLAN_DELETE                      // 3
-	NOTIFY_VLAN_UPDATE                      // 4
-	NOTIFY_LOGICAL_INTF_CREATE              // 5
-	NOTIFY_LOGICAL_INTF_DELETE              // 6
-	NOTIFY_LOGICAL_INTF_UPDATE              // 7
-	NOTIFY_IPV4INTF_CREATE                  // 8
-	NOTIFY_IPV4INTF_DELETE                  // 9
-	NOTIFY_IPV6INTF_CREATE                  // 10
-	NOTIFY_IPV6INTF_DELETE                  // 11
-	NOTIFY_LAG_CREATE                       // 12
-	NOTIFY_LAG_DELETE                       // 13
-	NOTIFY_LAG_UPDATE                       // 14
-	NOTIFY_IPV4NBR_MAC_MOVE                 // 15
-	NOTIFY_IPV4_ROUTE_CREATE_FAILURE        // 16
-	NOTIFY_IPV4_ROUTE_DELETE_FAILURE        // 17
+	NOTIFY_IPV4_L3INTF_STATE_CHANGE         // 1
+	NOTIFY_IPV6_L3INTF_STATE_CHANGE         // 2
+	NOTIFY_VLAN_CREATE                      // 3
+	NOTIFY_VLAN_DELETE                      // 4
+	NOTIFY_VLAN_UPDATE                      // 5
+	NOTIFY_LOGICAL_INTF_CREATE              // 6
+	NOTIFY_LOGICAL_INTF_DELETE              // 7
+	NOTIFY_LOGICAL_INTF_UPDATE              // 8
+	NOTIFY_IPV4INTF_CREATE                  // 9
+	NOTIFY_IPV4INTF_DELETE                  // 10
+	NOTIFY_IPV6INTF_CREATE                  // 11
+	NOTIFY_IPV6INTF_DELETE                  // 12
+	NOTIFY_LAG_CREATE                       // 13
+	NOTIFY_LAG_DELETE                       // 14
+	NOTIFY_LAG_UPDATE                       // 15
+	NOTIFY_IPV4NBR_MAC_MOVE                 // 16
+	NOTIFY_IPV6NBR_MAC_MOVE                 // 17
+	NOTIFY_IPV4_ROUTE_CREATE_FAILURE        // 17
+	NOTIFY_IPV4_ROUTE_DELETE_FAILURE        // 18
+	NOTIFY_IPV6_ROUTE_CREATE_FAILURE        // 19
+	NOTIFY_IPV6_ROUTE_DELETE_FAILURE        // 20
+	NOTIFY_VTEP_CREATE                      // 21
+	NOTIFY_VTEP_DELETE                      // 22
+	NOTIFY_MPLSINTF_STATE_CHANGE            // 23
+	NOTIFY_MPLSINTF_CREATE                  // 24
+	NOTIFY_MPLSINTF_DELETE                  // 25
+	NOTIFY_PORT_CONFIG_MODE_CHANGE          // 26
+)
+
+const (
+	// state values copied from asicd
+	INTF_STATE_DOWN = 0
+	INTF_STATE_UP   = 1
 )
 
 type AsicdNotification map[uint8]bool
@@ -159,20 +190,27 @@ type L2IntfStateNotifyMsg struct {
 	IfState uint8
 }
 
-type L3IntfStateNotifyMsg struct {
+type IPv4L3IntfStateNotifyMsg struct {
 	MsgType uint8
 	IpAddr  string
-	IpType  int
+	IfIndex int32
+	IfState uint8
+}
+
+type IPv6L3IntfStateNotifyMsg struct {
+	MsgType uint8
+	IpAddr  string
 	IfIndex int32
 	IfState uint8
 }
 
 type VlanNotifyMsg struct {
-	MsgType    uint8
-	VlanId     uint16
-	VlanName   string
-	TagPorts   []int32
-	UntagPorts []int32
+	MsgType     uint8
+	VlanId      uint16
+	VlanIfIndex int32
+	VlanName    string
+	TagPorts    []int32
+	UntagPorts  []int32
 }
 
 type LogicalIntfNotifyMsg struct {
@@ -192,6 +230,7 @@ type IPv4IntfNotifyMsg struct {
 	MsgType uint8
 	IpAddr  string
 	IfIndex int32
+	IntfRef string
 }
 
 type IPv4NbrMacMoveNotifyMsg struct {
@@ -213,6 +252,17 @@ type IPv6IntfNotifyMsg struct {
 	IpAddr  string
 	IfIndex int32
 	IntfRef string
+}
+
+type PortConfigModeChgNotifyMsg struct {
+	IfIndex int32
+	OldMode string
+	NewMode string
+}
+
+type PortConfigMtuChangeNotifyMsg struct {
+	IfIndex int32
+	Mtu     int32
 }
 
 type AsicdNotificationHdl interface {
