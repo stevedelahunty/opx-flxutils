@@ -55,14 +55,16 @@ type PolicyStmtMap struct {
 	PolicyStmtMap map[string]ConditionsAndActionsList
 }
 type PolicyEngineFilterEntityParams struct {
-	DestNetIp        string //CIDR format
-	NextHopIp        string
-	RouteProtocol    string
-	Neighbor         string
-	CreatePath       bool
-	DeletePath       bool
-	PolicyList       []string
-	PolicyHitCounter int
+	DestNetIp         string //CIDR format
+	NextHopIp         string
+	RouteProtocol     string
+	Neighbor          string
+	Community         uint32
+	ExtendedCommunity string
+	CreatePath        bool
+	DeletePath        bool
+	PolicyList        []string
+	PolicyHitCounter  int
 }
 type PolicyEngineApplyInfo struct {
 	ApplyPolicy    ApplyPolicyInfo
@@ -172,22 +174,37 @@ func (db *PolicyEngineDB) buildPolicyConditionCheckfuncMap() {
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch] = db.DstIpPrefixMatchConditionfunc
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeProtocolMatch] = db.ProtocolMatchConditionfunc
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeNeighborMatch] = db.NeighborMatchConditionfunc
+	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeCommunityMatch] = db.CommunityMatchConditionfunc
+	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch] = db.ExtendedCommunityMatchConditionfunc
 }
 func (db *PolicyEngineDB) buildPolicyValidConditionsForPolicyTypeMap() {
 	db.Logger.Info("buildPolicyValidConditionsForPolicyTypeMap")
 	db.ValidConditionsForPolicyTypeMap["ALL"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch,
-		policyCommonDefs.PolicyConditionTypeProtocolMatch, policyCommonDefs.PolicyConditionTypeNeighborMatch}
+		policyCommonDefs.PolicyConditionTypeProtocolMatch,
+		policyCommonDefs.PolicyConditionTypeNeighborMatch,
+		policyCommonDefs.PolicyConditionTypeCommunityMatch,
+		policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch}
 	db.ValidConditionsForPolicyTypeMap["BGP"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch,
-		policyCommonDefs.PolicyConditionTypeNeighborMatch}
+		policyCommonDefs.PolicyConditionTypeNeighborMatch,
+		policyCommonDefs.PolicyConditionTypeCommunityMatch,
+		policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch}
 	db.ValidConditionsForPolicyTypeMap["OSPF"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch}
 }
 func (db *PolicyEngineDB) buildPolicyValidActionsForPolicyTypeMap() {
 	db.Logger.Info("buildPolicyValidActionsForPolicyTypeMap")
 	db.ValidActionsForPolicyTypeMap["ALL"] = []int{policyCommonDefs.PolicyActionTypeRouteDisposition,
-		policyCommonDefs.PolicyActionTypeRouteRedistribute, policyCommonDefs.PolicyActionTypeRIBIn,
-		policyCommonDefs.PolicyActionTypeRIBOut}
+		policyCommonDefs.PolicyActionTypeRouteRedistribute,
+		policyCommonDefs.PolicyActionTypeRIBIn,
+		policyCommonDefs.PolicyActionTypeRIBOut,
+		policyCommonDefs.PolicyActionTypeSetCommunity,
+		policyCommonDefs.PolicyActionTypeSetExtendedCommunity,
+		policyCommonDefs.PolicyActionTypeSetLocalPref}
 	db.ValidActionsForPolicyTypeMap["BGP"] = []int{policyCommonDefs.PolicyActionTypeAggregate,
-		policyCommonDefs.PolicyActionTypeRIBIn, policyCommonDefs.PolicyActionTypeRIBOut}
+		policyCommonDefs.PolicyActionTypeRIBIn,
+		policyCommonDefs.PolicyActionTypeRIBOut,
+		policyCommonDefs.PolicyActionTypeSetCommunity,
+		policyCommonDefs.PolicyActionTypeSetExtendedCommunity,
+		policyCommonDefs.PolicyActionTypeSetLocalPref}
 }
 func NewPolicyEngineDB(logger *logging.Writer) (policyEngineDB *PolicyEngineDB) {
 	policyEngineDB = &PolicyEngineDB{}

@@ -65,11 +65,13 @@ type MatchPrefixConditionInfo struct {
 	HighRange    int
 }
 type PolicyConditionConfig struct {
-	Name                          string
-	ConditionType                 string
-	MatchProtocolConditionInfo    string
-	MatchDstIpPrefixConditionInfo PolicyDstIpMatchPrefixSetCondition
-	MatchNeighborConditionInfo    string
+	Name                                string
+	ConditionType                       string
+	MatchProtocolConditionInfo          string
+	MatchDstIpPrefixConditionInfo       PolicyDstIpMatchPrefixSetCondition
+	MatchCommunityConditionInfo         string
+	MatchExtendedCommunityConditionInfo string
+	MatchNeighborConditionInfo          string
 	//MatchNeighborConditionInfo   PolicyMatchNeighborSetCondition
 	//MatchTagConditionInfo   PolicyMatchTagSetCondition
 }
@@ -332,6 +334,107 @@ func (db *PolicyEngineDB) CreatePolicyMatchProtocolCondition(cfg PolicyCondition
 	}
 	return true, err
 }
+func (db *PolicyEngineDB) GetCommunityValue(inp string) (uint32, error) {
+	var val uint32
+	info, ok := policyCommonDefs.BGPWellKnownCommunitiesMap[inp]
+	if ok {
+		val = info
+	} else if strings.HasPrefix(inp, "0x") {
+		info, err := strconv.ParseInt(inp, 0, 64)
+		if err != nil {
+			return val, err
+		} else {
+			val = uint32(info)
+		}
+	} else {
+		//split with :
+		a := strings.Split(inp, ":")
+		if len(a) > 2 {
+			db.Logger.Err("Incorrect format for community ", inp)
+			return val, errors.New(fmt.Sprintln("Incorrect format for community ", inp))
+		}
+		if len(a) == 2 {
+			a0num, _ := strconv.Atoi(a[0])
+			as := fmt.Sprintf("%4x", a0num)
+			as = strings.Replace(as, " ", "0", -1)
+			a1num, _ := strconv.Atoi(a[1])
+			num := fmt.Sprintf("%4x", a1num)
+			num = strings.Replace(num, " ", "0", -1)
+
+			comm := "0x" + as + num
+			valint, err := strconv.ParseInt(comm, 0, 64)
+			if err != nil {
+				return val, err
+			}
+			val = uint32(valint)
+		} else if len(a) == 1 {
+			//just a integer
+			info, err := strconv.Atoi(inp)
+			db.Logger.Info("err:", err, " while caling strconv for ", inp)
+			if err == nil {
+				val = uint32(info)
+			} else {
+				db.Logger.Err("Incorrect community input:", inp)
+				return val, err
+			}
+		} else {
+			db.Logger.Err("Incorrect community input:", inp)
+			return val, errors.New(fmt.Sprintln("Incorrect community input:", inp))
+		}
+	}
+	return val, nil
+}
+func (db *PolicyEngineDB) CreatePolicyMatchCommunityCondition(cfg PolicyConditionConfig) (val bool, err error) {
+	db.Logger.Info(fmt.Sprintln("CreatePolicyMatchCommunityCondition"))
+
+	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Name))
+	if policyCondition == nil {
+		var val uint32
+		db.Logger.Info(fmt.Sprintln("Defining a new policy condition with name ", cfg.Name, " to match on community ", cfg.MatchCommunityConditionInfo))
+		//check if community is a well-known community
+		val, err := db.GetCommunityValue(cfg.MatchCommunityConditionInfo)
+		if err != nil {
+			db.Logger.Err("GetCommunityValue return error:", err, " for ", cfg.MatchCommunityConditionInfo)
+			return false, err
+		}
+		newPolicyCondition := PolicyCondition{Name: cfg.Name, ConditionType: policyCommonDefs.PolicyConditionTypeCommunityMatch, ConditionInfo: val, LocalDBSliceIdx: (len(*db.LocalPolicyConditionsDB))}
+		newPolicyCondition.ConditionGetBulkInfo = "match Community " + strconv.Itoa(int(val))
+		if ok := db.PolicyConditionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyCondition); ok != true {
+			db.Logger.Info(fmt.Sprintln(" return value not ok"))
+			err = errors.New("Error creating condition in the DB")
+			return false, err
+		}
+		db.LocalPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
+	} else {
+		db.Logger.Err(fmt.Sprintln("Duplicate Condition name"))
+		err = errors.New("Duplicate policy condition definition")
+		return false, err
+	}
+	return true, err
+}
+
+func (db *PolicyEngineDB) CreatePolicyMatchExtendedCommunityCondition(cfg PolicyConditionConfig) (val bool, err error) {
+	db.Logger.Info(fmt.Sprintln("CreatePolicyMatchExtendedCommunityCondition"))
+
+	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Name))
+	if policyCondition == nil {
+		db.Logger.Info(fmt.Sprintln("Defining a new policy condition with name ", cfg.Name, " to match on extended community ", cfg.MatchExtendedCommunityConditionInfo))
+		match := cfg.MatchExtendedCommunityConditionInfo
+		newPolicyCondition := PolicyCondition{Name: cfg.Name, ConditionType: policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch, ConditionInfo: match, LocalDBSliceIdx: (len(*db.LocalPolicyConditionsDB))}
+		newPolicyCondition.ConditionGetBulkInfo = "match Extended Community " + match
+		if ok := db.PolicyConditionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyCondition); ok != true {
+			db.Logger.Info(fmt.Sprintln(" return value not ok"))
+			err = errors.New("Error creating condition in the DB")
+			return false, err
+		}
+		db.LocalPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
+	} else {
+		db.Logger.Err(fmt.Sprintln("Duplicate Condition name"))
+		err = errors.New("Duplicate policy condition definition")
+		return false, err
+	}
+	return true, err
+}
 
 func (db *PolicyEngineDB) CreatePolicyMatchNeighborCondition(cfg PolicyConditionConfig) (val bool, err error) {
 	db.Logger.Info(fmt.Sprintln("CreatePolicyMatchNeighborCondition"))
@@ -409,6 +512,9 @@ func (db *PolicyEngineDB) ValidateConditionConfigCreate(inCfg PolicyConditionCon
 		}
 	case "MatchNeighbor":
 		break
+	case "MatchCommunity":
+	case "MatchExtendedCommunity":
+		break
 	default:
 		db.Logger.Err(fmt.Sprintln("Unknown condition type ", inCfg.ConditionType))
 		err = errors.New("Unknown condition type")
@@ -429,6 +535,12 @@ func (db *PolicyEngineDB) CreatePolicyCondition(cfg PolicyConditionConfig) (val 
 		break
 	case "MatchProtocol":
 		val, err = db.CreatePolicyMatchProtocolCondition(cfg)
+		break
+	case "MatchCommunity":
+		val, err = db.CreatePolicyMatchCommunityCondition(cfg)
+		break
+	case "MatchExtendedCommunity":
+		val, err = db.CreatePolicyMatchExtendedCommunityCondition(cfg)
 		break
 	case "MatchNeighbor":
 		val, err = db.CreatePolicyMatchNeighborCondition(cfg)

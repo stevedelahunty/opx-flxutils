@@ -27,6 +27,8 @@ const (
 	PolicyConditionTypeDstIpPrefixMatch       = 0
 	PolicyConditionTypeProtocolMatch          = 1
 	PolicyConditionTypeNeighborMatch          = 2
+	PolicyConditionTypeCommunityMatch         = 3
+	PolicyConditionTypeExtendedCommunityMatch = 4
 	PolicyActionTypeRouteDisposition          = 0
 	PolicyActionTypeRouteRedistribute         = 1
 	PoilcyActionTypeSetAdminDistance          = 2
@@ -34,7 +36,16 @@ const (
 	PolicyActionTypeAggregate                 = 4
 	PolicyActionTypeRIBIn                     = 5
 	PolicyActionTypeRIBOut                    = 6
+	PolicyActionTypeSetCommunity              = 7
+	PolicyActionTypeSetExtendedCommunity      = 8
+	PolicyActionTypeSetLocalPref              = 9
 	PolicyPath_Import                         = 1
 	PolicyPath_Export                         = 2
 	PolicyPath_All                            = 3
 )
+
+var BGPWellKnownCommunitiesMap = map[string]uint32{
+	"NO_EXPORT":           0xFFFFFF01,
+	"NO_ADVERTISE":        0xFFFFFF02,
+	"NO_EXPORT_SUBCONFED": 0xFFFFFF03,
+}

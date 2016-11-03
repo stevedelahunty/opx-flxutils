@@ -208,7 +208,8 @@ func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilter
 	switch action.ActionType {
 	case policyCommonDefs.PolicyActionTypeRouteDisposition, policyCommonDefs.PolicyActionTypeRouteRedistribute,
 		policyCommonDefs.PolicyActionTypeNetworkStatementAdvertise, policyCommonDefs.PolicyActionTypeAggregate,
-		policyCommonDefs.PolicyActionTypeRIBIn, policyCommonDefs.PolicyActionTypeRIBOut:
+		policyCommonDefs.PolicyActionTypeRIBIn, policyCommonDefs.PolicyActionTypeRIBOut, policyCommonDefs.PolicyActionTypeSetCommunity,
+		policyCommonDefs.PolicyActionTypeSetExtendedCommunity, policyCommonDefs.PolicyActionTypeSetLocalPref:
 		if entity.DeletePath == true {
 			db.Logger.Info("action to be reversed", action.ActionType)
 			if db.UndoActionfuncMap[action.ActionType] != nil {
@@ -379,7 +380,31 @@ func (db *PolicyEngineDB) NeighborMatchConditionfunc(entity PolicyEngineFilterEn
 		"matches entity neighbor: ", entity.Neighbor)
 	matchNeighbor := condition.ConditionInfo.(string)
 	if matchNeighbor == entity.Neighbor {
-		db.Logger.Info("Protocol condition matches")
+		db.Logger.Info("Neighbor matches")
+		match = true
+	}
+	return match
+}
+
+func (db *PolicyEngineDB) CommunityMatchConditionfunc(entity PolicyEngineFilterEntityParams,
+	condition PolicyCondition) (match bool) {
+	db.Logger.Info("CommunityMatchConditionfunc: check if policy community:", condition.ConditionInfo.(uint32),
+		"matches entity community: ", entity.Community)
+	matchEntity := condition.ConditionInfo.(uint32)
+	if matchEntity == entity.Community {
+		db.Logger.Info("Community matches")
+		match = true
+	}
+	return match
+}
+
+func (db *PolicyEngineDB) ExtendedCommunityMatchConditionfunc(entity PolicyEngineFilterEntityParams,
+	condition PolicyCondition) (match bool) {
+	db.Logger.Info("ExtendedCommunityMatchConditionfunc: check if policy extended community:", condition.ConditionInfo.(string),
+		"matches entity extended community: ", entity.ExtendedCommunity)
+	matchEntity := condition.ConditionInfo.(string)
+	if matchEntity == entity.ExtendedCommunity {
+		db.Logger.Info("Extended Community matches")
 		match = true
 	}
 	return match
