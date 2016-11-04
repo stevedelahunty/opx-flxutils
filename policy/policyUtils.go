@@ -30,6 +30,9 @@ import (
 	//	"log"
 	//	"log/syslog"
 	//	"os"
+	"fmt"
+	"strconv"
+	"strings"
 	"utils/logging"
 	"utils/patriciaDB"
 	"utils/policy/policyCommonDefs"
@@ -483,4 +486,73 @@ func (db *PolicyEngineDB) ConditionCheckForPolicyType(conditionName string, poli
 	}
 	db.Logger.Info("Condition ", conditionName, " not valid for policyType: ", policyType)
 	return false
+}
+func (db *PolicyEngineDB) GetCommunityValue(inp string) (uint32, error) {
+	var val uint32
+	info, ok := policyCommonDefs.BGPWellKnownCommunitiesMap[inp]
+	if ok {
+		val = info
+	} else if strings.HasPrefix(inp, "0x") {
+		info, err := strconv.ParseInt(inp, 0, 64)
+		if err != nil {
+			return val, err
+		} else {
+			val = uint32(info)
+		}
+	} else {
+		//split with :
+		a := strings.Split(inp, ":")
+		if len(a) > 2 {
+			db.Logger.Err("Incorrect format for community ", inp)
+			return val, errors.New(fmt.Sprintln("Incorrect format for community ", inp))
+		}
+		if len(a) == 2 {
+			a0num, _ := strconv.Atoi(a[0])
+			as := fmt.Sprintf("%4x", a0num)
+			as = strings.Replace(as, " ", "0", -1)
+			a1num, _ := strconv.Atoi(a[1])
+			num := fmt.Sprintf("%4x", a1num)
+			num = strings.Replace(num, " ", "0", -1)
+
+			comm := "0x" + as + num
+			valint, err := strconv.ParseInt(comm, 0, 64)
+			if err != nil {
+				return val, err
+			}
+			val = uint32(valint)
+		} else if len(a) == 1 {
+			//just a integer
+			info, err := strconv.Atoi(inp)
+			db.Logger.Info("err:", err, " while caling strconv for ", inp)
+			if err == nil {
+				val = uint32(info)
+			} else {
+				db.Logger.Err("Incorrect community input:", inp)
+				return val, err
+			}
+		} else {
+			db.Logger.Err("Incorrect community input:", inp)
+			return val, errors.New(fmt.Sprintln("Incorrect community input:", inp))
+		}
+	}
+	return val, nil
+}
+func (db *PolicyEngineDB) GetPolicySetAction(in PolicyActionCfg) (out PolicyActionState, err error) {
+	if _, ok := policyCommonDefs.SetActionMap[in.Attr]; !ok {
+		db.Logger.Err("GetPolicySetAction, inValid attr:", in.Attr)
+		return out, errors.New("Invalid attr")
+	}
+	out.Attr = policyCommonDefs.SetActionMap[in.Attr]
+	switch out.Attr {
+	case policyCommonDefs.PolicyActionTypeSetLocalPref:
+		out.LocalPref = uint32(in.LocalPref)
+		break
+	case policyCommonDefs.PolicyActionTypeSetCommunity:
+		out.Community, err = db.GetCommunityValue(in.Community)
+		break
+	case policyCommonDefs.PolicyActionTypeSetExtendedCommunity:
+		out.ExtendedCommunity = out.ExtendedCommunity
+		break
+	}
+	return out, err
 }

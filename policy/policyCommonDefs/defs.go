@@ -49,3 +49,8 @@ var BGPWellKnownCommunitiesMap = map[string]uint32{
 	"NO_ADVERTISE":        0xFFFFFF02,
 	"NO_EXPORT_SUBCONFED": 0xFFFFFF03,
 }
+var SetActionMap = map[string]int{
+	"Community":         PolicyActionTypeSetCommunity,
+	"ExtendedCommunity": PolicyActionTypeSetExtendedCommunity,
+	"LocalPref":         PolicyActionTypeSetLocalPref,
+}

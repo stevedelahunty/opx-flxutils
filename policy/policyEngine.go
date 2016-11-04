@@ -93,6 +93,7 @@ func (db *PolicyEngineDB) PolicyEngineCheckActionsForEntity(entity PolicyEngineF
 	}
 	return actionList
 }
+
 func (db *PolicyEngineDB) PolicyEngineUndoActionsPolicyStmt(policy Policy, policyStmt PolicyStmt, params interface{}, conditionsAndActionsList ConditionsAndActionsList) {
 	db.Logger.Info("policyEngineUndoActionsPolicyStmt")
 	if conditionsAndActionsList.ActionList == nil {
