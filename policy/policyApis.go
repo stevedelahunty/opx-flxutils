@@ -35,6 +35,12 @@ import (
 	"utils/policy/policyCommonDefs"
 )
 
+type PolicyActionState struct {
+	Attr              int
+	Community         uint32
+	ExtendedCommunity string
+	LocalPref         uint32
+}
 type PolicyStmt struct { //policy engine uses this
 	Name            string
 	Precedence      int
@@ -43,9 +49,17 @@ type PolicyStmt struct { //policy engine uses this
 	Actions         []string
 	PolicyList      []string
 	LocalDBSliceIdx int8
+	SetActionsCfg   []PolicyActionCfg
+	SetActionsState []PolicyActionState
 	//	ImportStmt      bool
 	//	ExportStmt      bool
 	//	GlobalStmt      bool
+}
+type PolicyActionCfg struct {
+	Attr              string
+	Community         string
+	ExtendedCommunity string
+	LocalPref         uint32
 }
 type PolicyStmtConfig struct {
 	Name            string
@@ -53,6 +67,7 @@ type PolicyStmtConfig struct {
 	MatchConditions string
 	Conditions      []string
 	Actions         []string
+	SetActions      []PolicyActionCfg
 }
 
 type Policy struct {
@@ -406,6 +421,12 @@ func (db *PolicyEngineDB) ValidatePolicyStatementCreate(cfg PolicyStmtConfig) (e
 			return errors.New("Condition not found")
 		}
 	}
+	for _, setAction := range cfg.SetActions {
+		if _, ok := policyCommonDefs.SetActionMap[setAction.Attr]; !ok {
+			db.Logger.Err("Invalid SetAction Attr:", setAction.Attr)
+			return errors.New(fmt.Sprintln("Invalid selection attr:", setAction.Attr))
+		}
+	}
 	return err
 }
 
@@ -445,6 +466,21 @@ func (db *PolicyEngineDB) CreatePolicyStatement(cfg PolicyStmtConfig) (err error
 			}
 			newPolicyStmt.Actions = make([]string, 0)
 			newPolicyStmt.Actions = append(newPolicyStmt.Actions, cfg.Actions[0])
+		}
+		if len(cfg.SetActions) > 0 {
+			db.Logger.Info("Policy Statement has ", len(cfg.SetActions), " number of set actions")
+			newPolicyStmt.SetActionsState = make([]PolicyActionState, 0)
+			for _, setAction := range cfg.SetActions {
+				policySetAction, err := db.GetPolicySetAction(setAction)
+				if err != nil {
+					return err
+				}
+				newPolicyStmt.SetActionsState = append(newPolicyStmt.SetActionsState, policySetAction)
+			}
+			newPolicyStmt.SetActionsCfg = make([]PolicyActionCfg, 0)
+			for _, setAction := range cfg.SetActions {
+				newPolicyStmt.SetActionsCfg = append(newPolicyStmt.SetActionsCfg, setAction)
+			}
 		}
 		newPolicyStmt.LocalDBSliceIdx = int8(len(*db.LocalPolicyStmtDB))
 		if ok := db.PolicyStmtDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyStmt); ok != true {
