@@ -267,3 +267,11 @@ func IsIPv4Addr(ipAddr string) bool {
 	}
 	return false
 }
+
+func IsIpv6LinkLocal(ipAddr string) bool {
+	ip, _, err := net.ParseCIDR(ipAddr)
+	if err != nil {
+		ip = net.ParseIP(ipAddr)
+	}
+	return ip.IsLinkLocalUnicast() && (ip.To4() == nil)
+}
