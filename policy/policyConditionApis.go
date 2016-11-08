@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	bgpUtils "utils/bgpUtils"
 	"utils/netUtils"
 	"utils/patriciaDB"
 	"utils/policy/policyCommonDefs"
@@ -53,7 +54,10 @@ type PolicyDstIpMatchPrefixSetCondition struct {
 	PrefixSet string
 	Prefix    PolicyPrefix
 }
-
+type PolicyExtendedCommunityInfo struct {
+	Type  string
+	Value string
+}
 type MatchPrefixConditionInfo struct {
 	UsePrefixSet bool
 	PrefixSet    string
@@ -70,7 +74,7 @@ type PolicyConditionConfig struct {
 	MatchProtocolConditionInfo          string
 	MatchDstIpPrefixConditionInfo       PolicyDstIpMatchPrefixSetCondition
 	MatchCommunityConditionInfo         string
-	MatchExtendedCommunityConditionInfo string
+	MatchExtendedCommunityConditionInfo PolicyExtendedCommunityInfo
 	MatchNeighborConditionInfo          string
 	//MatchNeighborConditionInfo   PolicyMatchNeighborSetCondition
 	//MatchTagConditionInfo   PolicyMatchTagSetCondition
@@ -342,7 +346,7 @@ func (db *PolicyEngineDB) CreatePolicyMatchCommunityCondition(cfg PolicyConditio
 		var val uint32
 		db.Logger.Info(fmt.Sprintln("Defining a new policy condition with name ", cfg.Name, " to match on community ", cfg.MatchCommunityConditionInfo))
 		//check if community is a well-known community
-		val, err := db.GetCommunityValue(cfg.MatchCommunityConditionInfo)
+		val, err := bgpUtils.GetCommunityValue(cfg.MatchCommunityConditionInfo)
 		if err != nil {
 			db.Logger.Err("GetCommunityValue return error:", err, " for ", cfg.MatchCommunityConditionInfo)
 			return false, err
@@ -369,7 +373,11 @@ func (db *PolicyEngineDB) CreatePolicyMatchExtendedCommunityCondition(cfg Policy
 	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Name))
 	if policyCondition == nil {
 		db.Logger.Info(fmt.Sprintln("Defining a new policy condition with name ", cfg.Name, " to match on extended community ", cfg.MatchExtendedCommunityConditionInfo))
-		match := cfg.MatchExtendedCommunityConditionInfo
+		match, err := bgpUtils.EncodeExtCommunity(bgpUtils.ExtCommunity{cfg.MatchExtendedCommunityConditionInfo.Type, cfg.MatchExtendedCommunityConditionInfo.Value})
+		if err != nil {
+			db.Logger.Err(fmt.Sprintln("EncodeExtCommunity returned err:", err))
+			return false, err
+		}
 		newPolicyCondition := PolicyCondition{Name: cfg.Name, ConditionType: policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch, ConditionInfo: match, LocalDBSliceIdx: (len(*db.LocalPolicyConditionsDB))}
 		newPolicyCondition.ConditionGetBulkInfo = "match Extended Community " + match
 		if ok := db.PolicyConditionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyCondition); ok != true {
