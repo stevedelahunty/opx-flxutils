@@ -44,11 +44,6 @@ const (
 	PolicyPath_All                            = 3
 )
 
-var BGPWellKnownCommunitiesMap = map[string]uint32{
-	"NO_EXPORT":           0xFFFFFF01,
-	"NO_ADVERTISE":        0xFFFFFF02,
-	"NO_EXPORT_SUBCONFED": 0xFFFFFF03,
-}
 var SetActionMap = map[string]int{
 	"Community":         PolicyActionTypeSetCommunity,
 	"ExtendedCommunity": PolicyActionTypeSetExtendedCommunity,

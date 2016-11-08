@@ -37,6 +37,12 @@ const (
 	IfTypeNull
 )
 
+var BGPWellKnownCommunitiesMap = map[string]uint32{
+	"NO_EXPORT":           0xFFFFFF01,
+	"NO_ADVERTISE":        0xFFFFFF02,
+	"NO_EXPORT_SUBCONFED": 0xFFFFFF03,
+}
+
 func GetIfTypeName(ifType int) string {
 	switch ifType {
 	case IfTypePort:
