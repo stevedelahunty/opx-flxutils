@@ -30,9 +30,11 @@ import (
 	//	"log"
 	//	"log/syslog"
 	//	"os"
-	"fmt"
-	"strconv"
-	"strings"
+	//"fmt"
+	//"strconv"
+	//"strings"
+	//commondefs "utils/commonDefs"
+	bgpUtils "utils/bgpUtils"
 	"utils/logging"
 	"utils/patriciaDB"
 	"utils/policy/policyCommonDefs"
@@ -486,10 +488,10 @@ func (db *PolicyEngineDB) ConditionCheckForPolicyType(conditionName string, poli
 	}
 	db.Logger.Info("Condition ", conditionName, " not valid for policyType: ", policyType)
 	return false
-}
+} /*
 func (db *PolicyEngineDB) GetCommunityValue(inp string) (uint32, error) {
 	var val uint32
-	info, ok := policyCommonDefs.BGPWellKnownCommunitiesMap[inp]
+	info, ok := commondefs.BGPWellKnownCommunitiesMap[inp]
 	if ok {
 		val = info
 	} else if strings.HasPrefix(inp, "0x") {
@@ -536,7 +538,7 @@ func (db *PolicyEngineDB) GetCommunityValue(inp string) (uint32, error) {
 		}
 	}
 	return val, nil
-}
+}*/
 func (db *PolicyEngineDB) GetPolicySetAction(in PolicyActionCfg) (out PolicyActionState, err error) {
 	if _, ok := policyCommonDefs.SetActionMap[in.Attr]; !ok {
 		db.Logger.Err("GetPolicySetAction, inValid attr:", in.Attr)
@@ -548,10 +550,18 @@ func (db *PolicyEngineDB) GetPolicySetAction(in PolicyActionCfg) (out PolicyActi
 		out.LocalPref = uint32(in.LocalPref)
 		break
 	case policyCommonDefs.PolicyActionTypeSetCommunity:
-		out.Community, err = db.GetCommunityValue(in.Community)
+		out.Community, err = bgpUtils.GetCommunityValue(in.Community)
+		if err != nil {
+			db.Logger.Err("SetAction returned error:", err, " while setting community policy action")
+			return out, err
+		}
 		break
 	case policyCommonDefs.PolicyActionTypeSetExtendedCommunity:
-		out.ExtendedCommunity = out.ExtendedCommunity
+		out.ExtendedCommunity, err = bgpUtils.EncodeExtCommunity(bgpUtils.ExtCommunity{in.ExtendedCommunity.Type, in.ExtendedCommunity.Value})
+		if err != nil {
+			db.Logger.Err("SetAction returned error:", err, " while setting extended community policy action")
+			return out, err
+		}
 		break
 	}
 	return out, err
