@@ -24,20 +24,20 @@
 package dmnBase
 
 import (
-	"asicd/asicdCommonDefs"
-	"asicdServices"
+	_ "asicd/asicdCommonDefs"
+	_ "asicdServices"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"git.apache.org/thrift.git/lib/go/thrift"
-	nanomsg "github.com/op/go-nanomsg"
+	_ "git.apache.org/thrift.git/lib/go/thrift"
+	//_nanomsg "github.com/op/go-nanomsg"
 	"io/ioutil"
-	"strconv"
-	"time"
+	_ "strconv"
+	_ "time"
 	"utils/asicdClient"
 	"utils/commonDefs"
 	"utils/dbutils"
-	"utils/ipcutils"
+	_ "utils/ipcutils"
 	"utils/keepalive"
 	"utils/logging"
 )
@@ -51,6 +51,16 @@ type ClientJson struct {
 	Port int    `json:Port`
 }
 
+type FSBaseDmn struct {
+	DmnName     string
+	ParamsDir   string
+	LogPrefix   string
+	Logger      *logging.Writer
+	DbHdl       *dbutils.DBUtil
+	ClientsList []ClientJson
+}
+
+/*
 type DmnClientBase struct {
 	Address            string
 	Transport          thrift.TTransport
@@ -63,15 +73,6 @@ type AsicdClient struct {
 	ClientHdl *asicdServices.ASICDServicesClient
 }
 
-type FSBaseDmn struct {
-	DmnName     string
-	ParamsDir   string
-	LogPrefix   string
-	Logger      *logging.Writer
-	DbHdl       *dbutils.DBUtil
-	ClientsList []ClientJson
-}
-
 // @TODO: need to remove this struct, it duplicate and introducing bugs
 type FSDaemon struct {
 	*FSBaseDmn
@@ -81,6 +82,7 @@ type FSDaemon struct {
 	AsicdSubSocketCh    chan []byte
 	AsicdSubSocketErrCh chan error
 }
+*/
 
 func (dmn *FSBaseDmn) InitLogger() (err error) {
 	fmt.Println(dmn.LogPrefix, " Starting ", dmn.DmnName, "logger")
@@ -142,10 +144,6 @@ func (dmn *FSBaseDmn) StartKeepAlive() {
 	go keepalive.InitKeepAlive(dmn.DmnName, dmn.ParamsDir)
 }
 
-func (dmn *FSDaemon) StartKeepAlive() {
-	dmn.FSBaseDmn.StartKeepAlive()
-}
-
 func NewBaseDmn(dmnName, logPrefix string) *FSBaseDmn {
 	var dmn = new(FSBaseDmn)
 	dmn.DmnName = dmnName
@@ -154,6 +152,10 @@ func NewBaseDmn(dmnName, logPrefix string) *FSBaseDmn {
 	return dmn
 }
 
+/*
+func (dmn *FSDaemon) StartKeepAlive() {
+	dmn.FSBaseDmn.StartKeepAlive()
+}
 func (dmn *FSDaemon) ConnectToAsicd() error {
 	var err error
 	for _, client := range dmn.FSBaseDmn.ClientsList {
@@ -258,7 +260,7 @@ func (dmn *FSDaemon) NewServer() {
 	dmn.AsicdSubSocketCh = make(chan []byte)
 	dmn.AsicdSubSocketErrCh = make(chan error)
 }
-
+*/
 func (dmn *FSBaseDmn) GetLogger() *logging.Writer {
 	return dmn.Logger
 }
