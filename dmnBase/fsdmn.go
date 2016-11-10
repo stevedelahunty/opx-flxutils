@@ -57,7 +57,7 @@ type FSBaseDmn struct {
 	LogPrefix   string
 	Logger      *logging.Writer
 	DbHdl       *dbutils.DBUtil
-	ClientsList []ClientJson
+	ClientsList []commonDefs.ClientJson
 }
 
 /*

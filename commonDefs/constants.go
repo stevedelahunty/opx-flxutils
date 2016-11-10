@@ -23,6 +23,10 @@
 
 package commonDefs
 
+import (
+	"git.apache.org/thrift.git/lib/go/thrift"
+)
+
 //L2 types
 const (
 	IfTypePort = iota
@@ -78,4 +82,15 @@ type Ipv6NeighborNotification struct {
 type NdpNotification struct {
 	MsgType uint8
 	Msg     []byte
+}
+
+type ClientJson struct {
+	Name string `json:Name`
+	Port int    `json:Port`
+}
+
+type ClientBase struct {
+	Address            string
+	Transport          thrift.TTransport
+	PtrProtocolFactory *thrift.TBinaryProtocolFactory
 }
