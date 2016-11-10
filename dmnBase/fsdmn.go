@@ -118,7 +118,7 @@ func (dmn *FSBaseDmn) Init() bool {
 	configFile := dmn.ParamsDir + "clients.json"
 	bytes, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		dmn.Logger.Info(fmt.Sprintln("Error in reading configuration file ", configFile))
+		dmn.Logger.Info("Error in reading configuration file ", configFile)
 		return false
 	}
 	err = json.Unmarshal(bytes, &dmn.ClientsList)
@@ -260,7 +260,6 @@ func (dmn *FSDaemon) NewServer() {
 	dmn.AsicdSubSocketCh = make(chan []byte)
 	dmn.AsicdSubSocketErrCh = make(chan error)
 }
-*/
 func (dmn *FSBaseDmn) GetLogger() *logging.Writer {
 	return dmn.Logger
 }
@@ -268,6 +267,7 @@ func (dmn *FSBaseDmn) GetLogger() *logging.Writer {
 func (dmn *FSBaseDmn) GetDbHdl() *dbutils.DBUtil {
 	return dmn.DbHdl
 }
+*/
 
 func (dmn *FSBaseDmn) InitSwitch(plugin, dmnName, logPrefix string, switchHdl commonDefs.AsicdClientStruct) asicdClient.AsicdClientIntf {
 	// @TODO: need to change second argument
