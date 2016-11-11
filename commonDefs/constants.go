@@ -94,3 +94,7 @@ type ClientBase struct {
 	Transport          thrift.TTransport
 	PtrProtocolFactory *thrift.TBinaryProtocolFactory
 }
+
+const (
+	FLEXSWITCH_PLUGIN = "flexswitch"
+)
