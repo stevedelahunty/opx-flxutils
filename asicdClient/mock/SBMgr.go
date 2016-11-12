@@ -169,6 +169,10 @@ func (asicdClientMgr *MockAsicdClientMgr) UpdateLag(ifIndex, hashType int32, por
 	return err
 }
 
+func (asicdClientMgr *MockAsicdClientMgr) UpdateLagCfgIntfList(ifName string, ifIndexList []int32) bool {
+	return true
+}
+
 func (asicdClientMgr *MockAsicdClientMgr) EnablePacketReception(mac string, vlan int, ifindex int32) (err error) {
 	return err
 }
