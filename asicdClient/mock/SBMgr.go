@@ -218,3 +218,11 @@ func (asicdClientMgr *MockAsicdClientMgr) DeleteVirtualIPv4Intf(intRef, ipAddr, 
 func (asicdClientMgr *MockAsicdClientMgr) DeleteVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
 	return err
 }
+
+func (asicdClientMgr *MockAsicdClientMgr) GetAllSubIPv4IntfState() ([]*commonDefs.SubIPv4IntfState, error) {
+	return nil, nil
+}
+
+func (asicdClientMgr *MockAsicdClientMgr) GetAllSubIPv6IntfState() ([]*commonDefs.SubIPv6IntfState, error) {
+	return nil, nil
+}

@@ -96,5 +96,7 @@ type ClientBase struct {
 }
 
 const (
-	FLEXSWITCH_PLUGIN = "flexswitch"
+	FLEXSWITCH_PLUGIN       = "flexswitch"
+	SUB_INTF_VIRTUAL_TYPE   = "virtual"
+	SUB_INTF_SECONDARY_TYPE = "secondary"
 )

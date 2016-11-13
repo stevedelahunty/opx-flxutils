@@ -91,6 +91,9 @@ type AsicdClientIntf interface {
 
 	DeleteVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) error
 	DeleteVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) error
+
+	GetAllSubIPv4IntfState() ([]*commonDefs.SubIPv4IntfState, error)
+	GetAllSubIPv6IntfState() ([]*commonDefs.SubIPv6IntfState, error)
 }
 
 func NewAsicdClientInit(plugin string, paramsFile string, asicdHdl commonDefs.AsicdClientStruct) AsicdClientIntf {

@@ -330,3 +330,26 @@ type IPv6IntfState struct {
 	L2IntfType        string
 	L2IntfId          int32
 }
+
+type SubIPv4IntfState struct {
+	IntfRef       string
+	Type          string
+	IfIndex       int32
+	IfName        string
+	ParentIfIndex int32
+	IpAddr        string
+	MacAddr       string
+	OperState     string
+}
+
+// @TODO: fixme as I am stop gap solution only
+type SubIPv6IntfState struct {
+	IntfRef       string
+	Type          string
+	IfIndex       int32
+	IfName        string
+	ParentIfIndex int32
+	IpAddr        string
+	MacAddr       string
+	OperState     string
+}

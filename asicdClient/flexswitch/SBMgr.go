@@ -515,6 +515,77 @@ func (asicdClientMgr *FSAsicdClientMgr) GetAllIPv4IntfState() ([]*commonDefs.IPv
 	return ipv4Info, nil
 }
 
+func (asicdClientMgr *FSAsicdClientMgr) GetAllSubIPv4IntfState() ([]*commonDefs.SubIPv4IntfState, error) {
+	curMark := 0
+	count := 100
+	ipv4Info := make([]*commonDefs.SubIPv4IntfState, 0)
+	for {
+		asicdmutex.Lock()
+		bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkSubIPv4IntfState(asicdServices.Int(curMark),
+			asicdServices.Int(count))
+		asicdmutex.Unlock()
+		if bulkInfo == nil {
+			return nil, err
+		}
+		curMark = int(bulkInfo.EndIdx)
+		for idx := 0; idx < int(bulkInfo.Count); idx++ {
+			obj := bulkInfo.SubIPv4IntfStateList[idx]
+			entry := &commonDefs.SubIPv4IntfState{
+				IntfRef:       obj.IntfRef,
+				Type:          obj.Type,
+				IfIndex:       obj.IfIndex,
+				IfName:        obj.IfName,
+				ParentIfIndex: obj.ParentIfIndex,
+				IpAddr:        obj.IpAddr,
+				MacAddr:       obj.MacAddr,
+				OperState:     obj.OperState,
+			}
+			ipv4Info = append(ipv4Info, entry)
+		}
+		if bulkInfo.More == false {
+			break
+		}
+	}
+	return ipv4Info, nil
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) GetAllSubIPv6IntfState() ([]*commonDefs.SubIPv6IntfState, error) {
+	/*
+		curMark := 0
+		count := 100
+		ipv4Info := make([]*commonDefs.SubIPv4IntfState, 0)
+		for {
+			asicdmutex.Lock()
+			bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkSubIPv6IntfState(asicdServices.Int(curMark),
+				asicdServices.Int(count))
+			asicdmutex.Unlock()
+			if bulkInfo == nil {
+				return nil, err
+			}
+			curMark = int(bulkInfo.EndIdx)
+			for idx := 0; idx < int(bulkInfo.Count); idx++ {
+				obj := bulkInfo.SubIPv6IntfStateList[idx]
+				entry := &commonDefs.SubIPv6IntfState{
+					IntfRef:       obj.IntfRef,
+					Type:          obj.Type,
+					IfIndex:       obj.IfIndex,
+					IfName:        obj.IfName,
+					ParentIfIndex: obj.ParentIfIndex,
+					IpAddr:        obj.IpAddr,
+					MacAddr:       obj.MacAddr,
+					OperState:     obj.OperState,
+				}
+				ipv4Info = append(ipv4Info, entry)
+			}
+			if bulkInfo.More == false {
+				break
+			}
+		}
+		return ipv6Info, nil
+	*/
+	return make([]*commonDefs.SubIPv6IntfState, 0), nil
+}
+
 /*  Library util to determine router id.
  *  Calculation Method:
  *	    1) Get all loopback interfaces on the system and return the highest value
