@@ -862,8 +862,8 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIn
 		ruleName := fmt.Sprintf("%sfpPort%s", aclName, srcIfIndex)
 		rule := &asicdServices.Acl{
 			AclName:  ruleName,
-			SrcPort:  srcIfIndex,
-			DstPort:  dstIfIndex,
+			SrcIntf:  srcIfIndex,
+			DstIntf:  dstIfIndex,
 			Action:   "DENY",
 			Priority: 10,
 		}
@@ -893,8 +893,8 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIn
 		ruleName := fmt.Sprintf("%sfpPort%s", aclName, srcIfIndex)
 		rule := &asicdServices.Acl{
 			AclName:  ruleName,
-			SrcPort:  srcIfIndex,
-			DstPort:  dstIfIndex,
+			SrcIntf:  srcIfIndex,
+			DstIntf:  dstIfIndex,
 			Priority: 10,
 		}
 
