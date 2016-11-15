@@ -524,7 +524,7 @@ func (db *PolicyEngineDB) ValidateConditionConfigCreate(inCfg PolicyConditionCon
 	case "MatchCommunity":
 	case "MatchExtendedCommunity":
 	case "MatchLocalPref":
-	case "MatchASPathInfo":
+	case "MatchASPath":
 		break
 	default:
 		db.Logger.Err(fmt.Sprintln("Unknown condition type ", inCfg.ConditionType))
@@ -553,7 +553,7 @@ func (db *PolicyEngineDB) CreatePolicyCondition(cfg PolicyConditionConfig) (val 
 	case "MatchLocalPref":
 		val, err = db.CreatePolicyMatchLocalPrefCondition(cfg)
 		break
-	case "MatchASPathInfo":
+	case "MatchASPath":
 		val, err = db.CreatePolicyMatchASPathCondition(cfg)
 		break
 	case "MatchExtendedCommunity":
