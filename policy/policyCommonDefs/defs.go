@@ -29,6 +29,8 @@ const (
 	PolicyConditionTypeNeighborMatch          = 2
 	PolicyConditionTypeCommunityMatch         = 3
 	PolicyConditionTypeExtendedCommunityMatch = 4
+	PolicyConditionTypeLocalPrefMatch         = 5
+	PolicyConditionTypeASPathMatch            = 6
 	PolicyActionTypeRouteDisposition          = 0
 	PolicyActionTypeRouteRedistribute         = 1
 	PoilcyActionTypeSetAdminDistance          = 2

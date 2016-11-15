@@ -174,3 +174,41 @@ func EncodeExtCommunity(inp ExtCommunity) (string, error) {
 	}
 	return comm + highByte + lowByte + value, nil
 }
+
+func IsDigit(in string) bool {
+	digit, _ := regexp.Compile("[0-9]+")
+	if digit.MatchString(in) {
+		return true
+	}
+	return false
+}
+func GetAsPathRegex(inp string) (*regexp.Regexp, error) {
+	val := ""
+	firstDigit := true
+	addedOpen := false
+	for i := 0; i < len(inp); i++ {
+		if IsDigit(string(inp[i])) && firstDigit {
+			val = val + "\\b"
+			firstDigit = false
+			addedOpen = true
+		}
+		val = val + string(inp[i])
+		if addedOpen == true {
+			if i+1 == len(inp) {
+				val = val + "\\b"
+				addedOpen = false
+			} else if i+1 < len(inp) {
+				if !IsDigit(string(inp[i+1])) {
+					val = val + "\\b"
+					addedOpen = false
+				}
+			}
+		}
+	}
+	regexVal, err := regexp.Compile(val)
+	return regexVal, err
+}
+func MatchASPath(inp interface{}, matchStr string) bool {
+	inAsPath := inp.(*regexp.Regexp)
+	return inAsPath.MatchString(matchStr)
+}

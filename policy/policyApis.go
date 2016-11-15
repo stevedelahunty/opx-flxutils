@@ -320,14 +320,31 @@ func (db *PolicyEngineDB) UpdateConditions(policyStmt PolicyStmt, conditionName 
 		db.Logger.Info("PolicyConditionTypeProtocolMatch")
 		db.UpdateProtocolPolicyTable(condition.ConditionInfo.(string), policyStmt.Name, op)
 		break
-	case policyCommonDefs.PolicyConditionTypeNeighborMatch:
-		db.Logger.Info("PolicyConditionTypeNeighborMatch")
-		db.UpdateProtocolPolicyTable(condition.ConditionInfo.(string), policyStmt.Name, op)
-		break
 	case policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch:
 		db.Logger.Info("PolicyConditionTypeDstIpPrefixMatch")
 		db.UpdatePrefixPolicyTable(condition.ConditionInfo, policyStmt.Name, op)
 		break
+		/*Uncomment if needed in future
+		case policyCommonDefs.PolicyConditionTypeNeighborMatch:
+			db.Logger.Info("PolicyConditionTypeNeighborMatch")
+			db.UpdateNeighborPolicyTable(condition.ConditionInfo.(string), policyStmt.Name, op)
+			break
+		case policyCommonDefs.PolicyConditionTypeCommunityMatch:
+			db.Logger.Info("PolicyConditionTypeCommunityMatch")
+			db.UpdateCommunityPolicyTable(condition.ConditionInfo, policyStmt.Name, op)
+			break
+		case policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch:
+			db.Logger.Info("PolicyConditionTypeExtendedCommunityMatch")
+			db.UpdateExtCommunityPolicyTable(condition.ConditionInfo, policyStmt.Name, op)
+			break
+		case policyCommonDefs.PolicyConditionTypeASPathMatch:
+			db.Logger.Info("PolicyConditionTypeExtendedASPathMatch")
+			db.UpdateExtASPathPolicyTable(condition.ConditionInfo, policyStmt.Name, op)
+			break
+		case policyCommonDefs.PolicyConditionTypeLocalPrefMatch:
+			db.Logger.Info("PolicyConditionTypeLocalPrefMatch")
+			db.UpdateLocalPrefPolicyTable(condition.ConditionInfo, policyStmt.Name, op)
+			break*/
 	}
 	if condition.PolicyStmtList == nil {
 		if op == del {

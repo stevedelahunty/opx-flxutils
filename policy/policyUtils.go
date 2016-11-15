@@ -66,6 +66,8 @@ type PolicyEngineFilterEntityParams struct {
 	Neighbor          string
 	Community         uint32
 	ExtendedCommunity string
+	ASPath            string
+	LocalPref         uint32
 	CreatePath        bool
 	DeletePath        bool
 	PolicyList        []string
@@ -181,6 +183,8 @@ func (db *PolicyEngineDB) buildPolicyConditionCheckfuncMap() {
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeNeighborMatch] = db.NeighborMatchConditionfunc
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeCommunityMatch] = db.CommunityMatchConditionfunc
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch] = db.ExtendedCommunityMatchConditionfunc
+	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeASPathMatch] = db.ASPathMatchConditionfunc
+	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeLocalPrefMatch] = db.LocalPrefMatchConditionfunc
 }
 func (db *PolicyEngineDB) buildPolicyValidConditionsForPolicyTypeMap() {
 	db.Logger.Info("buildPolicyValidConditionsForPolicyTypeMap")
@@ -188,11 +192,15 @@ func (db *PolicyEngineDB) buildPolicyValidConditionsForPolicyTypeMap() {
 		policyCommonDefs.PolicyConditionTypeProtocolMatch,
 		policyCommonDefs.PolicyConditionTypeNeighborMatch,
 		policyCommonDefs.PolicyConditionTypeCommunityMatch,
-		policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch}
+		policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch,
+		policyCommonDefs.PolicyConditionTypeLocalPrefMatch,
+		policyCommonDefs.PolicyConditionTypeASPathMatch}
 	db.ValidConditionsForPolicyTypeMap["BGP"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch,
 		policyCommonDefs.PolicyConditionTypeNeighborMatch,
 		policyCommonDefs.PolicyConditionTypeCommunityMatch,
-		policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch}
+		policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch,
+		policyCommonDefs.PolicyConditionTypeLocalPrefMatch,
+		policyCommonDefs.PolicyConditionTypeASPathMatch}
 	db.ValidConditionsForPolicyTypeMap["OSPF"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch}
 }
 func (db *PolicyEngineDB) buildPolicyValidActionsForPolicyTypeMap() {
