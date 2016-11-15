@@ -23,6 +23,10 @@
 
 package commonDefs
 
+import (
+	"git.apache.org/thrift.git/lib/go/thrift"
+)
+
 //L2 types
 const (
 	IfTypePort = iota
@@ -79,3 +83,20 @@ type NdpNotification struct {
 	MsgType uint8
 	Msg     []byte
 }
+
+type ClientJson struct {
+	Name string `json:Name`
+	Port int    `json:Port`
+}
+
+type ClientBase struct {
+	Address            string
+	Transport          thrift.TTransport
+	PtrProtocolFactory *thrift.TBinaryProtocolFactory
+}
+
+const (
+	FLEXSWITCH_PLUGIN       = "flexswitch"
+	SUB_INTF_VIRTUAL_TYPE   = "virtual"
+	SUB_INTF_SECONDARY_TYPE = "secondary"
+)

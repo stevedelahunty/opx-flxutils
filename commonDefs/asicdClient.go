@@ -145,35 +145,42 @@ type VlanStateGetInfo struct {
 }
 
 const (
-	//Notification msgs copied from asicd
-	NOTIFY_L2INTF_STATE_CHANGE       = iota // 0
-	NOTIFY_IPV4_L3INTF_STATE_CHANGE         // 1
-	NOTIFY_IPV6_L3INTF_STATE_CHANGE         // 2
-	NOTIFY_VLAN_CREATE                      // 3
-	NOTIFY_VLAN_DELETE                      // 4
-	NOTIFY_VLAN_UPDATE                      // 5
-	NOTIFY_LOGICAL_INTF_CREATE              // 6
-	NOTIFY_LOGICAL_INTF_DELETE              // 7
-	NOTIFY_LOGICAL_INTF_UPDATE              // 8
-	NOTIFY_IPV4INTF_CREATE                  // 9
-	NOTIFY_IPV4INTF_DELETE                  // 10
-	NOTIFY_IPV6INTF_CREATE                  // 11
-	NOTIFY_IPV6INTF_DELETE                  // 12
-	NOTIFY_LAG_CREATE                       // 13
-	NOTIFY_LAG_DELETE                       // 14
-	NOTIFY_LAG_UPDATE                       // 15
-	NOTIFY_IPV4NBR_MAC_MOVE                 // 16
-	NOTIFY_IPV6NBR_MAC_MOVE                 // 17
-	NOTIFY_IPV4_ROUTE_CREATE_FAILURE        // 17
-	NOTIFY_IPV4_ROUTE_DELETE_FAILURE        // 18
-	NOTIFY_IPV6_ROUTE_CREATE_FAILURE        // 19
-	NOTIFY_IPV6_ROUTE_DELETE_FAILURE        // 20
-	NOTIFY_VTEP_CREATE                      // 21
-	NOTIFY_VTEP_DELETE                      // 22
-	NOTIFY_MPLSINTF_STATE_CHANGE            // 23
-	NOTIFY_MPLSINTF_CREATE                  // 24
-	NOTIFY_MPLSINTF_DELETE                  // 25
-	NOTIFY_PORT_CONFIG_MODE_CHANGE          // 26
+	//Notification msgs copied from asicd always add notification to the bottom of the list
+	NOTIFY_L2INTF_STATE_CHANGE           = iota // 0
+	NOTIFY_IPV4_L3INTF_STATE_CHANGE             // 1
+	NOTIFY_IPV6_L3INTF_STATE_CHANGE             // 2
+	NOTIFY_VLAN_CREATE                          // 3
+	NOTIFY_VLAN_DELETE                          // 4
+	NOTIFY_VLAN_UPDATE                          // 5
+	NOTIFY_LOGICAL_INTF_CREATE                  // 6
+	NOTIFY_LOGICAL_INTF_DELETE                  // 7
+	NOTIFY_LOGICAL_INTF_UPDATE                  // 8
+	NOTIFY_IPV4INTF_CREATE                      // 9
+	NOTIFY_IPV4INTF_DELETE                      // 10
+	NOTIFY_IPV6INTF_CREATE                      // 11
+	NOTIFY_IPV6INTF_DELETE                      // 12
+	NOTIFY_LAG_CREATE                           // 13
+	NOTIFY_LAG_DELETE                           // 14
+	NOTIFY_LAG_UPDATE                           // 15
+	NOTIFY_IPV4NBR_MAC_MOVE                     // 16
+	NOTIFY_IPV6NBR_MAC_MOVE                     // 17
+	NOTIFY_IPV4_ROUTE_CREATE_FAILURE            // 18
+	NOTIFY_IPV4_ROUTE_DELETE_FAILURE            // 19
+	NOTIFY_IPV6_ROUTE_CREATE_FAILURE            // 20
+	NOTIFY_IPV6_ROUTE_DELETE_FAILURE            // 21
+	NOTIFY_VTEP_CREATE                          // 22
+	NOTIFY_VTEP_DELETE                          // 23
+	NOTIFY_MPLSINTF_STATE_CHANGE                // 24
+	NOTIFY_MPLSINTF_CREATE                      // 25
+	NOTIFY_MPLSINTF_DELETE                      // 26
+	NOTIFY_PORT_CONFIG_MODE_CHANGE              // 27
+	NOTIFY_PORT_CONFIG_MTU_CHANGE               // 28
+	NOTIFY_IPV4VIRTUAL_INTF_CREATE              // 29
+	NOTIFY_IPV4VIRTUAL_INTF_DELETE              // 30
+	NOTIFY_IPV6VIRTUAL_INTF_CREATE              // 31
+	NOTIFY_IPV6VIRTUAL_INTF_DELETE              // 32
+	NOTIFY_IPV4_VIRTUALINTF_STATE_CHANGE        // 33
+	NOTIFY_IPV6_VIRTUALINTF_STATE_CHANGE        // 34
 )
 
 const (
@@ -265,6 +272,38 @@ type PortConfigMtuChangeNotifyMsg struct {
 	Mtu     int32
 }
 
+type IPv4VirtualIntfNotifyMsg struct {
+	MsgType       uint8
+	IfIndex       int32
+	ParentIfIndex int32
+	IpAddr        string
+	MacAddr       string
+	IfName        string
+}
+
+type IPv6VirtualIntfNotifyMsg struct {
+	MsgType       uint8
+	IfIndex       int32
+	ParentIfIndex int32
+	IpAddr        string
+	MacAddr       string
+	IfName        string
+}
+
+type IPv4VirtualIntfStateNotifyMsg struct {
+	MsgType uint8
+	IfIndex int32
+	IpAddr  string
+	IfState uint8
+}
+
+type IPv6VirtualIntfStateNotifyMsg struct {
+	MsgType uint8
+	IfIndex int32
+	IpAddr  string
+	IfState uint8
+}
+
 type AsicdNotificationHdl interface {
 	ProcessNotification(msg AsicdNotifyMsg)
 }
@@ -290,4 +329,27 @@ type IPv6IntfState struct {
 	LastDownEventTime string
 	L2IntfType        string
 	L2IntfId          int32
+}
+
+type SubIPv4IntfState struct {
+	IntfRef       string
+	Type          string
+	IfIndex       int32
+	IfName        string
+	ParentIfIndex int32
+	IpAddr        string
+	MacAddr       string
+	OperState     string
+}
+
+// @TODO: fixme as I am stop gap solution only
+type SubIPv6IntfState struct {
+	IntfRef       string
+	Type          string
+	IfIndex       int32
+	IfName        string
+	ParentIfIndex int32
+	IpAddr        string
+	MacAddr       string
+	OperState     string
 }

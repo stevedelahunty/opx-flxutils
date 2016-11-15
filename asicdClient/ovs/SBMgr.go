@@ -192,3 +192,34 @@ func (asicdClientMgr *OvsAsicdClientMgr) IppVlanConversationClear(vlan uint16, i
 func (asicdClientMgr *OvsAsicdClientMgr) IsLoopbackType(ifindex int32) bool {
 	return true
 }
+
+func (asicdClientMgr *OvsAsicdClientMgr) CreateVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) CreateVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) UpdateVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) UpdateVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) DeleteVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) DeleteVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	return err
+}
+func (asicdClientMgr *OvsAsicdClientMgr) GetAllSubIPv4IntfState() ([]*commonDefs.SubIPv4IntfState, error) {
+	return nil, nil
+}
+
+func (asicdClientMgr *OvsAsicdClientMgr) GetAllSubIPv6IntfState() ([]*commonDefs.SubIPv6IntfState, error) {
+	return nil, nil
+}

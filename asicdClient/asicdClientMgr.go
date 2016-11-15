@@ -81,6 +81,19 @@ type AsicdClientIntf interface {
 	IppVlanConversationClear(vlan uint16, ifindex int32) error
 
 	IsLoopbackType(ifIndex int32) bool
+
+	// Create Virtual Interface
+	CreateVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) error
+	CreateVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) error
+
+	UpdateVirtualIPv4Intf(intfRef, ipAddr, macAddr string, enable bool) error
+	UpdateVirtualIPv6Intf(intfRef, ipAddr, macAddr string, enable bool) error
+
+	DeleteVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) error
+	DeleteVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) error
+
+	GetAllSubIPv4IntfState() ([]*commonDefs.SubIPv4IntfState, error)
+	GetAllSubIPv6IntfState() ([]*commonDefs.SubIPv6IntfState, error)
 }
 
 func NewAsicdClientInit(plugin string, paramsFile string, asicdHdl commonDefs.AsicdClientStruct) AsicdClientIntf {

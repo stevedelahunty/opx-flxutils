@@ -30,6 +30,7 @@ import (
 	"asicdServices"
 	"encoding/json"
 	"fmt"
+	"git.apache.org/thrift.git/lib/go/thrift"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -38,8 +39,6 @@ import (
 	"utils/commonDefs"
 	"utils/ipcutils"
 	"utils/logging"
-
-	"git.apache.org/thrift.git/lib/go/thrift"
 )
 
 type AsicdClient struct {
@@ -516,6 +515,77 @@ func (asicdClientMgr *FSAsicdClientMgr) GetAllIPv4IntfState() ([]*commonDefs.IPv
 	return ipv4Info, nil
 }
 
+func (asicdClientMgr *FSAsicdClientMgr) GetAllSubIPv4IntfState() ([]*commonDefs.SubIPv4IntfState, error) {
+	curMark := 0
+	count := 100
+	ipv4Info := make([]*commonDefs.SubIPv4IntfState, 0)
+	for {
+		asicdmutex.Lock()
+		bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkSubIPv4IntfState(asicdServices.Int(curMark),
+			asicdServices.Int(count))
+		asicdmutex.Unlock()
+		if bulkInfo == nil {
+			return nil, err
+		}
+		curMark = int(bulkInfo.EndIdx)
+		for idx := 0; idx < int(bulkInfo.Count); idx++ {
+			obj := bulkInfo.SubIPv4IntfStateList[idx]
+			entry := &commonDefs.SubIPv4IntfState{
+				IntfRef:       obj.IntfRef,
+				Type:          obj.Type,
+				IfIndex:       obj.IfIndex,
+				IfName:        obj.IfName,
+				ParentIfIndex: obj.ParentIfIndex,
+				IpAddr:        obj.IpAddr,
+				MacAddr:       obj.MacAddr,
+				OperState:     obj.OperState,
+			}
+			ipv4Info = append(ipv4Info, entry)
+		}
+		if bulkInfo.More == false {
+			break
+		}
+	}
+	return ipv4Info, nil
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) GetAllSubIPv6IntfState() ([]*commonDefs.SubIPv6IntfState, error) {
+	/*
+		curMark := 0
+		count := 100
+		ipv4Info := make([]*commonDefs.SubIPv4IntfState, 0)
+		for {
+			asicdmutex.Lock()
+			bulkInfo, err := asicdClientMgr.ClientHdl.GetBulkSubIPv6IntfState(asicdServices.Int(curMark),
+				asicdServices.Int(count))
+			asicdmutex.Unlock()
+			if bulkInfo == nil {
+				return nil, err
+			}
+			curMark = int(bulkInfo.EndIdx)
+			for idx := 0; idx < int(bulkInfo.Count); idx++ {
+				obj := bulkInfo.SubIPv6IntfStateList[idx]
+				entry := &commonDefs.SubIPv6IntfState{
+					IntfRef:       obj.IntfRef,
+					Type:          obj.Type,
+					IfIndex:       obj.IfIndex,
+					IfName:        obj.IfName,
+					ParentIfIndex: obj.ParentIfIndex,
+					IpAddr:        obj.IpAddr,
+					MacAddr:       obj.MacAddr,
+					OperState:     obj.OperState,
+				}
+				ipv4Info = append(ipv4Info, entry)
+			}
+			if bulkInfo.More == false {
+				break
+			}
+		}
+		return ipv6Info, nil
+	*/
+	return make([]*commonDefs.SubIPv6IntfState, 0), nil
+}
+
 /*  Library util to determine router id.
  *  Calculation Method:
  *	    1) Get all loopback interfaces on the system and return the highest value
@@ -792,8 +862,8 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIn
 		ruleName := fmt.Sprintf("%sfpPort%s", aclName, srcIfIndex)
 		rule := &asicdServices.Acl{
 			AclName:  ruleName,
-			SrcPort:  srcIfIndex,
-			DstPort:  dstIfIndex,
+			SrcIntf:  srcIfIndex,
+			DstIntf:  dstIfIndex,
 			Action:   "DENY",
 			Priority: 10,
 		}
@@ -823,8 +893,8 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIn
 		ruleName := fmt.Sprintf("%sfpPort%s", aclName, srcIfIndex)
 		rule := &asicdServices.Acl{
 			AclName:  ruleName,
-			SrcPort:  srcIfIndex,
-			DstPort:  dstIfIndex,
+			SrcIntf:  srcIfIndex,
+			DstIntf:  dstIfIndex,
 			Priority: 10,
 		}
 
@@ -916,6 +986,57 @@ func (asicdClientMgr *FSAsicdClientMgr) IsLoopbackType(ifIndex int32) bool {
 	if pluginCommon.GetTypeFromIfIndex(ifIndex) == commonDefs.IfTypeLoopback {
 		return true
 	}
-
 	return false
+}
+
+func createVirtualV4Obj(intRef, ipAddr, macAddr string, enable bool) *asicdServices.SubIPv4Intf {
+	obj := asicdServices.NewSubIPv4Intf()
+	obj.IntfRef = intRef
+	obj.Type = pluginCommon.SUB_INTF_VIRTUAL_TYPE
+	obj.IpAddr = ipAddr
+	obj.MacAddr = macAddr
+	obj.Enable = enable
+
+	return obj
+}
+
+func createVirtualV6Obj(intRef, ipAddr, macAddr string, enable bool) *asicdServices.SubIPv6Intf {
+	obj := asicdServices.NewSubIPv6Intf()
+	obj.IntfRef = intRef
+	obj.Type = pluginCommon.SUB_INTF_VIRTUAL_TYPE
+	obj.IpAddr = ipAddr
+	obj.MacAddr = macAddr
+	obj.Enable = enable
+
+	return obj
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) CreateVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.CreateSubIPv4Intf(createVirtualV4Obj(intRef, ipAddr, macAddr, enable))
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) CreateVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.CreateSubIPv6Intf(createVirtualV6Obj(intRef, ipAddr, macAddr, enable))
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) UpdateVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.UpdateVirtualIPv4Intf(intRef, pluginCommon.SUB_INTF_VIRTUAL_TYPE, ipAddr, macAddr, enable)
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) UpdateVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.UpdateVirtualIPv6Intf(intRef, pluginCommon.SUB_INTF_VIRTUAL_TYPE, ipAddr, macAddr, enable)
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) DeleteVirtualIPv4Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.DeleteSubIPv4Intf(createVirtualV4Obj(intRef, ipAddr, macAddr, enable))
+	return err
+}
+
+func (asicdClientMgr *FSAsicdClientMgr) DeleteVirtualIPv6Intf(intRef, ipAddr, macAddr string, enable bool) (err error) {
+	_, err = asicdClientMgr.ClientHdl.DeleteSubIPv6Intf(createVirtualV6Obj(intRef, ipAddr, macAddr, enable))
+	return err
 }
