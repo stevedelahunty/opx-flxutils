@@ -58,7 +58,7 @@ type PolicyStmt struct { //policy engine uses this
 type PolicyActionCfg struct {
 	Attr              string
 	Community         string
-	ExtendedCommunity string
+	ExtendedCommunity PolicyExtendedCommunityInfo
 	LocalPref         uint32
 }
 type PolicyStmtConfig struct {
