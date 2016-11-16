@@ -76,6 +76,8 @@ type PolicyConditionConfig struct {
 	MatchCommunityConditionInfo         string
 	MatchExtendedCommunityConditionInfo PolicyExtendedCommunityInfo
 	MatchNeighborConditionInfo          string
+	MatchASPathConditionInfo            string
+	MatchLocalPrefConditionInfo         uint32
 	//MatchNeighborConditionInfo   PolicyMatchNeighborSetCondition
 	//MatchTagConditionInfo   PolicyMatchTagSetCondition
 }
@@ -367,6 +369,55 @@ func (db *PolicyEngineDB) CreatePolicyMatchCommunityCondition(cfg PolicyConditio
 	return true, err
 }
 
+func (db *PolicyEngineDB) CreatePolicyMatchLocalPrefCondition(cfg PolicyConditionConfig) (val bool, err error) {
+	db.Logger.Info(fmt.Sprintln("CreatePolicyMatchLocalPrefCondition"))
+
+	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Name))
+	if policyCondition == nil {
+		db.Logger.Info(fmt.Sprintln("Defining a new policy condition with name ", cfg.Name, " to match on local pref ", cfg.MatchLocalPrefConditionInfo))
+		newPolicyCondition := PolicyCondition{Name: cfg.Name, ConditionType: policyCommonDefs.PolicyConditionTypeLocalPrefMatch, ConditionInfo: cfg.MatchLocalPrefConditionInfo, LocalDBSliceIdx: (len(*db.LocalPolicyConditionsDB))}
+		newPolicyCondition.ConditionGetBulkInfo = "match LocalPref " + strconv.Itoa(int(cfg.MatchLocalPrefConditionInfo))
+		if ok := db.PolicyConditionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyCondition); ok != true {
+			db.Logger.Info(fmt.Sprintln(" return value not ok"))
+			err = errors.New("Error creating condition in the DB")
+			return false, err
+		}
+		db.LocalPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
+	} else {
+		db.Logger.Err(fmt.Sprintln("Duplicate Condition name"))
+		err = errors.New("Duplicate policy condition definition")
+		return false, err
+	}
+	return true, err
+}
+
+func (db *PolicyEngineDB) CreatePolicyMatchASPathCondition(cfg PolicyConditionConfig) (val bool, err error) {
+	db.Logger.Info(fmt.Sprintln("CreatePolicyMatchASPathCondition"))
+
+	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(cfg.Name))
+	if policyCondition == nil {
+		db.Logger.Info(fmt.Sprintln("Defining a new policy condition with name ", cfg.Name, " to match on AS PATH ", cfg.MatchASPathConditionInfo))
+		val, err := bgpUtils.GetAsPathRegex(cfg.MatchASPathConditionInfo)
+		if err != nil {
+			db.Logger.Err("GetAsPathRegex failed with err:", err)
+			return false, err
+		}
+		newPolicyCondition := PolicyCondition{Name: cfg.Name, ConditionType: policyCommonDefs.PolicyConditionTypeASPathMatch, ConditionInfo: val, LocalDBSliceIdx: (len(*db.LocalPolicyConditionsDB))}
+		newPolicyCondition.ConditionGetBulkInfo = "match ASPath " + cfg.MatchASPathConditionInfo
+		if ok := db.PolicyConditionsDB.Insert(patriciaDB.Prefix(cfg.Name), newPolicyCondition); ok != true {
+			db.Logger.Info(fmt.Sprintln(" return value not ok"))
+			err = errors.New("Error creating condition in the DB")
+			return false, err
+		}
+		db.LocalPolicyConditionsDB.updateLocalDB(patriciaDB.Prefix(cfg.Name), add)
+	} else {
+		db.Logger.Err(fmt.Sprintln("Duplicate Condition name"))
+		err = errors.New("Duplicate policy condition definition")
+		return false, err
+	}
+	return true, err
+}
+
 func (db *PolicyEngineDB) CreatePolicyMatchExtendedCommunityCondition(cfg PolicyConditionConfig) (val bool, err error) {
 	db.Logger.Info(fmt.Sprintln("CreatePolicyMatchExtendedCommunityCondition"))
 
@@ -472,6 +523,8 @@ func (db *PolicyEngineDB) ValidateConditionConfigCreate(inCfg PolicyConditionCon
 		break
 	case "MatchCommunity":
 	case "MatchExtendedCommunity":
+	case "MatchLocalPref":
+	case "MatchASPath":
 		break
 	default:
 		db.Logger.Err(fmt.Sprintln("Unknown condition type ", inCfg.ConditionType))
@@ -496,6 +549,12 @@ func (db *PolicyEngineDB) CreatePolicyCondition(cfg PolicyConditionConfig) (val 
 		break
 	case "MatchCommunity":
 		val, err = db.CreatePolicyMatchCommunityCondition(cfg)
+		break
+	case "MatchLocalPref":
+		val, err = db.CreatePolicyMatchLocalPrefCondition(cfg)
+		break
+	case "MatchASPath":
+		val, err = db.CreatePolicyMatchASPathCondition(cfg)
 		break
 	case "MatchExtendedCommunity":
 		val, err = db.CreatePolicyMatchExtendedCommunityCondition(cfg)
