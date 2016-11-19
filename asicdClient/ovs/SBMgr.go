@@ -166,6 +166,10 @@ func (asicdClientMgr *OvsAsicdClientMgr) UpdateLag(ifIndex, hashType int32, port
 	return err
 }
 
+func (asicdClientMgr *OvsAsicdClientMgr) UpdateLagCfgIntfList(ifName string, ifIndexList []int32) bool {
+	return true
+}
+
 func (asicdClientMgr *OvsAsicdClientMgr) EnablePacketReception(mac string, vlan int, ifindex int32) (err error) {
 	return err
 }

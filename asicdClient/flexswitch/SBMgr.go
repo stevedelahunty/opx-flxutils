@@ -825,6 +825,16 @@ func (asicdClientMgr *FSAsicdClientMgr) UpdateLag(ifIndex, hashType int32, ports
 	return err
 }
 
+func (asicdClientMgr *FSAsicdClientMgr) UpdateLagCfgIntfList(ifName string, ifIndexList []int32) bool {
+	var ok bool
+	if asicdClientMgr.ClientHdl != nil {
+		asicdmutex.Lock()
+		ok, _ = asicdClientMgr.ClientHdl.UpdateLagCfgIntfList(ifName, ifIndexList)
+		asicdmutex.Unlock()
+	}
+	return ok
+}
+
 func (asicdClientMgr *FSAsicdClientMgr) EnablePacketReception(mac string, vlan int, ifindex int32) (err error) {
 	if asicdClientMgr.ClientHdl != nil {
 		asicdmutex.Lock()

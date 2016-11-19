@@ -70,6 +70,7 @@ type AsicdClientIntf interface {
 	CreateLag(ifname string, hashType int32, ports string) (int32, error)
 	DeleteLag(ifIndex int32) error
 	UpdateLag(ifIndex, hashType int32, ports string) error
+	UpdateLagCfgIntfList(ifName string, ifIndexList []int32) bool
 
 	EnablePacketReception(mac string, vlan int, ifindex int32) error
 	DisablePacketReception(mac string, vlan int, ifindex int32) error
