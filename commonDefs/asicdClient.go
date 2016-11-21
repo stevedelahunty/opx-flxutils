@@ -342,7 +342,6 @@ type SubIPv4IntfState struct {
 	OperState     string
 }
 
-// @TODO: fixme as I am stop gap solution only
 type SubIPv6IntfState struct {
 	IntfRef       string
 	Type          string
