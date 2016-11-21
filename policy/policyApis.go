@@ -40,6 +40,8 @@ type PolicyActionState struct {
 	Community         uint32
 	ExtendedCommunity string
 	LocalPref         uint32
+	MED               uint32
+	PrependASPath     string
 }
 type PolicyStmt struct { //policy engine uses this
 	Name            string
@@ -60,6 +62,8 @@ type PolicyActionCfg struct {
 	Community         string
 	ExtendedCommunity PolicyExtendedCommunityInfo
 	LocalPref         uint32
+	MED               uint32
+	PrependASPath     string
 }
 type PolicyStmtConfig struct {
 	Name            string

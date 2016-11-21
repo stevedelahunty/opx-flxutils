@@ -31,6 +31,7 @@ const (
 	PolicyConditionTypeExtendedCommunityMatch = 4
 	PolicyConditionTypeLocalPrefMatch         = 5
 	PolicyConditionTypeASPathMatch            = 6
+	PolicyConditionTypeMEDMatch               = 7
 	PolicyActionTypeRouteDisposition          = 0
 	PolicyActionTypeRouteRedistribute         = 1
 	PoilcyActionTypeSetAdminDistance          = 2
@@ -41,6 +42,8 @@ const (
 	PolicyActionTypeSetCommunity              = 7
 	PolicyActionTypeSetExtendedCommunity      = 8
 	PolicyActionTypeSetLocalPref              = 9
+	PolicyActionTypeSetPrependASPath          = 10
+	PolicyActionTypeSetMED                    = 11
 	PolicyPath_Import                         = 1
 	PolicyPath_Export                         = 2
 	PolicyPath_All                            = 3
@@ -50,4 +53,6 @@ var SetActionMap = map[string]int{
 	"Community":         PolicyActionTypeSetCommunity,
 	"ExtendedCommunity": PolicyActionTypeSetExtendedCommunity,
 	"LocalPref":         PolicyActionTypeSetLocalPref,
+	"MED":               PolicyActionTypeSetMED,
+	"PrependASPath":     PolicyActionTypeSetPrependASPath,
 }
