@@ -27,10 +27,7 @@ package policy
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	bgpUtils "utils/bgpUtils"
-	"utils/netUtils"
 	"utils/patriciaDB"
 	"utils/policy/policyCommonDefs"
 )
@@ -113,19 +110,24 @@ func (db *PolicyEngineDB) CreatePolicyExtendedCommunitySet(cfg PolicyExtendedCom
 	policyExtendedCommunitySet := db.PolicyExtendedCommunitySetDB.Get(patriciaDB.Prefix(cfg.Name))
 	if policyExtendedCommunitySet == nil {
 		db.Logger.Info("Defining a new policy extended communuty set with name ", cfg.Name)
-		list := make([]string, 0)
+		list := make([]PolicyExtendedCommunityInfo, 0)
 		matchInfoList := make([]MatchExtendedCommunityConditionInfo, 0)
 		db.Logger.Info("cfg.ExtendedCommunityList:", cfg.ExtendedCommunityList)
 		for _, v := range cfg.ExtendedCommunityList {
 			db.Logger.Info("range over cfg.ExtendedCommunityList, current value:", v)
 			list = append(list, v)
 			var conditionInfo MatchExtendedCommunityConditionInfo
-			conditionInfo.UseExtendedCommunitySet = false
-			conditionInfo.ExtendedCommunity = v
+			conditionInfo.UseSet = false
+			match, err := bgpUtils.EncodeExtCommunity(bgpUtils.ExtCommunity{v.Type, v.Value})
+			if err != nil {
+				db.Logger.Err(fmt.Sprintln("EncodeExtCommunity returned err:", err))
+				return false, err
+			}
+			conditionInfo.ExtendedCommunity = match
 			matchInfoList = append(matchInfoList, conditionInfo)
 		}
 		db.Logger.Info("insert ExtendedCommunity set with ExtendedCommunityList:", list, " matchInfoList:", matchInfoList)
-		if ok := db.PolicyExtendedCommunitySetDB.Insert(patriciaDB.Prefix(cfg.Name), PolicyExtendedCommunitySet{Name: cfg.Name, CommunutyList: list, MatchInfoList: matchInfoList}); ok != true {
+		if ok := db.PolicyExtendedCommunitySetDB.Insert(patriciaDB.Prefix(cfg.Name), PolicyExtendedCommunitySet{Name: cfg.Name, ExtendedCommunityList: list, MatchInfoList: matchInfoList}); ok != true {
 			db.Logger.Info(" return value not ok")
 			err = errors.New("Error creating policy extended community set in the DB")
 			return false, err
@@ -185,20 +187,19 @@ func (db *PolicyEngineDB) CreatePolicyMatchExtendedCommunitySetCondition(inCfg P
 	cfg := inCfg.MatchExtendedCommunityConditionInfo
 	var conditionInfo MatchExtendedCommunityConditionInfo
 	var conditionGetBulkInfo string
-	if len(cfg.ExtendedCommunitySet) == 0 && len(cfg.ExtendedCommunity) == 0 {
+	if len(cfg.ExtendedCommunitySet) == 0 && len(cfg.ExtendedCommunity.Value) == 0 {
 		db.Logger.Err(fmt.Sprintln("Empty extended community set/nil extended community"))
 		err = errors.New("Empty extended community set/nil extended community")
 		return false, err
 	}
-	if len(cfg.ExtendedCommunitySet) != 0 && len(cfg.ExtendedCommunity) != 0 {
+	if len(cfg.ExtendedCommunitySet) != 0 && len(cfg.ExtendedCommunity.Value) != 0 {
 		db.Logger.Err(fmt.Sprintln("Cannot provide both extended community set and individual ExtendedCommunity"))
 		err = errors.New("Cannot provide both extended community set and individual extended community")
 		return false, err
 	}
-	if len(cfg.ExtendedCommunity) != 0 {
-		conditionGetBulkInfo = "match ExtendedCommunity " + cfg.ExtendedCommunity
+	if len(cfg.ExtendedCommunity.Value) != 0 {
+		conditionGetBulkInfo = "match ExtendedCommunity " + cfg.ExtendedCommunity.Type + ":" + cfg.ExtendedCommunity.Value
 		conditionInfo.UseSet = true
-		db.Logger.Info(fmt.Sprintln("Defining a new policy condition with name ", cfg.Name, " to match on extended community ", cfg.ExtendedCommunity))
 		match, err := bgpUtils.EncodeExtCommunity(bgpUtils.ExtCommunity{cfg.ExtendedCommunity.Type, cfg.ExtendedCommunity.Value})
 		if err != nil {
 			db.Logger.Err(fmt.Sprintln("EncodeExtCommunity returned err:", err))
@@ -207,7 +208,7 @@ func (db *PolicyEngineDB) CreatePolicyMatchExtendedCommunitySetCondition(inCfg P
 		conditionInfo.ExtendedCommunity = match
 	} else if len(cfg.ExtendedCommunitySet) != 0 {
 		conditionInfo.UseSet = true
-		conditionInfo.ExtendedCommunitySet = cfg.ExtendedCommunitySet
+		conditionInfo.Set = cfg.ExtendedCommunitySet
 		conditionGetBulkInfo = "match ExtendedCommunity set " + cfg.ExtendedCommunitySet
 	}
 	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(inCfg.Name))

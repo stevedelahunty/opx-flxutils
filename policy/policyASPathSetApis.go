@@ -27,10 +27,7 @@ package policy
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	bgpUtils "utils/bgpUtils"
-	"utils/netUtils"
 	"utils/patriciaDB"
 	"utils/policy/policyCommonDefs"
 )
@@ -53,7 +50,7 @@ type PolicyMatchASPathSetCondition struct {
 type MatchASPathConditionInfo struct {
 	UseSet bool
 	Set    string
-	ASPath string
+	ASPath interface{}
 }
 
 func (db *PolicyEngineDB) UpdateASPathSet(condition PolicyCondition, setName string, op int) (err error) {
@@ -115,8 +112,13 @@ func (db *PolicyEngineDB) CreatePolicyASPathSet(cfg PolicyASPathSetConfig) (val 
 			db.Logger.Info("range over cfg.ASPathList, current value:", v)
 			list = append(list, v)
 			var conditionInfo MatchASPathConditionInfo
-			conditionInfo.UseASPathSet = false
-			conditionInfo.ASPath = v
+			conditionInfo.UseSet = false
+			val, err := bgpUtils.GetAsPathRegex(v)
+			if err != nil {
+				db.Logger.Err("GetAsPathRegex failed with err:", err)
+				return false, err
+			}
+			conditionInfo.ASPath = val
 			matchInfoList = append(matchInfoList, conditionInfo)
 		}
 		db.Logger.Info("insert ASPath set with ASPathList:", list, " matchInfoList:", matchInfoList)
@@ -180,7 +182,7 @@ func (db *PolicyEngineDB) CreatePolicyMatchASPathSetCondition(inCfg PolicyCondit
 	cfg := inCfg.MatchASPathConditionInfo
 	var conditionInfo MatchASPathConditionInfo
 	var conditionGetBulkInfo string
-	if len(cfg.ASPathSet) == 0 && cfg.ASPath == 0 {
+	if len(cfg.ASPathSet) == 0 && len(cfg.ASPath) == 0 {
 		db.Logger.Err(fmt.Sprintln("Empty aspath set/nil aspath"))
 		err = errors.New("Empty aspath set/nil aspath")
 		return false, err
@@ -193,7 +195,6 @@ func (db *PolicyEngineDB) CreatePolicyMatchASPathSetCondition(inCfg PolicyCondit
 	if len(cfg.ASPath) != 0 {
 		conditionGetBulkInfo = "match ASPath " + cfg.ASPath
 		conditionInfo.UseSet = true
-		db.Logger.Info(fmt.Sprintln("Defining a new policy condition with name ", cfg.Name, " to match on aspath ", cfg.ASPath))
 		//check if community is a well-known community
 		val, err := bgpUtils.GetAsPathRegex(cfg.ASPath)
 		if err != nil {
@@ -203,7 +204,7 @@ func (db *PolicyEngineDB) CreatePolicyMatchASPathSetCondition(inCfg PolicyCondit
 		conditionInfo.ASPath = val
 	} else if len(cfg.ASPathSet) != 0 {
 		conditionInfo.UseSet = true
-		conditionInfo.ASPathSet = cfg.ASPathSet
+		conditionInfo.Set = cfg.ASPathSet
 		conditionGetBulkInfo = "match ASPath set " + cfg.ASPathSet
 	}
 	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(inCfg.Name))

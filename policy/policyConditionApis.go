@@ -29,7 +29,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	bgpUtils "utils/bgpUtils"
 	"utils/netUtils"
 	"utils/patriciaDB"
 	"utils/policy/policyCommonDefs"

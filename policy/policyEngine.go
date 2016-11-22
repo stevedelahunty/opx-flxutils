@@ -468,6 +468,18 @@ func (db *PolicyEngineDB) LocalPrefMatchConditionfunc(entity PolicyEngineFilterE
 	return match
 }
 
+func (db *PolicyEngineDB) MEDMatchConditionfunc(entity PolicyEngineFilterEntityParams,
+	condition PolicyCondition) (match bool) {
+	db.Logger.Info("MEDMatchConditionfunc: check if policy MED:", condition.ConditionInfo.(uint32),
+		"matches entity MED: ", entity.MED)
+	matchEntity := condition.ConditionInfo.(uint32)
+	if matchEntity == entity.MED {
+		db.Logger.Info("MED matches")
+		match = true
+	}
+	return match
+}
+
 func (db *PolicyEngineDB) ExtendedCommunityMatchConditionfunc(entity PolicyEngineFilterEntityParams,
 	condition PolicyCondition) (match bool) {
 	db.Logger.Info("ExtendedCommunityMatchConditionfunc: check if policy extended community matches entity extended community: ", entity.ExtendedCommunity)

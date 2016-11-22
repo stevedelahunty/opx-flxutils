@@ -27,10 +27,7 @@ package policy
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	bgpUtils "utils/bgpUtils"
-	"utils/netUtils"
 	"utils/patriciaDB"
 	"utils/policy/policyCommonDefs"
 )
@@ -47,7 +44,7 @@ type PolicyCommunitySet struct {
 	LocalDBSliceIdx     int
 }
 type PolicyMatchCommunitySetCondition struct {
-	Community    uint32
+	Community    string
 	CommunitySet string
 }
 type MatchCommunityConditionInfo struct {
@@ -115,12 +112,19 @@ func (db *PolicyEngineDB) CreatePolicyCommunitySet(cfg PolicyCommunitySetConfig)
 			db.Logger.Info("range over cfg.CommunityList, current value:", v)
 			list = append(list, v)
 			var conditionInfo MatchCommunityConditionInfo
-			conditionInfo.UseCommunitySet = false
-			conditionInfo.Community = v
+			conditionInfo.UseSet = false
+			var val uint32
+			//check if community is a well-known community
+			val, err := bgpUtils.GetCommunityValue(v)
+			if err != nil {
+				db.Logger.Err("GetCommunityValue return error:", err, " for ", v)
+				return false, err
+			}
+			conditionInfo.Community = val
 			matchInfoList = append(matchInfoList, conditionInfo)
 		}
 		db.Logger.Info("insert Community set with CommunityList:", list, " matchInfoList:", matchInfoList)
-		if ok := db.PolicyCommunitySetDB.Insert(patriciaDB.Prefix(cfg.Name), PolicyCommunitySet{Name: cfg.Name, CommunutyList: list, MatchInfoList: matchInfoList}); ok != true {
+		if ok := db.PolicyCommunitySetDB.Insert(patriciaDB.Prefix(cfg.Name), PolicyCommunitySet{Name: cfg.Name, CommunityList: list, MatchInfoList: matchInfoList}); ok != true {
 			db.Logger.Info(" return value not ok")
 			err = errors.New("Error creating policy community set in the DB")
 			return false, err
@@ -180,12 +184,12 @@ func (db *PolicyEngineDB) CreatePolicyMatchCommunitySetCondition(inCfg PolicyCon
 	cfg := inCfg.MatchCommunityConditionInfo
 	var conditionInfo MatchCommunityConditionInfo
 	var conditionGetBulkInfo string
-	if len(cfg.CommunitySet) == 0 && cfg.Community == 0 {
+	if len(cfg.CommunitySet) == 0 && len(cfg.Community) == 0 {
 		db.Logger.Err(fmt.Sprintln("Empty community set/nil community"))
 		err = errors.New("Empty community set/nil community")
 		return false, err
 	}
-	if len(cfg.CommunitySet) != 0 && cfg.Community != 0 {
+	if len(cfg.CommunitySet) != 0 && len(cfg.Community) != 0 {
 		db.Logger.Err(fmt.Sprintln("Cannot provide both community set and individual Community"))
 		err = errors.New("Cannot provide both community set and individual community")
 		return false, err
@@ -194,7 +198,6 @@ func (db *PolicyEngineDB) CreatePolicyMatchCommunitySetCondition(inCfg PolicyCon
 		conditionGetBulkInfo = "match Community " + cfg.Community
 		conditionInfo.UseSet = true
 		var val uint32
-		db.Logger.Info(fmt.Sprintln("Defining a new policy condition with name ", cfg.Name, " to match on community ", cfg.MatchCommunityConditionInfo))
 		//check if community is a well-known community
 		val, err := bgpUtils.GetCommunityValue(cfg.Community)
 		if err != nil {
@@ -204,7 +207,7 @@ func (db *PolicyEngineDB) CreatePolicyMatchCommunitySetCondition(inCfg PolicyCon
 		conditionInfo.Community = val
 	} else if len(cfg.CommunitySet) != 0 {
 		conditionInfo.UseSet = true
-		conditionInfo.CommunitySet = cfg.CommunitySet
+		conditionInfo.Set = cfg.CommunitySet
 		conditionGetBulkInfo = "match Community set " + cfg.CommunitySet
 	}
 	policyCondition := db.PolicyConditionsDB.Get(patriciaDB.Prefix(inCfg.Name))
