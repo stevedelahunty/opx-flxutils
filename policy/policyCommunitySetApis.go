@@ -180,10 +180,11 @@ func (db *PolicyEngineDB) DeletePolicyCommunitySet(cfg PolicyCommunitySetConfig)
 }
 
 func (db *PolicyEngineDB) CreatePolicyMatchCommunitySetCondition(inCfg PolicyConditionConfig) (val bool, err error) {
-	db.Logger.Info(fmt.Sprintln("CreatePolicyMatchCommunitySetCondition"))
+	db.Logger.Info(fmt.Sprintln("CreatePolicyMatchCommunitySetCondition inCfg:", inCfg))
 	cfg := inCfg.MatchCommunityConditionInfo
 	var conditionInfo MatchCommunityConditionInfo
 	var conditionGetBulkInfo string
+	db.Logger.Info("CreatePolicyMatchCommunitySetCondition:cfg.CommunitySet:", cfg.CommunitySet, " cfg.Community:", cfg.Community)
 	if len(cfg.CommunitySet) == 0 && len(cfg.Community) == 0 {
 		db.Logger.Err(fmt.Sprintln("Empty community set/nil community"))
 		err = errors.New("Empty community set/nil community")

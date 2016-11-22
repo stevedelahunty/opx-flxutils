@@ -285,6 +285,7 @@ func (db *PolicyEngineDB) ValidateConditionConfigCreate(inCfg PolicyConditionCon
 	case "MatchCommunity":
 	case "MatchExtendedCommunity":
 	case "MatchLocalPref":
+	case "MatchMED":
 	case "MatchASPath":
 		break
 	default:
