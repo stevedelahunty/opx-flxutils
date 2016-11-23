@@ -97,6 +97,7 @@ type ClientBase struct {
 
 const (
 	FLEXSWITCH_PLUGIN       = "flexswitch"
+	MOCK_PLUGIN             = "mock"
 	SUB_INTF_VIRTUAL_TYPE   = "virtual"
 	SUB_INTF_SECONDARY_TYPE = "secondary"
 )
