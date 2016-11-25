@@ -29,6 +29,7 @@ import (
 	"sort"
 	//	"strconv"
 	//	"strings"
+	bgpUtils "utils/bgpUtils"
 	"utils/netUtils"
 	"utils/patriciaDB"
 	"utils/policy/policyCommonDefs"
@@ -54,16 +55,29 @@ func (db *PolicyEngineDB) PolicyEngineCheckActionsForEntity(entity PolicyEngineF
 	db.Logger.Info("PolicyEngineTest to see if there are any policies for condition ", policyConditionType)
 	var policyStmtList []string
 	switch policyConditionType {
-	case policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch:
-		break
 	case policyCommonDefs.PolicyConditionTypeProtocolMatch:
 		policyStmtList = db.ProtocolPolicyListDB[entity.RouteProtocol]
 		break
-	case policyCommonDefs.PolicyConditionTypeNeighborMatch:
-		policyStmtList = db.ProtocolPolicyListDB[entity.Neighbor]
-		break
+		/* Uncomment if needed in future
+		case policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch:
+			break
+		case policyCommonDefs.PolicyConditionTypeNeighborMatch:
+			policyStmtList = db.NeighborPolicyListDB[entity.Neighbor]
+			break
+		case policyCommonDefs.PolicyConditionTypeCommunityMatch:
+			policyStmtList = db.CommunityPolicyListDB[entity.Community]
+			break
+		case policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch:
+			policyStmtList = db.ExtCommunityPolicyListDB[entity.ExtendedCommunity]
+			break
+		case policyCommonDefs.PolicyConditionTypeASPathMatch:
+			policyStmtList = db.ASPathPolicyListDB[entity.ASPath]
+			break
+		case policyCommonDefs.PolicyConditionTypeLocalPrefMatch:
+			policyStmtList = db.LocalPrefPolicyListDB[entity.LocalPref]
+			break*/
 	default:
-		db.Logger.Err("Unknown conditonType")
+		db.Logger.Info("policyList not maintained for conditonType:", policyConditionType)
 		return nil
 	}
 	if policyStmtList == nil || len(policyStmtList) == 0 {
@@ -389,11 +403,78 @@ func (db *PolicyEngineDB) NeighborMatchConditionfunc(entity PolicyEngineFilterEn
 
 func (db *PolicyEngineDB) CommunityMatchConditionfunc(entity PolicyEngineFilterEntityParams,
 	condition PolicyCondition) (match bool) {
-	db.Logger.Info("CommunityMatchConditionfunc: check if policy community:", condition.ConditionInfo.(uint32),
-		"matches entity community: ", entity.Community)
+	conditionInfo := condition.ConditionInfo.(MatchCommunityConditionInfo)
+	if conditionInfo.UseSet {
+		db.Logger.Info("FindCommunityMatch:useset")
+		item := db.PolicyCommunitySetDB.Get(patriciaDB.Prefix(conditionInfo.Set))
+		if item != nil {
+			set := item.(PolicyCommunitySet)
+			db.Logger.Info("FindCommunityMatch, communitySet matchInfoList :", set.MatchInfoList)
+			for _, matchInfo := range set.MatchInfoList {
+				if matchInfo.Community == entity.Community {
+					db.Logger.Info("Community matches")
+					match = true
+				}
+			}
+		} else {
+			db.Logger.Err("community set ", conditionInfo.Set, " not found")
+		}
+	} else {
+		if conditionInfo.Community == entity.Community {
+			db.Logger.Info("Community matches")
+			match = true
+		}
+	}
+	return match
+}
+
+func (db *PolicyEngineDB) ASPathMatchConditionfunc(entity PolicyEngineFilterEntityParams,
+	condition PolicyCondition) (match bool) {
+	db.Logger.Info("ASPathMatchConditionfunc: check if policy as path matches entity ASPath: ", entity.ASPath)
+	conditionInfo := condition.ConditionInfo.(MatchASPathConditionInfo)
+	if conditionInfo.UseSet {
+		db.Logger.Info("FindASPathMatch:useset")
+		item := db.PolicyASPathSetDB.Get(patriciaDB.Prefix(conditionInfo.Set))
+		if item != nil {
+			set := item.(PolicyASPathSet)
+			db.Logger.Info("FindASPathMatch, ASPathSet matchInfoList :", set.MatchInfoList)
+			for _, matchInfo := range set.MatchInfoList {
+				if bgpUtils.MatchASPath(matchInfo.ASPath, entity.ASPath) {
+					db.Logger.Info("ASPath matches")
+					match = true
+				}
+			}
+		} else {
+			db.Logger.Err("aspath set ", conditionInfo.Set, " not found")
+		}
+	} else {
+		if bgpUtils.MatchASPath(conditionInfo.ASPath, entity.ASPath) {
+			db.Logger.Info("ASPath matches")
+			match = true
+		}
+	}
+	return match
+}
+
+func (db *PolicyEngineDB) LocalPrefMatchConditionfunc(entity PolicyEngineFilterEntityParams,
+	condition PolicyCondition) (match bool) {
+	db.Logger.Info("LocalPrefMatchConditionfunc: check if policy LocalPref:", condition.ConditionInfo.(uint32),
+		"matches entity LocalPref: ", entity.LocalPref)
 	matchEntity := condition.ConditionInfo.(uint32)
-	if matchEntity == entity.Community {
-		db.Logger.Info("Community matches")
+	if matchEntity == entity.LocalPref {
+		db.Logger.Info("LocalPref matches")
+		match = true
+	}
+	return match
+}
+
+func (db *PolicyEngineDB) MEDMatchConditionfunc(entity PolicyEngineFilterEntityParams,
+	condition PolicyCondition) (match bool) {
+	db.Logger.Info("MEDMatchConditionfunc: check if policy MED:", condition.ConditionInfo.(uint32),
+		"matches entity MED: ", entity.MED)
+	matchEntity := condition.ConditionInfo.(uint32)
+	if matchEntity == entity.MED {
+		db.Logger.Info("MED matches")
 		match = true
 	}
 	return match
@@ -401,12 +482,28 @@ func (db *PolicyEngineDB) CommunityMatchConditionfunc(entity PolicyEngineFilterE
 
 func (db *PolicyEngineDB) ExtendedCommunityMatchConditionfunc(entity PolicyEngineFilterEntityParams,
 	condition PolicyCondition) (match bool) {
-	db.Logger.Info("ExtendedCommunityMatchConditionfunc: check if policy extended community:", condition.ConditionInfo.(string),
-		"matches entity extended community: ", entity.ExtendedCommunity)
-	matchEntity := condition.ConditionInfo.(string)
-	if matchEntity == entity.ExtendedCommunity {
-		db.Logger.Info("Extended Community matches")
-		match = true
+	db.Logger.Info("ExtendedCommunityMatchConditionfunc: check if policy extended community matches entity extended community: ", entity.ExtendedCommunity)
+	conditionInfo := condition.ConditionInfo.(MatchExtendedCommunityConditionInfo)
+	if conditionInfo.UseSet {
+		db.Logger.Info("FindExtendedCommunityMatch:useset")
+		item := db.PolicyExtendedCommunitySetDB.Get(patriciaDB.Prefix(conditionInfo.Set))
+		if item != nil {
+			set := item.(PolicyExtendedCommunitySet)
+			db.Logger.Info("FindExtendedCommunityMatch, extendedcommunitySet matchInfoList :", set.MatchInfoList)
+			for _, matchInfo := range set.MatchInfoList {
+				if matchInfo.ExtendedCommunity == entity.ExtendedCommunity {
+					db.Logger.Info("Extended Community matches")
+					match = true
+				}
+			}
+		} else {
+			db.Logger.Err("Extended community set ", conditionInfo.Set, " not found")
+		}
+	} else {
+		if conditionInfo.ExtendedCommunity == entity.ExtendedCommunity {
+			db.Logger.Info("Extended Community matches")
+			match = true
+		}
 	}
 	return match
 }

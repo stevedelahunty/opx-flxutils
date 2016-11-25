@@ -66,6 +66,9 @@ type PolicyEngineFilterEntityParams struct {
 	Neighbor          string
 	Community         uint32
 	ExtendedCommunity string
+	ASPath            string
+	LocalPref         uint32
+	MED               uint32
 	CreatePath        bool
 	DeletePath        bool
 	PolicyList        []string
@@ -141,37 +144,43 @@ type PolicyEntityMapIndex interface{}
 type GetPolicyEnityMapIndexFunc func(entity PolicyEngineFilterEntityParams, policy string) PolicyEntityMapIndex
 
 type PolicyEngineDB struct {
-	Logger                          *logging.Writer //*log.Logger
-	PolicyPrefixSetDB               *patriciaDB.Trie
-	LocalPolicyPrefixSetDB          *LocalDBSlice
-	PolicyConditionsDB              *patriciaDB.Trie
-	LocalPolicyConditionsDB         *LocalDBSlice
-	PolicyActionsDB                 *patriciaDB.Trie
-	LocalPolicyActionsDB            *LocalDBSlice
-	PolicyStmtDB                    *patriciaDB.Trie
-	LocalPolicyStmtDB               *LocalDBSlice
-	PolicyDB                        *patriciaDB.Trie
-	LocalPolicyDB                   *LocalDBSlice
-	PolicyStmtPolicyMapDB           map[string][]string //policies using this statement
-	PrefixPolicyListDB              *patriciaDB.Trie
-	ProtocolPolicyListDB            map[string][]string //policystmt names assoociated with every protocol type
-	ImportPolicyPrecedenceMap       map[int]string
-	ExportPolicyPrecedenceMap       map[int]string
-	ApplyPolicyMap                  map[string]ApplyPolicyMapInfo
-	PolicyEntityMap                 map[PolicyEntityMapIndex]PolicyStmtMap
-	DefaultImportPolicyActionFunc   Policyfunc
-	DefaultExportPolicyActionFunc   Policyfunc
-	IsEntityPresentFunc             PolicyCheckfunc
-	GetPolicyEntityMapIndex         GetPolicyEnityMapIndexFunc
-	UpdateEntityDB                  EntityUpdatefunc
-	ConditionCheckfuncMap           map[int]PolicyConditionCheckfunc
-	ActionfuncMap                   map[int]Policyfunc
-	UndoActionfuncMap               map[int]UndoActionfunc
-	TraverseAndApplyPolicyFunc      EntityTraverseAndApplyPolicyfunc
-	TraverseAndReversePolicyFunc    EntityTraverseAndReversePolicyfunc
-	ValidConditionsForPolicyTypeMap map[string][]int //map of policyType to list of valid conditions
-	ValidActionsForPolicyTypeMap    map[string][]int //map of policyType to list of valid actions
-	Global                          bool             //this variable is to say whether this engine is for storing the policies only (true)) or the actual engine : default is false, meaning it is an application engine
+	Logger                            *logging.Writer //*log.Logger
+	PolicyPrefixSetDB                 *patriciaDB.Trie
+	LocalPolicyPrefixSetDB            *LocalDBSlice
+	PolicyASPathSetDB                 *patriciaDB.Trie
+	LocalPolicyASPathSetDB            *LocalDBSlice
+	PolicyCommunitySetDB              *patriciaDB.Trie
+	LocalPolicyCommunitySetDB         *LocalDBSlice
+	PolicyExtendedCommunitySetDB      *patriciaDB.Trie
+	LocalPolicyExtendedCommunitySetDB *LocalDBSlice
+	PolicyConditionsDB                *patriciaDB.Trie
+	LocalPolicyConditionsDB           *LocalDBSlice
+	PolicyActionsDB                   *patriciaDB.Trie
+	LocalPolicyActionsDB              *LocalDBSlice
+	PolicyStmtDB                      *patriciaDB.Trie
+	LocalPolicyStmtDB                 *LocalDBSlice
+	PolicyDB                          *patriciaDB.Trie
+	LocalPolicyDB                     *LocalDBSlice
+	PolicyStmtPolicyMapDB             map[string][]string //policies using this statement
+	PrefixPolicyListDB                *patriciaDB.Trie
+	ProtocolPolicyListDB              map[string][]string //policystmt names assoociated with every protocol type
+	ImportPolicyPrecedenceMap         map[int]string
+	ExportPolicyPrecedenceMap         map[int]string
+	ApplyPolicyMap                    map[string]ApplyPolicyMapInfo
+	PolicyEntityMap                   map[PolicyEntityMapIndex]PolicyStmtMap
+	DefaultImportPolicyActionFunc     Policyfunc
+	DefaultExportPolicyActionFunc     Policyfunc
+	IsEntityPresentFunc               PolicyCheckfunc
+	GetPolicyEntityMapIndex           GetPolicyEnityMapIndexFunc
+	UpdateEntityDB                    EntityUpdatefunc
+	ConditionCheckfuncMap             map[int]PolicyConditionCheckfunc
+	ActionfuncMap                     map[int]Policyfunc
+	UndoActionfuncMap                 map[int]UndoActionfunc
+	TraverseAndApplyPolicyFunc        EntityTraverseAndApplyPolicyfunc
+	TraverseAndReversePolicyFunc      EntityTraverseAndReversePolicyfunc
+	ValidConditionsForPolicyTypeMap   map[string][]int //map of policyType to list of valid conditions
+	ValidActionsForPolicyTypeMap      map[string][]int //map of policyType to list of valid actions
+	Global                            bool             //this variable is to say whether this engine is for storing the policies only (true)) or the actual engine : default is false, meaning it is an application engine
 }
 
 func (db *PolicyEngineDB) buildPolicyConditionCheckfuncMap() {
@@ -181,6 +190,9 @@ func (db *PolicyEngineDB) buildPolicyConditionCheckfuncMap() {
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeNeighborMatch] = db.NeighborMatchConditionfunc
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeCommunityMatch] = db.CommunityMatchConditionfunc
 	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch] = db.ExtendedCommunityMatchConditionfunc
+	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeASPathMatch] = db.ASPathMatchConditionfunc
+	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeLocalPrefMatch] = db.LocalPrefMatchConditionfunc
+	db.ConditionCheckfuncMap[policyCommonDefs.PolicyConditionTypeMEDMatch] = db.MEDMatchConditionfunc
 }
 func (db *PolicyEngineDB) buildPolicyValidConditionsForPolicyTypeMap() {
 	db.Logger.Info("buildPolicyValidConditionsForPolicyTypeMap")
@@ -188,11 +200,17 @@ func (db *PolicyEngineDB) buildPolicyValidConditionsForPolicyTypeMap() {
 		policyCommonDefs.PolicyConditionTypeProtocolMatch,
 		policyCommonDefs.PolicyConditionTypeNeighborMatch,
 		policyCommonDefs.PolicyConditionTypeCommunityMatch,
-		policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch}
+		policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch,
+		policyCommonDefs.PolicyConditionTypeLocalPrefMatch,
+		policyCommonDefs.PolicyConditionTypeASPathMatch,
+		policyCommonDefs.PolicyConditionTypeMEDMatch}
 	db.ValidConditionsForPolicyTypeMap["BGP"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch,
 		policyCommonDefs.PolicyConditionTypeNeighborMatch,
 		policyCommonDefs.PolicyConditionTypeCommunityMatch,
-		policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch}
+		policyCommonDefs.PolicyConditionTypeExtendedCommunityMatch,
+		policyCommonDefs.PolicyConditionTypeLocalPrefMatch,
+		policyCommonDefs.PolicyConditionTypeASPathMatch,
+		policyCommonDefs.PolicyConditionTypeMEDMatch}
 	db.ValidConditionsForPolicyTypeMap["OSPF"] = []int{policyCommonDefs.PolicyConditionTypeDstIpPrefixMatch}
 }
 func (db *PolicyEngineDB) buildPolicyValidActionsForPolicyTypeMap() {
@@ -203,13 +221,17 @@ func (db *PolicyEngineDB) buildPolicyValidActionsForPolicyTypeMap() {
 		policyCommonDefs.PolicyActionTypeRIBOut,
 		policyCommonDefs.PolicyActionTypeSetCommunity,
 		policyCommonDefs.PolicyActionTypeSetExtendedCommunity,
-		policyCommonDefs.PolicyActionTypeSetLocalPref}
+		policyCommonDefs.PolicyActionTypeSetLocalPref,
+		policyCommonDefs.PolicyActionTypeSetPrependASPath,
+		policyCommonDefs.PolicyActionTypeSetMED}
 	db.ValidActionsForPolicyTypeMap["BGP"] = []int{policyCommonDefs.PolicyActionTypeAggregate,
 		policyCommonDefs.PolicyActionTypeRIBIn,
 		policyCommonDefs.PolicyActionTypeRIBOut,
 		policyCommonDefs.PolicyActionTypeSetCommunity,
 		policyCommonDefs.PolicyActionTypeSetExtendedCommunity,
-		policyCommonDefs.PolicyActionTypeSetLocalPref}
+		policyCommonDefs.PolicyActionTypeSetLocalPref,
+		policyCommonDefs.PolicyActionTypeSetPrependASPath,
+		policyCommonDefs.PolicyActionTypeSetMED}
 }
 func NewPolicyEngineDB(logger *logging.Writer) (policyEngineDB *PolicyEngineDB) {
 	policyEngineDB = &PolicyEngineDB{}
@@ -232,6 +254,21 @@ func NewPolicyEngineDB(logger *logging.Writer) (policyEngineDB *PolicyEngineDB) 
 	LocalPolicyPrefixSetDB := make([]LocalDB, 0)
 	localPrefixSetSlice := LocalDBSlice(LocalPolicyPrefixSetDB)
 	policyEngineDB.LocalPolicyPrefixSetDB = &localPrefixSetSlice
+
+	policyEngineDB.PolicyCommunitySetDB = patriciaDB.NewTrie()
+	LocalPolicyCommunitySetDB := make([]LocalDB, 0)
+	localCommunitySetSlice := LocalDBSlice(LocalPolicyCommunitySetDB)
+	policyEngineDB.LocalPolicyCommunitySetDB = &localCommunitySetSlice
+
+	policyEngineDB.PolicyExtendedCommunitySetDB = patriciaDB.NewTrie()
+	LocalPolicyExtendedCommunitySetDB := make([]LocalDB, 0)
+	localExtendedCommunitySetSlice := LocalDBSlice(LocalPolicyExtendedCommunitySetDB)
+	policyEngineDB.LocalPolicyExtendedCommunitySetDB = &localExtendedCommunitySetSlice
+
+	policyEngineDB.PolicyASPathSetDB = patriciaDB.NewTrie()
+	LocalPolicyASPathSetDB := make([]LocalDB, 0)
+	localASPathSetSlice := LocalDBSlice(LocalPolicyASPathSetDB)
+	policyEngineDB.LocalPolicyASPathSetDB = &localASPathSetSlice
 
 	policyEngineDB.PolicyConditionsDB = patriciaDB.NewTrie()
 	LocalPolicyConditionsDB := make([]LocalDB, 0)
@@ -388,6 +425,26 @@ func (db *PolicyEngineDB) PolicyActionType(actionType int) (exportTypeAction boo
 		exportTypeAction = true
 		db.Logger.Info("setting exportTypeAction true")
 		break
+	case policyCommonDefs.PolicyActionTypeSetCommunity:
+		exportTypeAction = true
+		db.Logger.Info("setting exportTypeAction true")
+		break
+	case policyCommonDefs.PolicyActionTypeSetLocalPref:
+		exportTypeAction = true
+		db.Logger.Info("setting exportTypeAction true")
+		break
+	case policyCommonDefs.PolicyActionTypeSetMED:
+		exportTypeAction = true
+		db.Logger.Info("setting exportTypeAction true")
+		break
+	case policyCommonDefs.PolicyActionTypeSetExtendedCommunity:
+		exportTypeAction = true
+		db.Logger.Info("setting exportTypeAction true")
+		break
+	case policyCommonDefs.PolicyActionTypeSetPrependASPath:
+		exportTypeAction = true
+		db.Logger.Info("setting exportTypeAction true")
+		break
 	default:
 		db.Logger.Err("Unknown action type")
 		break
@@ -416,6 +473,21 @@ func PolicyActionStrToIntType(action string) (actionType int, err error) {
 		break
 	case "RIBOut":
 		actionType = policyCommonDefs.PolicyActionTypeRIBOut
+		break
+	case "LocalPref":
+		actionType = policyCommonDefs.PolicyActionTypeSetLocalPref
+		break
+	case "Community":
+		actionType = policyCommonDefs.PolicyActionTypeSetCommunity
+		break
+	case "ExtendedCommunity":
+		actionType = policyCommonDefs.PolicyActionTypeSetExtendedCommunity
+		break
+	case "MED":
+		actionType = policyCommonDefs.PolicyActionTypeSetMED
+		break
+	case "PrependASPath":
+		actionType = policyCommonDefs.PolicyActionTypeSetPrependASPath
 		break
 	default:
 		return -1, errors.New("Unknown ActionType")
@@ -548,6 +620,12 @@ func (db *PolicyEngineDB) GetPolicySetAction(in PolicyActionCfg) (out PolicyActi
 	switch out.Attr {
 	case policyCommonDefs.PolicyActionTypeSetLocalPref:
 		out.LocalPref = uint32(in.LocalPref)
+		break
+	case policyCommonDefs.PolicyActionTypeSetMED:
+		out.MED = uint32(in.MED)
+		break
+	case policyCommonDefs.PolicyActionTypeSetPrependASPath:
+		out.PrependASPath = in.PrependASPath
 		break
 	case policyCommonDefs.PolicyActionTypeSetCommunity:
 		out.Community, err = bgpUtils.GetCommunityValue(in.Community)

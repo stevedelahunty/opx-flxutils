@@ -37,27 +37,34 @@ var asicdSubSocket *nanomsg.SubSocket
 type processMsg func(uint8, []byte, *logging.Writer) (commonDefs.AsicdNotifyMsg, error)
 
 var AsicdMsgMap map[uint8]processMsg = map[uint8]processMsg{
-	asicdCommonDefs.NOTIFY_L2INTF_STATE_CHANGE:       processL2IntdStateNotifyMsg,
-	asicdCommonDefs.NOTIFY_IPV4_L3INTF_STATE_CHANGE:  processIPv4L3IntfStateNotifyMsg,
-	asicdCommonDefs.NOTIFY_IPV6_L3INTF_STATE_CHANGE:  processIPv6L3IntfStateNotifyMsg,
-	asicdCommonDefs.NOTIFY_VLAN_CREATE:               processVlanNotifyMsg,
-	asicdCommonDefs.NOTIFY_VLAN_DELETE:               processVlanNotifyMsg,
-	asicdCommonDefs.NOTIFY_VLAN_UPDATE:               processVlanNotifyMsg,
-	asicdCommonDefs.NOTIFY_LOGICAL_INTF_CREATE:       processLogicalIntfNotifyMsg,
-	asicdCommonDefs.NOTIFY_LOGICAL_INTF_DELETE:       processLogicalIntfNotifyMsg,
-	asicdCommonDefs.NOTIFY_LOGICAL_INTF_UPDATE:       processLogicalIntfNotifyMsg,
-	asicdCommonDefs.NOTIFY_IPV4INTF_CREATE:           processIPv4IntfNotifyMsg,
-	asicdCommonDefs.NOTIFY_IPV4INTF_DELETE:           processIPv4IntfNotifyMsg,
-	asicdCommonDefs.NOTIFY_IPV6INTF_CREATE:           processIPv6IntfNotifyMsg,
-	asicdCommonDefs.NOTIFY_IPV6INTF_DELETE:           processIPv6IntfNotifyMsg,
-	asicdCommonDefs.NOTIFY_LAG_CREATE:                processLagNotifyMsg,
-	asicdCommonDefs.NOTIFY_LAG_DELETE:                processLagNotifyMsg,
-	asicdCommonDefs.NOTIFY_LAG_UPDATE:                processLagNotifyMsg,
-	asicdCommonDefs.NOTIFY_IPV4NBR_MAC_MOVE:          processIPv4NbrMacMoveNotifyMsg,
-	asicdCommonDefs.NOTIFY_IPV6NBR_MAC_MOVE:          processIPv6NbrMacMoveNotifyMsg,
-	asicdCommonDefs.NOTIFY_IPV4_ROUTE_CREATE_FAILURE: processIPv4RouteAddDelNotifyMsg,
-	asicdCommonDefs.NOTIFY_IPV4_ROUTE_DELETE_FAILURE: processIPv4RouteAddDelNotifyMsg,
-	asicdCommonDefs.NOTIFY_PORT_CONFIG_MODE_CHANGE:   processPortConfigModeChgNotifyMsg,
+	asicdCommonDefs.NOTIFY_L2INTF_STATE_CHANGE:           processL2IntdStateNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV4_L3INTF_STATE_CHANGE:      processIPv4L3IntfStateNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV6_L3INTF_STATE_CHANGE:      processIPv6L3IntfStateNotifyMsg,
+	asicdCommonDefs.NOTIFY_VLAN_CREATE:                   processVlanNotifyMsg,
+	asicdCommonDefs.NOTIFY_VLAN_DELETE:                   processVlanNotifyMsg,
+	asicdCommonDefs.NOTIFY_VLAN_UPDATE:                   processVlanNotifyMsg,
+	asicdCommonDefs.NOTIFY_LOGICAL_INTF_CREATE:           processLogicalIntfNotifyMsg,
+	asicdCommonDefs.NOTIFY_LOGICAL_INTF_DELETE:           processLogicalIntfNotifyMsg,
+	asicdCommonDefs.NOTIFY_LOGICAL_INTF_UPDATE:           processLogicalIntfNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV4INTF_CREATE:               processIPv4IntfNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV4INTF_DELETE:               processIPv4IntfNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV6INTF_CREATE:               processIPv6IntfNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV6INTF_DELETE:               processIPv6IntfNotifyMsg,
+	asicdCommonDefs.NOTIFY_LAG_CREATE:                    processLagNotifyMsg,
+	asicdCommonDefs.NOTIFY_LAG_DELETE:                    processLagNotifyMsg,
+	asicdCommonDefs.NOTIFY_LAG_UPDATE:                    processLagNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV4NBR_MAC_MOVE:              processIPv4NbrMacMoveNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV6NBR_MAC_MOVE:              processIPv6NbrMacMoveNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV4_ROUTE_CREATE_FAILURE:     processIPv4RouteAddDelNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV4_ROUTE_DELETE_FAILURE:     processIPv4RouteAddDelNotifyMsg,
+	asicdCommonDefs.NOTIFY_PORT_CONFIG_MODE_CHANGE:       processPortConfigModeChgNotifyMsg,
+	asicdCommonDefs.NOTIFY_PORT_CONFIG_MTU_CHANGE:        processPortConfigMtuChange,
+	asicdCommonDefs.NOTIFY_IPV4VIRTUAL_INTF_CREATE:       processIPv4VirutalIntfNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV4VIRTUAL_INTF_DELETE:       processIPv4VirutalIntfNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV6VIRTUAL_INTF_CREATE:       processIPv6VirutalIntfNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV6VIRTUAL_INTF_DELETE:       processIPv6VirutalIntfNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV4_VIRTUALINTF_STATE_CHANGE: processIPv4VirtualIntfStateNotifyMsg,
+	asicdCommonDefs.NOTIFY_IPV6_VIRTUALINTF_STATE_CHANGE: processIPv6VirtualIntfStateNotifyMsg,
 }
 
 func processL2IntdStateNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (commonDefs.AsicdNotifyMsg, error) {
@@ -102,6 +109,40 @@ func processIPv6L3IntfStateNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logg
 		return msg, err
 	}
 	msg = commonDefs.IPv6L3IntfStateNotifyMsg{
+		MsgType: rxMsgType,
+		IpAddr:  l3Msg.IpAddr,
+		IfIndex: l3Msg.IfIndex,
+		IfState: l3Msg.IfState,
+	}
+	return msg, nil
+}
+
+func processIPv4VirtualIntfStateNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (commonDefs.AsicdNotifyMsg, error) {
+	var l3Msg asicdCommonDefs.IPv4VirtualIntfStateNotifyMsg
+	var msg commonDefs.AsicdNotifyMsg
+	err := json.Unmarshal(rxMsg, &l3Msg)
+	if err != nil {
+		logger.Err(fmt.Sprintln("Unable to unmashal IPv4VirtualIntfStateNotifyMsg:", rxMsg))
+		return msg, err
+	}
+	msg = commonDefs.IPv4VirtualIntfStateNotifyMsg{
+		MsgType: rxMsgType,
+		IpAddr:  l3Msg.IpAddr,
+		IfIndex: l3Msg.IfIndex,
+		IfState: l3Msg.IfState,
+	}
+	return msg, nil
+}
+
+func processIPv6VirtualIntfStateNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (commonDefs.AsicdNotifyMsg, error) {
+	var l3Msg asicdCommonDefs.IPv6VirtualIntfStateNotifyMsg
+	var msg commonDefs.AsicdNotifyMsg
+	err := json.Unmarshal(rxMsg, &l3Msg)
+	if err != nil {
+		logger.Err(fmt.Sprintln("Unable to unmashal IPv6VirtualIntfStateNotifyMsg:", rxMsg))
+		return msg, err
+	}
+	msg = commonDefs.IPv6VirtualIntfStateNotifyMsg{
 		MsgType: rxMsgType,
 		IpAddr:  l3Msg.IpAddr,
 		IfIndex: l3Msg.IfIndex,
@@ -182,6 +223,46 @@ func processIPv6IntfNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Wri
 	return msg, nil
 }
 
+func processIPv4VirutalIntfNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (commonDefs.AsicdNotifyMsg, error) {
+	var ipv4Msg asicdCommonDefs.IPv4VirtualIntfNotifyMsg
+	var msg commonDefs.AsicdNotifyMsg
+	err := json.Unmarshal(rxMsg, &ipv4Msg)
+	if err != nil {
+		logger.Err(fmt.Sprintln("Unable to unmashal IPv4 Virtual Intf:", rxMsg))
+		return msg, err
+	}
+	msg = commonDefs.IPv4VirtualIntfNotifyMsg{
+		MsgType:       rxMsgType,
+		IfIndex:       ipv4Msg.IfIndex,
+		ParentIfIndex: ipv4Msg.ParentIfIndex,
+		IpAddr:        ipv4Msg.IpAddr,
+		MacAddr:       ipv4Msg.MacAddr,
+		IfName:        ipv4Msg.IfName,
+	}
+
+	return msg, nil
+}
+
+func processIPv6VirutalIntfNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (commonDefs.AsicdNotifyMsg, error) {
+	var ipv4Msg asicdCommonDefs.IPv6VirtualIntfNotifyMsg
+	var msg commonDefs.AsicdNotifyMsg
+	err := json.Unmarshal(rxMsg, &ipv4Msg)
+	if err != nil {
+		logger.Err(fmt.Sprintln("Unable to unmashal IPv6 Virtual Intf:", rxMsg))
+		return msg, err
+	}
+	msg = commonDefs.IPv6VirtualIntfNotifyMsg{
+		MsgType:       rxMsgType,
+		IfIndex:       ipv4Msg.IfIndex,
+		ParentIfIndex: ipv4Msg.ParentIfIndex,
+		IpAddr:        ipv4Msg.IpAddr,
+		MacAddr:       ipv4Msg.MacAddr,
+		IfName:        ipv4Msg.IfName,
+	}
+
+	return msg, nil
+}
+
 func processLagNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (commonDefs.AsicdNotifyMsg, error) {
 	var lagMsg asicdCommonDefs.LagNotifyMsg
 	var msg commonDefs.AsicdNotifyMsg
@@ -252,6 +333,11 @@ func processPortConfigModeChgNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *lo
 		OldMode: portCfgChgMsg.OldMode,
 		NewMode: portCfgChgMsg.NewMode,
 	}
+	return msg, nil
+}
+
+//@TODO: need to implement the functionality
+func processPortConfigMtuChange(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (msg commonDefs.AsicdNotifyMsg, err error) {
 	return msg, nil
 }
 
