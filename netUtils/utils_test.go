@@ -26,6 +26,7 @@ package netUtils
 import (
 	"fmt"
 	"net"
+	"syscall"
 	"testing"
 )
 
@@ -231,10 +232,61 @@ func TestCheckIPv6Address(t *testing.T) {
 	}
 	fmt.Println("****************************")
 }
+
 func TestGetCIDR(t *testing.T) {
 	fmt.Println("****TestGetCIDR()****")
 	ipAddr := "40.1.10.0"
 	mask := "255.255.255.0"
 	cidrAddr, err := GetCIDR(ipAddr, mask)
 	fmt.Println("cidrAddr:", cidrAddr, " err:", err, " for ipAddr:", ipAddr, " mask:", mask)
+	fmt.Println("****************************")
+}
+
+func TestIpIpAddrValid(t *testing.T) {
+	fmt.Println("****TestIsIpAddrValid()****")
+	ipAddr := "192.16.0.0/31"
+	valid := IsIpAddrValid(ipAddr, syscall.AF_INET)
+	if !valid {
+		t.Error("ip Addr should be valid:", ipAddr)
+		return
+	}
+	ipAddr = "192.16.0.0/32"
+	valid = IsIpAddrValid(ipAddr, syscall.AF_INET)
+	if !valid {
+		t.Error("ip Addr should be valid:", ipAddr)
+		return
+	}
+	ipAddr = "192.16.0.0/24"
+	valid = IsIpAddrValid(ipAddr, syscall.AF_INET)
+	if valid {
+		t.Error("ip Addr should not be valid:", ipAddr)
+		return
+	}
+
+	ipAddr = "1000::192:16:0:1/64"
+	valid = IsIpAddrValid(ipAddr, syscall.AF_INET6)
+	if !valid {
+		t.Error("ip Addr should be valid:", ipAddr)
+		return
+	}
+	ipAddr = "1000::192:16:0:1/128"
+	valid = IsIpAddrValid(ipAddr, syscall.AF_INET6)
+	if !valid {
+		t.Error("ip Addr should be valid:", ipAddr)
+		return
+	}
+	ipAddr = "1000::192:16:0:1/127"
+	valid = IsIpAddrValid(ipAddr, syscall.AF_INET6)
+	if valid {
+		t.Error("ip Addr should not be valid:", ipAddr)
+		return
+	}
+	ipAddr = "3000::e/126"
+	valid = IsIpAddrValid(ipAddr, syscall.AF_INET6)
+	if !valid {
+		t.Error("ip Addr should be valid:", ipAddr)
+		return
+	}
+
+	fmt.Println("****************************")
 }
