@@ -349,6 +349,7 @@ func processPortAttrChangeNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *loggi
 		IfIndex:     attrChgMsg.IfIndex,
 		Mtu:         attrChgMsg.Mtu,
 		Description: attrChgMsg.Description,
+		Pvid:        attrChgMsg.Pvid,
 		AttrMask:    attrChgMsg.AttrMask,
 	}
 	return msg, nil

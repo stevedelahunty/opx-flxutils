@@ -206,6 +206,7 @@ const (
 	PORT_ATTR_RX_PRBS_EN    = 0x00001000
 	PORT_ATTR_PRBS_POLY     = 0x00002000
 	PORT_ATTR_DESCRIPTION   = 0x00004000
+	PORT_ATTR_PVID          = 0x00008000
 )
 
 type AsicdNotification map[uint8]bool
@@ -290,6 +291,7 @@ type PortAttrChangeNotifyMsg struct {
 	IfIndex     int32
 	Mtu         int32
 	Description string
+	Pvid        int32
 	AttrMask    int32
 }
 
