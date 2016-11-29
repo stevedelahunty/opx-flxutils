@@ -174,7 +174,7 @@ const (
 	NOTIFY_MPLSINTF_CREATE                      // 25
 	NOTIFY_MPLSINTF_DELETE                      // 26
 	NOTIFY_PORT_CONFIG_MODE_CHANGE              // 27
-	NOTIFY_PORT_CONFIG_MTU_CHANGE               // 28
+	NOTIFY_PORT_ATTR_CHANGE                     // 28
 	NOTIFY_IPV4VIRTUAL_INTF_CREATE              // 29
 	NOTIFY_IPV4VIRTUAL_INTF_DELETE              // 30
 	NOTIFY_IPV6VIRTUAL_INTF_CREATE              // 31
@@ -187,6 +187,25 @@ const (
 	// state values copied from asicd
 	INTF_STATE_DOWN = 0
 	INTF_STATE_UP   = 1
+)
+
+const (
+	// this needs to match asicd server
+	PORT_ATTR_PHY_INTF_TYPE = 0x00000001
+	PORT_ATTR_ADMIN_STATE   = 0x00000002
+	PORT_ATTR_MAC_ADDR      = 0x00000004
+	PORT_ATTR_SPEED         = 0x00000008
+	PORT_ATTR_DUPLEX        = 0x00000010
+	PORT_ATTR_AUTONEG       = 0x00000020
+	PORT_ATTR_MEDIA_TYPE    = 0x00000040
+	PORT_ATTR_MTU           = 0x00000080
+	PORT_ATTR_BREAKOUT_MODE = 0x00000100
+	PORT_ATTR_LOOPBACK_MODE = 0x00000200
+	PORT_ATTR_ENABLE_FEC    = 0x00000400
+	PORT_ATTR_TX_PRBS_EN    = 0x00000800
+	PORT_ATTR_RX_PRBS_EN    = 0x00001000
+	PORT_ATTR_PRBS_POLY     = 0x00002000
+	PORT_ATTR_DESCRIPTION   = 0x00004000
 )
 
 type AsicdNotification map[uint8]bool
@@ -267,9 +286,11 @@ type PortConfigModeChgNotifyMsg struct {
 	NewMode string
 }
 
-type PortConfigMtuChangeNotifyMsg struct {
-	IfIndex int32
-	Mtu     int32
+type PortAttrChangeNotifyMsg struct {
+	IfIndex     int32
+	Mtu         int32
+	Description string
+	AttrMask    int32
 }
 
 type IPv4VirtualIntfNotifyMsg struct {

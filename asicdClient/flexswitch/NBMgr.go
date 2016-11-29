@@ -58,7 +58,7 @@ var AsicdMsgMap map[uint8]processMsg = map[uint8]processMsg{
 	asicdCommonDefs.NOTIFY_IPV4_ROUTE_CREATE_FAILURE:     processIPv4RouteAddDelNotifyMsg,
 	asicdCommonDefs.NOTIFY_IPV4_ROUTE_DELETE_FAILURE:     processIPv4RouteAddDelNotifyMsg,
 	asicdCommonDefs.NOTIFY_PORT_CONFIG_MODE_CHANGE:       processPortConfigModeChgNotifyMsg,
-	asicdCommonDefs.NOTIFY_PORT_CONFIG_MTU_CHANGE:        processPortConfigMtuChange,
+	asicdCommonDefs.NOTIFY_PORT_ATTR_CHANGE:              processPortAttrChangeNotifyMsg,
 	asicdCommonDefs.NOTIFY_IPV4VIRTUAL_INTF_CREATE:       processIPv4VirutalIntfNotifyMsg,
 	asicdCommonDefs.NOTIFY_IPV4VIRTUAL_INTF_DELETE:       processIPv4VirutalIntfNotifyMsg,
 	asicdCommonDefs.NOTIFY_IPV6VIRTUAL_INTF_CREATE:       processIPv6VirutalIntfNotifyMsg,
@@ -336,23 +336,20 @@ func processPortConfigModeChgNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *lo
 	return msg, nil
 }
 
-//@TODO: need to implement the functionality
-func processPortConfigMtuChange(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (msg commonDefs.AsicdNotifyMsg, err error) {
-	return msg, nil
-}
-
-func processMtuChgNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (commonDefs.AsicdNotifyMsg, error) {
-	var mtuChgMsg asicdCommonDefs.PortConfigMtuChgNotigyMsg
+func processPortAttrChangeNotifyMsg(rxMsgType uint8, rxMsg []byte, logger *logging.Writer) (commonDefs.AsicdNotifyMsg, error) {
+	var attrChgMsg asicdCommonDefs.PortAttrChangeNotifyMsg
 	var msg commonDefs.AsicdNotifyMsg
 
-	err := json.Unmarshal(rxMsg, &mtuChgMsg)
+	err := json.Unmarshal(rxMsg, &attrChgMsg)
 	if err != nil {
 		logger.Err(fmt.Sprintln("Unable to unmashal  PortConfigMtuChgNotigyMsg:", rxMsg))
 		return msg, err
 	}
-	msg = commonDefs.PortConfigMtuChangeNotifyMsg{
-		IfIndex: mtuChgMsg.IfIndex,
-		Mtu:     mtuChgMsg.Mtu,
+	msg = commonDefs.PortAttrChangeNotifyMsg{
+		IfIndex:     attrChgMsg.IfIndex,
+		Mtu:         attrChgMsg.Mtu,
+		Description: attrChgMsg.Description,
+		AttrMask:    attrChgMsg.AttrMask,
 	}
 	return msg, nil
 }
