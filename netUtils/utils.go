@@ -31,6 +31,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"syscall"
 	"utils/patriciaDB"
 )
 
@@ -274,4 +275,46 @@ func IsIpv6LinkLocal(ipAddr string) bool {
 		ip = net.ParseIP(ipAddr)
 	}
 	return ip.IsLinkLocalUnicast() && (ip.To4() == nil)
+}
+
+const (
+	SUBNET_MASK_31_BIT  = 31
+	SUBNET_MASK_32_BIT  = 32
+	SUBNET_MASK_128_BIT = 128
+)
+
+// accepts input only in CIDR format
+func IsIpAddrValid(ipAddr string, ipType int) bool {
+	ip, ipnet, err := net.ParseCIDR(ipAddr)
+	if err != nil {
+		return false
+	}
+	ipStr := ipnet.String()
+	size, _ := ipnet.Mask.Size()
+	if ipType == syscall.AF_INET {
+		if size == SUBNET_MASK_31_BIT || size == SUBNET_MASK_32_BIT {
+			return true
+		}
+		ip = ip.To4()
+	} else if ipType == syscall.AF_INET6 {
+		if size == SUBNET_MASK_128_BIT {
+			return true
+		}
+		ip = ip.To16()
+	} else {
+		return false // invalid ip type
+	}
+	subnet := ipnet.Mask
+	for idx, _ := range subnet {
+		subnet[idx] = byte(subnet[idx]) ^ 0xff
+	}
+	broadcast := make(net.IP, 0)
+	for idx, _ := range ip {
+		broadcast = append(broadcast, ip[idx]|subnet[idx])
+	}
+	broadcastIp := broadcast.String() + "/" + strconv.Itoa(size)
+	if strings.Compare(ipAddr, ipStr) == 0 || strings.Compare(ipAddr, broadcastIp) == 0 {
+		return false
+	}
+	return true
 }
