@@ -415,7 +415,11 @@ func (db *PolicyEngineDB) CommunityMatchConditionfunc(entity PolicyEngineFilterE
 					if matchInfo.Community == community {
 						db.Logger.Info("Community", community, "matches")
 						match = true
+						break
 					}
+				}
+				if match {
+					break
 				}
 			}
 		} else {
@@ -426,6 +430,7 @@ func (db *PolicyEngineDB) CommunityMatchConditionfunc(entity PolicyEngineFilterE
 			if conditionInfo.Community == community {
 				db.Logger.Info("Community", community, "matches")
 				match = true
+				break
 			}
 		}
 	}
@@ -446,6 +451,7 @@ func (db *PolicyEngineDB) ASPathMatchConditionfunc(entity PolicyEngineFilterEnti
 				if bgpUtils.MatchASPath(matchInfo.ASPath, entity.ASPath) {
 					db.Logger.Info("ASPath matches")
 					match = true
+					break
 				}
 			}
 		} else {
@@ -499,7 +505,11 @@ func (db *PolicyEngineDB) ExtendedCommunityMatchConditionfunc(entity PolicyEngin
 					if matchInfo.ExtendedCommunity == extComm {
 						db.Logger.Info("Extended Community", extComm, "matches")
 						match = true
+						break
 					}
+				}
+				if match {
+					break
 				}
 			}
 		} else {
@@ -510,6 +520,7 @@ func (db *PolicyEngineDB) ExtendedCommunityMatchConditionfunc(entity PolicyEngin
 			if conditionInfo.ExtendedCommunity == extComm {
 				db.Logger.Info("Extended Community", extComm, "matches")
 				match = true
+				break
 			}
 		}
 	}
