@@ -38,7 +38,7 @@ import (
 type PolicyActionState struct {
 	Attr              int
 	Community         uint32
-	ExtendedCommunity string
+	ExtendedCommunity uint64
 	LocalPref         uint32
 	MED               uint32
 	PrependASPath     string

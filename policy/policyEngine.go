@@ -410,19 +410,28 @@ func (db *PolicyEngineDB) CommunityMatchConditionfunc(entity PolicyEngineFilterE
 		if item != nil {
 			set := item.(PolicyCommunitySet)
 			db.Logger.Info("FindCommunityMatch, communitySet matchInfoList :", set.MatchInfoList)
-			for _, matchInfo := range set.MatchInfoList {
-				if matchInfo.Community == entity.Community {
-					db.Logger.Info("Community matches")
-					match = true
+			for _, community := range entity.Community {
+				for _, matchInfo := range set.MatchInfoList {
+					if matchInfo.Community == community {
+						db.Logger.Info("Community", community, "matches")
+						match = true
+						break
+					}
+				}
+				if match {
+					break
 				}
 			}
 		} else {
 			db.Logger.Err("community set ", conditionInfo.Set, " not found")
 		}
 	} else {
-		if conditionInfo.Community == entity.Community {
-			db.Logger.Info("Community matches")
-			match = true
+		for _, community := range entity.Community {
+			if conditionInfo.Community == community {
+				db.Logger.Info("Community", community, "matches")
+				match = true
+				break
+			}
 		}
 	}
 	return match
@@ -442,6 +451,7 @@ func (db *PolicyEngineDB) ASPathMatchConditionfunc(entity PolicyEngineFilterEnti
 				if bgpUtils.MatchASPath(matchInfo.ASPath, entity.ASPath) {
 					db.Logger.Info("ASPath matches")
 					match = true
+					break
 				}
 			}
 		} else {
@@ -490,19 +500,28 @@ func (db *PolicyEngineDB) ExtendedCommunityMatchConditionfunc(entity PolicyEngin
 		if item != nil {
 			set := item.(PolicyExtendedCommunitySet)
 			db.Logger.Info("FindExtendedCommunityMatch, extendedcommunitySet matchInfoList :", set.MatchInfoList)
-			for _, matchInfo := range set.MatchInfoList {
-				if matchInfo.ExtendedCommunity == entity.ExtendedCommunity {
-					db.Logger.Info("Extended Community matches")
-					match = true
+			for _, extComm := range entity.ExtendedCommunity {
+				for _, matchInfo := range set.MatchInfoList {
+					if matchInfo.ExtendedCommunity == extComm {
+						db.Logger.Info("Extended Community", extComm, "matches")
+						match = true
+						break
+					}
+				}
+				if match {
+					break
 				}
 			}
 		} else {
 			db.Logger.Err("Extended community set ", conditionInfo.Set, " not found")
 		}
 	} else {
-		if conditionInfo.ExtendedCommunity == entity.ExtendedCommunity {
-			db.Logger.Info("Extended Community matches")
-			match = true
+		for _, extComm := range entity.ExtendedCommunity {
+			if conditionInfo.ExtendedCommunity == extComm {
+				db.Logger.Info("Extended Community", extComm, "matches")
+				match = true
+				break
+			}
 		}
 	}
 	return match

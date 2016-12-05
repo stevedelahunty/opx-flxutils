@@ -64,8 +64,8 @@ type PolicyEngineFilterEntityParams struct {
 	NextHopIp         string
 	RouteProtocol     string
 	Neighbor          string
-	Community         uint32
-	ExtendedCommunity string
+	Community         []uint32
+	ExtendedCommunity []uint64
 	ASPath            string
 	LocalPref         uint32
 	MED               uint32

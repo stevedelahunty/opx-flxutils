@@ -194,7 +194,7 @@ func (db *PolicyEngineDB) CreatePolicyMatchASPathSetCondition(inCfg PolicyCondit
 	}
 	if len(cfg.ASPath) != 0 {
 		conditionGetBulkInfo = "match ASPath " + cfg.ASPath
-		conditionInfo.UseSet = true
+		conditionInfo.UseSet = false
 		//check if community is a well-known community
 		val, err := bgpUtils.GetAsPathRegex(cfg.ASPath)
 		if err != nil {
