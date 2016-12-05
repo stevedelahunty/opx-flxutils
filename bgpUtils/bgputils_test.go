@@ -40,7 +40,7 @@ func TestEncodeExtCommunity(t *testing.T) {
 	fmt.Println("****TestEncodeExtCommunity()****")
 	var extComm ExtCommunity
 	var err error
-	var val string
+	var val uint64
 	extComm = ExtCommunity{"Route-Target", "200:10"}
 	val, err = EncodeExtCommunity(extComm)
 	fmt.Println("extComm bytes for inp:", extComm, " is - ", val, " error : ", err)
