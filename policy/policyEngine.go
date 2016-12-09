@@ -132,7 +132,7 @@ func (db *PolicyEngineDB) PolicyEngineUndoActionsPolicyStmt(policy Policy, polic
 		*/
 		policyAction := conditionsAndActionsList.ActionList[i]
 		if db.UndoActionfuncMap[policyAction.ActionType] != nil {
-			db.UndoActionfuncMap[policyAction.ActionType](policyAction.ActionInfo, conditionInfoList, params, policyStmt)
+			db.UndoActionfuncMap[policyAction.ActionType](policyAction.ActionInfo, conditionInfoList, policy, params, policyStmt)
 		}
 	}
 }
@@ -216,7 +216,8 @@ func (db *PolicyEngineDB) PolicyEngineUndoApplyPolicyForEntity(entity PolicyEngi
 	return db.PolicyEngineUndoPolicyForEntity(entity, info.ApplyPolicy, updateInfo, params)
 }
 func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilterEntityParams, action PolicyAction,
-	conditionInfoList []interface{}, params interface{}, policyStmt PolicyStmt) (policyActionList []PolicyAction) {
+	conditionInfoList []interface{}, policy Policy, params interface{}, policyStmt PolicyStmt) (
+	policyActionList []PolicyAction) {
 	db.Logger.Info("policyEngineImplementActions")
 	policyActionList = make([]PolicyAction, 0)
 	addActionToList := false
@@ -228,13 +229,13 @@ func (db *PolicyEngineDB) PolicyEngineImplementActions(entity PolicyEngineFilter
 		if entity.DeletePath == true {
 			db.Logger.Info("action to be reversed", action.ActionType)
 			if db.UndoActionfuncMap[action.ActionType] != nil {
-				db.UndoActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params, policyStmt)
+				db.UndoActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, policy, params, policyStmt)
 			}
 			addActionToList = true
 		} else { //if entity.CreatePath == true or neither create/delete is valid - in case this function is called a a part of policy create{
 			db.Logger.Info("action to be applied", action.ActionType)
 			if db.ActionfuncMap[action.ActionType] != nil {
-				db.ActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, params, policyStmt)
+				db.ActionfuncMap[action.ActionType](action.ActionInfo, conditionInfoList, policy, params, policyStmt)
 			}
 			addActionToList = true
 		}
@@ -636,7 +637,7 @@ func (db *PolicyEngineDB) PolicyEngineApplyPolicyStmt(entity *PolicyEngineFilter
 		}
 		db.Logger.Debug("PolicyEngineApplyStmt conditionInfoList after checking with the applyInfo:", conditionInfoList)
 	}
-	actionList := db.PolicyEngineImplementActions(*entity, info.Action, conditionInfoList, params, policyStmt)
+	actionList := db.PolicyEngineImplementActions(*entity, info.Action, conditionInfoList, info.ApplyPolicy, params, policyStmt)
 	if db.ActionListHasAction(actionList, policyCommonDefs.PolicyActionTypeRouteDisposition, "Reject") {
 		db.Logger.Info("Reject action was applied for this entity")
 		*deleted = true
@@ -768,7 +769,7 @@ func (db *PolicyEngineDB) PolicyEngineReverseGlobalPolicyStmt(policy Policy, pol
 		actionInfo := actionItem.(PolicyAction)
 		if db.UndoActionfuncMap[actionInfo.ActionType] != nil {
 			//since global policies have just 1 condition, we can pass that as the params to the undo call
-			db.UndoActionfuncMap[actionInfo.ActionType](actionItem, nil, conditionItem, policyStmt)
+			db.UndoActionfuncMap[actionInfo.ActionType](actionItem, nil, policy, conditionItem, policyStmt)
 		}
 	}
 }
@@ -803,7 +804,7 @@ func (db *PolicyEngineDB) PolicyEngineApplyGlobalPolicyStmt(policy Policy, polic
 		}
 		actionInfo := actionItem.(PolicyAction)
 		if db.ActionfuncMap[actionInfo.ActionType] != nil {
-			db.ActionfuncMap[actionInfo.ActionType](actionInfo.ActionInfo, conditionInfoList, nil, policyStmt)
+			db.ActionfuncMap[actionInfo.ActionType](actionInfo.ActionInfo, conditionInfoList, policy, nil, policyStmt)
 		}
 	}
 }
@@ -993,12 +994,12 @@ func (db *PolicyEngineDB) PolicyEngineFilter(entity PolicyEngineFilterEntityPara
 		if policyPath == policyCommonDefs.PolicyPath_Import {
 			//db.Logger.Info("Applying default import policy")
 			if db.DefaultImportPolicyActionFunc != nil {
-				db.DefaultImportPolicyActionFunc(nil, nil, params, PolicyStmt{})
+				db.DefaultImportPolicyActionFunc(nil, nil, Policy{}, params, PolicyStmt{})
 			}
 		} else if policyPath == policyCommonDefs.PolicyPath_Export {
 			//db.Logger.Info("Applying default export policy")
 			if db.DefaultExportPolicyActionFunc != nil {
-				db.DefaultExportPolicyActionFunc(nil, nil, params, PolicyStmt{})
+				db.DefaultExportPolicyActionFunc(nil, nil, Policy{}, params, PolicyStmt{})
 			}
 		}
 	}
