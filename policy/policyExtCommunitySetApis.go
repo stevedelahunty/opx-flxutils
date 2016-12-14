@@ -55,7 +55,7 @@ type PolicyMatchExtendedCommunitySetCondition struct {
 type MatchExtendedCommunityConditionInfo struct {
 	UseSet            bool
 	Set               string
-	ExtendedCommunity string
+	ExtendedCommunity uint64
 }
 
 func (db *PolicyEngineDB) UpdateExtendedCommunitySet(condition PolicyCondition, setName string, op int) (err error) {
@@ -199,7 +199,7 @@ func (db *PolicyEngineDB) CreatePolicyMatchExtendedCommunitySetCondition(inCfg P
 	}
 	if len(cfg.ExtendedCommunity.Value) != 0 {
 		conditionGetBulkInfo = "match ExtendedCommunity " + cfg.ExtendedCommunity.Type + ":" + cfg.ExtendedCommunity.Value
-		conditionInfo.UseSet = true
+		conditionInfo.UseSet = false
 		match, err := bgpUtils.EncodeExtCommunity(bgpUtils.ExtCommunity{cfg.ExtendedCommunity.Type, cfg.ExtendedCommunity.Value})
 		if err != nil {
 			db.Logger.Err(fmt.Sprintln("EncodeExtCommunity returned err:", err))

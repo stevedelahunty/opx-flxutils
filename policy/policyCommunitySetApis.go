@@ -197,7 +197,7 @@ func (db *PolicyEngineDB) CreatePolicyMatchCommunitySetCondition(inCfg PolicyCon
 	}
 	if len(cfg.Community) != 0 {
 		conditionGetBulkInfo = "match Community " + cfg.Community
-		conditionInfo.UseSet = true
+		conditionInfo.UseSet = false
 		var val uint32
 		//check if community is a well-known community
 		val, err := bgpUtils.GetCommunityValue(cfg.Community)

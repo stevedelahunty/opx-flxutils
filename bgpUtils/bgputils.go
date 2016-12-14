@@ -99,7 +99,7 @@ func GetCommunityValue(inp string) (uint32, error) {
 	return val, nil
 }
 
-func EncodeExtCommunity(inp ExtCommunity) (string, error) {
+func EncodeExtCommunity(inp ExtCommunity) (uint64, error) {
 	ipAddr, _ = regexp.Compile("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$")
 	asplain, _ = regexp.Compile("^([0-5]?[0-9]?[0-9]?[0-9]?[0-9]?|6[0-9]?[0-9]?[0-9]?[0-5]?)$")
 	twobytenn = asplain
@@ -108,7 +108,7 @@ func EncodeExtCommunity(inp ExtCommunity) (string, error) {
 	_, ok := TypeStrToLowTypeMap[inp.Type]
 	if !ok {
 		fmt.Println("invalid type")
-		return "", errors.New("Invalid Type")
+		return 0, errors.New("Invalid Type")
 	}
 	lowByte := ""
 	highByte := ""
@@ -118,7 +118,7 @@ func EncodeExtCommunity(inp ExtCommunity) (string, error) {
 	a := strings.Split(inp.Value, ":")
 	if len(a) != 2 {
 		fmt.Println("Invalid ExtCommunity value:", inp.Value)
-		return "", errors.New("Invalid Extended community value")
+		return 0, errors.New("Invalid Extended community value")
 	}
 
 	switch inp.Type {
@@ -154,7 +154,7 @@ func EncodeExtCommunity(inp ExtCommunity) (string, error) {
 				a1 := strings.Split(a[0], ".")
 				if len(a1) != 2 {
 					fmt.Println("Invalid format for extended community")
-					return "", errors.New("Invalid Extended community value")
+					return 0, errors.New("Invalid Extended community value")
 				}
 				if twobytenn.MatchString(a1[0]) && twobytenn.MatchString(a1[1]) && twobytenn.MatchString(a[1]) {
 					highByte = "02"
@@ -164,15 +164,16 @@ func EncodeExtCommunity(inp ExtCommunity) (string, error) {
 					value = asdot0 + asdot1 + num
 				} else {
 					fmt.Println("Invalid extended community:", inp.Value)
-					return "", errors.New("Invalid Extended community value")
+					return 0, errors.New("Invalid Extended community value")
 				}
 			}
 		}
 	default:
 		fmt.Println("Type:", inp.Type, " not supported")
-		return "", errors.New("Invalid Extended community value")
+		return 0, errors.New("Invalid Extended community value")
 	}
-	return comm + highByte + lowByte + value, nil
+	hexStr := comm + highByte + lowByte + value
+	return strconv.ParseUint(hexStr, 0, 64)
 }
 
 func IsDigit(in string) bool {
@@ -186,8 +187,15 @@ func GetAsPathRegex(inp string) (*regexp.Regexp, error) {
 	val := ""
 	firstDigit := true
 	addedOpen := false
+	openBraces := false
 	for i := 0; i < len(inp); i++ {
-		if IsDigit(string(inp[i])) && firstDigit {
+		if string(inp[i]) == "{" || string(inp[i]) == "(" || string(inp[i]) == "[" {
+			openBraces = true
+		}
+		if string(inp[i]) == "}" || string(inp[i]) == ")" || string(inp[i]) == "]" {
+			openBraces = false
+		}
+		if IsDigit(string(inp[i])) && firstDigit && !openBraces {
 			val = val + "\\b"
 			firstDigit = false
 			addedOpen = true
@@ -201,6 +209,7 @@ func GetAsPathRegex(inp string) (*regexp.Regexp, error) {
 				if !IsDigit(string(inp[i+1])) {
 					val = val + "\\b"
 					addedOpen = false
+					firstDigit = true
 				}
 			}
 		}
