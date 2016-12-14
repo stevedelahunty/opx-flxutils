@@ -187,8 +187,15 @@ func GetAsPathRegex(inp string) (*regexp.Regexp, error) {
 	val := ""
 	firstDigit := true
 	addedOpen := false
+	openBraces := false
 	for i := 0; i < len(inp); i++ {
-		if IsDigit(string(inp[i])) && firstDigit {
+		if string(inp[i]) == "{" || string(inp[i]) == "(" || string(inp[i]) == "[" {
+			openBraces = true
+		}
+		if string(inp[i]) == "}" || string(inp[i]) == ")" || string(inp[i]) == "]" {
+			openBraces = false
+		}
+		if IsDigit(string(inp[i])) && firstDigit && !openBraces {
 			val = val + "\\b"
 			firstDigit = false
 			addedOpen = true
@@ -202,6 +209,7 @@ func GetAsPathRegex(inp string) (*regexp.Regexp, error) {
 				if !IsDigit(string(inp[i+1])) {
 					val = val + "\\b"
 					addedOpen = false
+					firstDigit = true
 				}
 			}
 		}
