@@ -74,6 +74,9 @@ func TestGetCommunityValue(t *testing.T) {
 func TestInitASPathInfo(t *testing.T) {
 	fmt.Println("****TestInitASPathInfo()****")
 	ASPathInfo = make([]ASPathData, 0)
+	ASPathInfo = append(ASPathInfo, ASPathData{"^.{0}$", "400", false})
+	ASPathInfo = append(ASPathInfo, ASPathData{"^.{0}$", "", true})
+	ASPathInfo = append(ASPathInfo, ASPathData{"^4 [0-9]*$", "4 200", true})
 	ASPathInfo = append(ASPathInfo, ASPathData{".*400.*", "400", true})
 	ASPathInfo = append(ASPathInfo, ASPathData{".*400.*", "200 400", true})
 	ASPathInfo = append(ASPathInfo, ASPathData{".*400.*", "200 4000", false})
@@ -83,6 +86,7 @@ func TestInitASPathInfo(t *testing.T) {
 	ASPathInfo = append(ASPathInfo, ASPathData{".*200 300 400.*", "1 300 200 400", false})
 	ASPathInfo = append(ASPathInfo, ASPathData{".*200 300 400.*", "200 3000 300 400", false})
 	ASPathInfo = append(ASPathInfo, ASPathData{".*200 300 400.*", "3 200 300 400", true})
+	ASPathInfo = append(ASPathInfo, ASPathData{".*200 300 400.*", "3 200 300 4000", false})
 	ASPathInfo = append(ASPathInfo, ASPathData{".*200 300 400.*", "2 4 200 300 400 5 6", true})
 	ASPathInfo = append(ASPathInfo, ASPathData{".*200.* 300 400.*", "200 2 300 400", true})
 	ASPathInfo = append(ASPathInfo, ASPathData{".*200.* 300 400.*", "200 2 300 200 400", false})
@@ -91,6 +95,7 @@ func TestMatchAsPath(t *testing.T) {
 	fmt.Println("***TestMatchAsPath()********")
 	for _, v := range ASPathInfo {
 		inAsPathRegex, _ := GetAsPathRegex(v.AsPath)
+		fmt.Println("aspath regex for inp ", v, " is ", inAsPathRegex)
 		if MatchASPath(inAsPathRegex, v.MatchStr) != v.Expected {
 			fmt.Println("aspath regex match for inp:", v.MatchStr, ":", MatchASPath(inAsPathRegex, v.MatchStr), " not the same as expected:", v.Expected)
 		}

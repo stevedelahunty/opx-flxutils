@@ -868,25 +868,29 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressDrop(srcIfIndex, dstIfIn
 		asicdmutex.Lock()
 		aclName := fmt.Sprintf("IPPInOutBlockfpPort%s", dstIfIndex)
 		ruleName := fmt.Sprintf("%sfpPort%s", aclName, srcIfIndex)
-		rule := &asicdServices.Acl{
-			AclName:  ruleName,
-			SrcIntf:  srcIfIndex,
-			DstIntf:  dstIfIndex,
-			Action:   "DENY",
-			Priority: 10,
+		filter := &asicdServices.AclIpv4Filter{
+			FilterName: "blockIngressEgress",
+			SrcIntf:    srcIfIndex,
+			DstIntf:    dstIfIndex,
 		}
-
+		rule := &asicdServices.Acl{
+			AclName:    ruleName,
+			Action:     "DENY",
+			Priority:   10,
+			Stage:      "OUT",
+			FilterName: "blockIngressEgress",
+		}
+		_, err = asicdClientMgr.ClientHdl.CreateAclIpv4Filter(filter)
+		if err != nil {
+			asicdmutex.Unlock()
+			return err
+		}
 		_, err = asicdClientMgr.ClientHdl.CreateAcl(rule)
 		if err != nil {
 			asicdmutex.Unlock()
 			return err
 		}
-		acl := &asicdServices.AclGroup{
-			GroupName: ruleName,
-			Direction: "OUT",
-		}
 
-		_, err = asicdClientMgr.ClientHdl.CreateAclGroup(acl)
 		asicdmutex.Unlock()
 	}
 
@@ -899,24 +903,29 @@ func (asicdClientMgr *FSAsicdClientMgr) IppIngressEgressPass(srcIfIndex, dstIfIn
 		asicdmutex.Lock()
 		aclName := fmt.Sprintf("IPPInOutBlockfpPort%s", dstIfIndex)
 		ruleName := fmt.Sprintf("%sfpPort%s", aclName, srcIfIndex)
-		rule := &asicdServices.Acl{
-			AclName:  ruleName,
-			SrcIntf:  srcIfIndex,
-			DstIntf:  dstIfIndex,
-			Priority: 10,
+		filterName := ruleName + "Filter"
+		filter := &asicdServices.AclIpv4Filter{
+			FilterName: filterName,
+			SrcIntf:    srcIfIndex,
+			DstIntf:    dstIfIndex,
 		}
-
+		rule := &asicdServices.Acl{
+			AclName:    ruleName,
+			Stage:      "OUT",
+			Priority:   10,
+			FilterName: filterName,
+		}
+		_, err = asicdClientMgr.ClientHdl.CreateAclIpv4Filter(filter)
+		if err != nil {
+			asicdmutex.Unlock()
+			return err
+		}
 		_, err = asicdClientMgr.ClientHdl.CreateAcl(rule)
 		if err != nil {
 			asicdmutex.Unlock()
 			return err
 		}
-		acl := &asicdServices.AclGroup{
-			GroupName: ruleName,
-			Direction: "OUT",
-		}
 
-		_, err = asicdClientMgr.ClientHdl.CreateAclGroup(acl)
 		asicdmutex.Unlock()
 	}
 
