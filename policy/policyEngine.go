@@ -562,30 +562,35 @@ func (db *PolicyEngineDB) PolicyEngineMatchConditions(entity PolicyEngineFilterE
 	anyConditionsMatch := false
 	addConditiontoList := false
 	conditionsList = make([]PolicyCondition, 0)
-	for i = 0; i < len(conditions); i++ {
-		addConditiontoList = false
-		db.Logger.Debug("Find policy condition number ", i, " name ", conditions[i], " in the condition database")
-		conditionItem := db.PolicyConditionsDB.Get(patriciaDB.Prefix(conditions[i]))
-		if conditionItem == nil {
-			db.Logger.Info("Did not find condition ", conditions[i], " in the condition database")
-			continue
-		}
-		condition := conditionItem.(PolicyCondition)
-		db.Logger.Debug("policy condition number ", i, "  type ", condition.ConditionType)
-		if db.ConditionCheckfuncMap[condition.ConditionType] != nil {
-			match = db.ConditionCheckfuncMap[condition.ConditionType](entity, condition)
-			db.Logger.Debug("match for condition:", condition.Name, " : ", match)
-			if match {
-				db.Logger.Info("Condition match found")
-				anyConditionsMatch = true
-				addConditiontoList = true
-			} else {
-				db.Logger.Info("Condition:", condition.Name, " not matched, set allConditionsMatch to false")
-				allConditionsMatch = false
+	if len(conditions) == 0 {
+		allConditionsMatch = true
+		anyConditionsMatch = true
+	} else {
+		for i = 0; i < len(conditions); i++ {
+			addConditiontoList = false
+			db.Logger.Debug("Find policy condition number ", i, " name ", conditions[i], " in the condition database")
+			conditionItem := db.PolicyConditionsDB.Get(patriciaDB.Prefix(conditions[i]))
+			if conditionItem == nil {
+				db.Logger.Info("Did not find condition ", conditions[i], " in the condition database")
+				continue
 			}
-		}
-		if addConditiontoList == true {
-			conditionsList = append(conditionsList, condition)
+			condition := conditionItem.(PolicyCondition)
+			db.Logger.Debug("policy condition number ", i, "  type ", condition.ConditionType)
+			if db.ConditionCheckfuncMap[condition.ConditionType] != nil {
+				match = db.ConditionCheckfuncMap[condition.ConditionType](entity, condition)
+				db.Logger.Debug("match for condition:", condition.Name, " : ", match)
+				if match {
+					db.Logger.Info("Condition match found")
+					anyConditionsMatch = true
+					addConditiontoList = true
+				} else {
+					db.Logger.Info("Condition:", condition.Name, " not matched, set allConditionsMatch to false")
+					allConditionsMatch = false
+				}
+			}
+			if addConditiontoList == true {
+				conditionsList = append(conditionsList, condition)
+			}
 		}
 	}
 	if matchConditions == "all" && allConditionsMatch == true {
