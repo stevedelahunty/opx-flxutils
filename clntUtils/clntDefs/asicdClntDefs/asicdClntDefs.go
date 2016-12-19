@@ -383,7 +383,7 @@ type AsicdNotifyMsg interface {
 }
 
 type AsicdClientStruct struct {
-	Logger *logging.Writer
+	Logger logging.LoggerIntf
 	NHdl   AsicdNotificationHdl
 	NMap   AsicdNotification
 }
