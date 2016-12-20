@@ -1,0 +1,90 @@
+//
+//Copyright [2016] [SnapRoute Inc]
+//
+//Licensed under the Apache License, Version 2.0 (the "License");
+//you may not use this file except in compliance with the License.
+//You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//       Unless required by applicable law or agreed to in writing, software
+//       distributed under the License is distributed on an "AS IS" BASIS,
+//       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//       See the License for the specific language governing permissions and
+//       limitations under the License.
+//
+// _______  __       __________   ___      _______.____    __    ____  __  .___________.  ______  __    __
+// |   ____||  |     |   ____\  \ /  /     /       |\   \  /  \  /   / |  | |           | /      ||  |  |  |
+// |  |__   |  |     |  |__   \  V  /     |   (----` \   \/    \/   /  |  | `---|  |----`|  ,----'|  |__|  |
+// |   __|  |  |     |   __|   >   <       \   \      \            /   |  |     |  |     |  |     |   __   |
+// |  |     |  `----.|  |____ /  .  \  .----)   |      \    /\    /    |  |     |  |     |  `----.|  |  |  |
+// |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
+//
+
+package arpdClntDefs
+
+import (
+	"utils/logging"
+)
+
+type ArpdClientStruct struct {
+	Logger logging.LoggerIntf
+}
+
+type ArpEntryState struct {
+	IpAddr         string
+	MacAddr        string
+	Vlan           string
+	Intf           string
+	ExpiryTimeLeft string
+}
+
+type ArpEntryStateGetInfo struct {
+	StartIdx          int32
+	EndIdx            int32
+	Count             int32
+	More              bool
+	ArpEntryStateList []*ArpEntryState
+}
+
+type ArpRefreshByIfName struct {
+	IfName string
+}
+
+type ArpRefreshByIPv4Addr struct {
+	IpAddr string
+}
+
+type ArpLinuxEntryState struct {
+	IpAddr  string
+	HWType  string
+	MacAddr string
+	IfName  string
+}
+
+type ArpLinuxEntryStateGetInfo struct {
+	StartIdx               int32
+	EndIdx                 int32
+	Count                  int32
+	More                   bool
+	ArpLinuxEntryStateList []*ArpLinuxEntryState
+}
+
+type ArpDeleteByIfName struct {
+	IfName string
+}
+
+type ArpDeleteByIPv4Addr struct {
+	IpAddr string
+}
+
+type ArpGlobal struct {
+	Vrf     string
+	Timeout int32
+}
+
+type PatchOpInfo struct {
+	Op    string
+	Path  string
+	Value string
+}
