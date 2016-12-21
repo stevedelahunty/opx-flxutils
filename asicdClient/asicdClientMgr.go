@@ -95,6 +95,8 @@ type AsicdClientIntf interface {
 
 	GetAllSubIPv4IntfState() ([]*commonDefs.SubIPv4IntfState, error)
 	GetAllSubIPv6IntfState() ([]*commonDefs.SubIPv6IntfState, error)
+
+	IsLinuxOnlyPlugin() (bool, error)
 }
 
 func NewAsicdClientInit(plugin string, paramsFile string, asicdHdl commonDefs.AsicdClientStruct) AsicdClientIntf {

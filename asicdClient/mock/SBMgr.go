@@ -230,3 +230,7 @@ func (asicdClientMgr *MockAsicdClientMgr) GetAllSubIPv4IntfState() ([]*commonDef
 func (asicdClientMgr *MockAsicdClientMgr) GetAllSubIPv6IntfState() ([]*commonDefs.SubIPv6IntfState, error) {
 	return nil, nil
 }
+
+func (asicdClientMgr *MockAsicdClientMgr) IsLinuxOnlyPlugin() (bool, error) {
+	return false, nil
+}
