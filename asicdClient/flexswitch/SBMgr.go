@@ -1057,3 +1057,10 @@ func (asicdClientMgr *FSAsicdClientMgr) DeleteVirtualIPv6Intf(intRef, ipAddr, ma
 	_, err = asicdClientMgr.ClientHdl.DeleteSubIPv6Intf(createVirtualV6Obj(intRef, ipAddr, macAddr, enable))
 	return err
 }
+
+func (asicdClientMgr *FSAsicdClientMgr) IsLinuxOnlyPlugin() (bool, error) {
+	asicdmutex.Lock()
+	ret, err := asicdClientMgr.ClientHdl.IsLinuxOnlyPlugin()
+	asicdmutex.Unlock()
+	return ret, err
+}
