@@ -21,24 +21,12 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package arpdClntDefs
+package clntDefs
 
-import (
-	"models/objects"
-)
+import ()
 
-type ArpEntryStateGetInfo struct {
-	StartIdx          int32
-	EndIdx            int32
-	Count             int32
-	More              bool
-	ArpEntryStateList []*objects.ArpEntryState
-}
-
-type ArpLinuxEntryStateGetInfo struct {
-	StartIdx               int32
-	EndIdx                 int32
-	Count                  int32
-	More                   bool
-	ArpLinuxEntryStateList []*objects.ArpLinuxEntryState
+type PatchOpInfo struct {
+	Op    string
+	Path  string
+	Value string
 }

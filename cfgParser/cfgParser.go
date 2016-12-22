@@ -7,11 +7,11 @@
 //
 //    http://www.apache.org/licenses/LICENSE-2.0
 //
-//       Unless required by applicable law or agreed to in writing, software
-//       distributed under the License is distributed on an "AS IS" BASIS,
-//       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//       See the License for the specific language governing permissions and
-//       limitations under the License.
+//	 Unless required by applicable law or agreed to in writing, software
+//	 distributed under the License is distributed on an "AS IS" BASIS,
+//	 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//	 See the License for the specific language governing permissions and
+//	 limitations under the License.
 //
 // _______  __       __________   ___      _______.____    __    ____  __  .___________.  ______  __    __
 // |   ____||  |     |   ____\  \ /  /     /       |\   \  /  \  /   / |  | |           | /      ||  |  |  |
@@ -21,24 +21,36 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package arpdClntDefs
+package cfgParser
 
 import (
-	"models/objects"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
 )
 
-type ArpEntryStateGetInfo struct {
-	StartIdx          int32
-	EndIdx            int32
-	Count             int32
-	More              bool
-	ArpEntryStateList []*objects.ArpEntryState
+type ClientJson struct {
+	Name string `json:Name`
+	Port int    `json:Port`
 }
 
-type ArpLinuxEntryStateGetInfo struct {
-	StartIdx               int32
-	EndIdx                 int32
-	Count                  int32
-	More                   bool
-	ArpLinuxEntryStateList []*objects.ArpLinuxEntryState
+func GetDmnPortFromClientJson(dmnName string, paramsFile string) (int, error) {
+	var clientsList []ClientJson
+	bytes, err := ioutil.ReadFile(paramsFile)
+	if err != nil {
+		return 0, err
+	}
+
+	err = json.Unmarshal(bytes, &clientsList)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, client := range clientsList {
+		if client.Name == dmnName {
+			return client.Port, nil
+		}
+	}
+	return 0, errors.New(fmt.Sprintf("Unbale to find the dmn %s in %s file", dmnName, paramsFile))
 }

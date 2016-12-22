@@ -21,24 +21,13 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package arpdClntDefs
+package arpdClntIntfs
 
-import (
-	"models/objects"
-)
+import ()
 
-type ArpEntryStateGetInfo struct {
-	StartIdx          int32
-	EndIdx            int32
-	Count             int32
-	More              bool
-	ArpEntryStateList []*objects.ArpEntryState
-}
-
-type ArpLinuxEntryStateGetInfo struct {
-	StartIdx               int32
-	EndIdx                 int32
-	Count                  int32
-	More                   bool
-	ArpLinuxEntryStateList []*objects.ArpLinuxEntryState
+type ArpdIntObjClntIntf interface {
+	ResolveArpIPv4(destNetIp string, ifIdx int32) (err error)
+	DeleteResolveArpIPv4(NbrIP string) (err error)
+	DeleteArpEntry(ipAddr string) (err error)
+	SendGarp(ifName string, macAddr string, ipAddr string) (err error)
 }
