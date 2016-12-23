@@ -62,6 +62,7 @@ type AsicdClntIntf interface {
 	GetIntfTypeFromIfIndex(ifIndex int32) int
 	GetIfIndexFromIntfIdAndIntfType(ifId int, ifType int) int32
 	GetMinSysPort() int
+	IsLinuxOnlyPlugin() (bool, error)
 }
 
 func NewAsicdClntInit(clntPluginName AsicdClntPluginName, paramsFile string, asicdHdl asicdClntDefs.AsicdClientStruct) (AsicdClntIntf, error) {

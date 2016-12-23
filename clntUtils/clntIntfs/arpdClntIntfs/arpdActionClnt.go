@@ -21,24 +21,15 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package arpdClntDefs
+package arpdClntIntfs
 
 import (
-	"models/objects"
+	"models/actions"
 )
 
-type ArpEntryStateGetInfo struct {
-	StartIdx          int32
-	EndIdx            int32
-	Count             int32
-	More              bool
-	ArpEntryStateList []*objects.ArpEntryState
-}
-
-type ArpLinuxEntryStateGetInfo struct {
-	StartIdx               int32
-	EndIdx                 int32
-	Count                  int32
-	More                   bool
-	ArpLinuxEntryStateList []*objects.ArpLinuxEntryState
+type ArpdActionClntIntf interface {
+	ExecuteActionArpDeleteByIfName(cfg *actions.ArpDeleteByIfName) (bool, error)
+	ExecuteActionArpDeleteByIPv4Addr(cfg *actions.ArpDeleteByIPv4Addr) (bool, error)
+	ExecuteActionArpRefreshByIfName(cfg *actions.ArpRefreshByIfName) (bool, error)
+	ExecuteActionArpRefreshByIPv4Addr(cfg *actions.ArpRefreshByIPv4Addr) (bool, error)
 }

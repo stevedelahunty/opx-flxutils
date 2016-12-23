@@ -21,24 +21,22 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package arpdClntDefs
+package clntIntfs
 
 import (
-	"models/objects"
+	"utils/logging"
 )
 
-type ArpEntryStateGetInfo struct {
-	StartIdx          int32
-	EndIdx            int32
-	Count             int32
-	More              bool
-	ArpEntryStateList []*objects.ArpEntryState
+type NotificationHdl interface {
+	ProcessNotification(msg NotifyMsg)
 }
 
-type ArpLinuxEntryStateGetInfo struct {
-	StartIdx               int32
-	EndIdx                 int32
-	Count                  int32
-	More                   bool
-	ArpLinuxEntryStateList []*objects.ArpLinuxEntryState
+type NotifyMsg interface {
+}
+
+type BaseClnt struct {
+	PluginName   string
+	ClntInfoFile string
+	Logger       logging.LoggerIntf
+	NHdl         NotificationHdl
 }

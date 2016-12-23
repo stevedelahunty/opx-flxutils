@@ -26,38 +26,23 @@ package arpdClntIntfs
 import (
 	"errors"
 	"l3/arp/fsArpdClnt"
-	"utils/clntUtils/clntDefs/arpdClntDefs"
+	"utils/clntUtils/clntIntfs"
 )
 
-type ArpdClntPluginName string
-
 const (
-	FS_ARPD_CLNT ArpdClntPluginName = "FSArpdClnt"
+	FS_ARPD_CLNT = "FSArpdClnt"
 )
 
 type ArpdClntIntf interface {
-	GetBulkArpEntryState(fromIndex int, count int) (*arpdClntDefs.ArpEntryStateGetInfo, error)
-	GetArpEntryState(ipAddr string) (*arpdClntDefs.ArpEntryState, error)
-	GetBulkArpLinuxEntryState(fromIndex int, count int) (*arpdClntDefs.ArpLinuxEntryStateGetInfo, error)
-	GetArpLinuxEntryState(ipAddr string) (*arpdClntDefs.ArpLinuxEntryState, error)
-	ExecuteActionArpDeleteByIfName(cfg *arpdClntDefs.ArpDeleteByIfName) (bool, error)
-	ExecuteActionArpDeleteByIPv4Addr(cfg *arpdClntDefs.ArpDeleteByIPv4Addr) (bool, error)
-	ExecuteActionArpRefreshByIfName(cfg *arpdClntDefs.ArpRefreshByIfName) (bool, error)
-	ExecuteActionArpRefreshByIPv4Addr(cfg *arpdClntDefs.ArpRefreshByIPv4Addr) (bool, error)
-	CreateArpGlobal(cfg *arpdClntDefs.ArpGlobal) (bool, error)
-	UpdateArpGlobal(origCfg *arpdClntDefs.ArpGlobal, newCfg *arpdClntDefs.ArpGlobal, attrset []bool, op []*arpdClntDefs.PatchOpInfo) (bool, error)
-	DeleteArpGlobal(cfg *arpdClntDefs.ArpGlobal) (bool, error)
-
-	ResolveArpIPv4(destNetIp string, ifIdx int32) (err error)
-	DeleteResolveArpIPv4(NbrIP string) (err error)
-	DeleteArpEntry(ipAddr string) (err error)
-	SendGarp(ifName string, macAddr string, ipAddr string) (err error)
+	ArpdIntObjClntIntf
+	ArpdExtObjClntIntf
+	ArpdActionClntIntf
 }
 
-func NewArpdClntInit(clntPluginName ArpdClntPluginName, paramsFile string, arpdHdl arpdClntDefs.ArpdClientStruct) (ArpdClntIntf, error) {
-	switch clntPluginName {
+func NewArpdClntInit(clntInitParams clntIntfs.BaseClnt) (ArpdClntIntf, error) {
+	switch clntInitParams.PluginName {
 	case FS_ARPD_CLNT:
-		return fsArpdClnt.NewArpdClntInit(paramsFile, arpdHdl)
+		return fsArpdClnt.NewArpdClntInit(clntInitParams)
 	default:
 		return nil, errors.New("Invalid Arpd Client Plugin Name")
 	}
