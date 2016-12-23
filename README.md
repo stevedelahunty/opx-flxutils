@@ -1,1 +1,4 @@
-# opx-utils
+# utils
+Common utilities used by all snaproute components
+
+
