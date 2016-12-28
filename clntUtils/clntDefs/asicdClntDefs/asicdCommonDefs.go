@@ -21,20 +21,45 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package arpdClntIntfs
+package asicdClntDefs
 
-import (
-	"models/objects"
-	"utils/clntUtils/clntDefs"
-	"utils/clntUtils/clntDefs/arpdClntDefs"
+import ()
+
+const (
+	IfTypePort = iota
+	IfTypeLag
+	IfTypeVlan
+	IfTypeP2P
+	IfTypeBcast
+	IfTypeLoopback
+	IfTypeSecondary
+	IfTypeVirtual
+	IfTypeVtep
+	IfTypeNull
 )
 
-type ArpdExtObjClntIntf interface {
-	GetBulkArpEntryState(fromIndex int, count int) (*arpdClntDefs.ArpEntryStateGetInfo, error)
-	GetArpEntryState(IpAddr string) (*objects.ArpEntryState, error)
-	GetBulkArpLinuxEntryState(fromIndex int, count int) (*arpdClntDefs.ArpLinuxEntryStateGetInfo, error)
-	GetArpLinuxEntryState(IpAddr string) (*objects.ArpLinuxEntryState, error)
-	CreateArpGlobal(cfg *objects.ArpGlobal) (bool, error)
-	UpdateArpGlobal(origCfg, newCfg *objects.ArpGlobal, attrset []bool, op []*clntDefs.PatchOpInfo) (bool, error)
-	DeleteArpGlobal(cfg *objects.ArpGlobal) (bool, error)
-}
+const (
+	// state values copied from asicd
+	INTF_STATE_DOWN = 0
+	INTF_STATE_UP   = 1
+)
+
+const (
+	// this needs to match asicd server
+	PORT_ATTR_PHY_INTF_TYPE = 0x00000001
+	PORT_ATTR_ADMIN_STATE   = 0x00000002
+	PORT_ATTR_MAC_ADDR      = 0x00000004
+	PORT_ATTR_SPEED         = 0x00000008
+	PORT_ATTR_DUPLEX        = 0x00000010
+	PORT_ATTR_AUTONEG       = 0x00000020
+	PORT_ATTR_MEDIA_TYPE    = 0x00000040
+	PORT_ATTR_MTU           = 0x00000080
+	PORT_ATTR_BREAKOUT_MODE = 0x00000100
+	PORT_ATTR_LOOPBACK_MODE = 0x00000200
+	PORT_ATTR_ENABLE_FEC    = 0x00000400
+	PORT_ATTR_TX_PRBS_EN    = 0x00000800
+	PORT_ATTR_RX_PRBS_EN    = 0x00001000
+	PORT_ATTR_PRBS_POLY     = 0x00002000
+	PORT_ATTR_DESCRIPTION   = 0x00004000
+	PORT_ATTR_PVID          = 0x00008000
+)

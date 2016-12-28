@@ -21,20 +21,17 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package arpdClntIntfs
+package asicdClntIntfs
 
 import (
 	"models/objects"
-	"utils/clntUtils/clntDefs"
-	"utils/clntUtils/clntDefs/arpdClntDefs"
 )
 
-type ArpdExtObjClntIntf interface {
-	GetBulkArpEntryState(fromIndex int, count int) (*arpdClntDefs.ArpEntryStateGetInfo, error)
-	GetArpEntryState(IpAddr string) (*objects.ArpEntryState, error)
-	GetBulkArpLinuxEntryState(fromIndex int, count int) (*arpdClntDefs.ArpLinuxEntryStateGetInfo, error)
-	GetArpLinuxEntryState(IpAddr string) (*objects.ArpLinuxEntryState, error)
-	CreateArpGlobal(cfg *objects.ArpGlobal) (bool, error)
-	UpdateArpGlobal(origCfg, newCfg *objects.ArpGlobal, attrset []bool, op []*clntDefs.PatchOpInfo) (bool, error)
-	DeleteArpGlobal(cfg *objects.ArpGlobal) (bool, error)
+type AsicdCustomClntIntf interface {
+	GetSysRsvdVlan() int
+	GetIntfIdFromIfIndex(ifIndex int32) int
+	GetIntfTypeFromIfIndex(ifIndex int32) int
+	GetIfIndexFromIntfIdAndIntfType(ifId int, ifType int) int32
+	GetMinSysPort() int
+	GetAllSubIPv4IntfState() ([]*objects.SubIPv4IntfState, error)
 }

@@ -24,6 +24,7 @@
 package clntIntfs
 
 import (
+	"utils/cfgParser"
 	"utils/logging"
 )
 
@@ -34,9 +35,28 @@ type NotificationHdl interface {
 type NotifyMsg interface {
 }
 
-type BaseClnt struct {
-	PluginName   string
-	ClntInfoFile string
-	Logger       logging.LoggerIntf
-	NHdl         NotificationHdl
+type BaseClntInitParams struct {
+	Logger     logging.LoggerIntf
+	NHdl       NotificationHdl
+	ParamsFile string
+	PluginName string
+}
+
+const (
+	ClntInfoFile   string = "clntInfo.json"
+	FlexswitchClnt string = "Flexswitch"
+)
+
+func NewBaseClntInitParams(dmnName string, logger logging.LoggerIntf, nHdl NotificationHdl, paramsDir string) (*BaseClntInitParams, error) {
+	clntInfoFile := paramsDir + ClntInfoFile
+	pluginName, paramsFile, err := cfgParser.GetDmnClntInfoFromClntInfoJson(dmnName, clntInfoFile)
+	if err != nil {
+		return nil, err
+	}
+	return &BaseClntInitParams{
+		Logger:     logger,
+		NHdl:       nHdl,
+		ParamsFile: paramsFile,
+		PluginName: pluginName,
+	}, nil
 }

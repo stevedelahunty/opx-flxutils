@@ -52,5 +52,52 @@ func GetDmnPortFromClientJson(dmnName string, paramsFile string) (int, error) {
 			return client.Port, nil
 		}
 	}
-	return 0, errors.New(fmt.Sprintf("Unbale to find the dmn %s in %s file", dmnName, paramsFile))
+	return 0, errors.New(fmt.Sprintf("Unable to find the dmn %s in %s file", dmnName, paramsFile))
+}
+
+type ClntInfo struct {
+	ClntDmnName string `json:ClntDmnName`
+	PluginName  string `json:PluginName`
+}
+
+type PluginInfo struct {
+	PluginName string `json:PluginName`
+	ParamsFile string `json:ParamsFile`
+}
+
+type ClntInfos struct {
+	PluginInfoList []PluginInfo `json:PluginInfoList`
+	ClntInfoList   []ClntInfo   `json:ClntInfoList`
+}
+
+func GetDmnClntInfoFromClntInfoJson(dmnName string, fileName string) (string, string, error) {
+	var clntInfos ClntInfos
+	var pluginName string
+	var paramsFile string
+
+	bytes, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return "", "", err
+	}
+
+	err = json.Unmarshal(bytes, &clntInfos)
+	if err != nil {
+		return "", "", err
+	}
+
+	for _, clntInfo := range clntInfos.ClntInfoList {
+		if clntInfo.ClntDmnName == dmnName {
+			pluginName = clntInfo.PluginName
+		}
+	}
+
+	for _, pluginInfo := range clntInfos.PluginInfoList {
+		if pluginName == pluginInfo.PluginName {
+			paramsFile = pluginInfo.ParamsFile
+		}
+	}
+	if pluginName != "" && paramsFile != "" {
+		return pluginName, paramsFile, nil
+	}
+	return "", "", errors.New(fmt.Sprintf("Unable to find the dmn clnt %s in %s file", dmnName, fileName))
 }
