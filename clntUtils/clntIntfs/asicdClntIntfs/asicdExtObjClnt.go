@@ -21,20 +21,25 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package arpdClntIntfs
+package asicdClntIntfs
 
 import (
 	"models/objects"
 	"utils/clntUtils/clntDefs"
-	"utils/clntUtils/clntDefs/arpdClntDefs"
+	"utils/clntUtils/clntDefs/asicdClntDefs"
 )
 
-type ArpdExtObjClntIntf interface {
-	GetBulkArpEntryState(fromIndex int, count int) (*arpdClntDefs.ArpEntryStateGetInfo, error)
-	GetArpEntryState(IpAddr string) (*objects.ArpEntryState, error)
-	GetBulkArpLinuxEntryState(fromIndex int, count int) (*arpdClntDefs.ArpLinuxEntryStateGetInfo, error)
-	GetArpLinuxEntryState(IpAddr string) (*objects.ArpLinuxEntryState, error)
-	CreateArpGlobal(cfg *objects.ArpGlobal) (bool, error)
-	UpdateArpGlobal(origCfg, newCfg *objects.ArpGlobal, attrset []bool, op []*clntDefs.PatchOpInfo) (bool, error)
-	DeleteArpGlobal(cfg *objects.ArpGlobal) (bool, error)
+type AsicdExtObjClntIntf interface {
+	GetBulkIPv4IntfState(fromIndex int, count int) (*asicdClntDefs.IPv4IntfStateGetInfo, error)
+	GetIPv4IntfState(IntfRef string) (*objects.IPv4IntfState, error)
+
+	GetBulkPort(fromIndex int, count int) (*asicdClntDefs.PortGetInfo, error)
+	GetPort(IntfRef string) (*objects.Port, error)
+	GetBulkPortState(fromIndex int, count int) (*asicdClntDefs.PortStateGetInfo, error)
+	GetPortState(IntfRef string) (*objects.PortState, error)
+	GetBulkVlanState(fromIndex int, count int) (*asicdClntDefs.VlanStateGetInfo, error)
+	GetVlanState(VlanId int32) (*objects.VlanState, error)
+	CreateVlan(cfg *objects.Vlan) (bool, error)
+	UpdateVlan(origCfg, newCfg *objects.Vlan, attrset []bool, op []*clntDefs.PatchOpInfo) (bool, error)
+	DeleteVlan(cfg *objects.Vlan) (bool, error)
 }

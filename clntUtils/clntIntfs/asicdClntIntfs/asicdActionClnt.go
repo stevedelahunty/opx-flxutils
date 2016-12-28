@@ -21,20 +21,12 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package arpdClntIntfs
+package asicdClntIntfs
 
 import (
-	"models/objects"
-	"utils/clntUtils/clntDefs"
-	"utils/clntUtils/clntDefs/arpdClntDefs"
+	"models/actions"
 )
 
-type ArpdExtObjClntIntf interface {
-	GetBulkArpEntryState(fromIndex int, count int) (*arpdClntDefs.ArpEntryStateGetInfo, error)
-	GetArpEntryState(IpAddr string) (*objects.ArpEntryState, error)
-	GetBulkArpLinuxEntryState(fromIndex int, count int) (*arpdClntDefs.ArpLinuxEntryStateGetInfo, error)
-	GetArpLinuxEntryState(IpAddr string) (*objects.ArpLinuxEntryState, error)
-	CreateArpGlobal(cfg *objects.ArpGlobal) (bool, error)
-	UpdateArpGlobal(origCfg, newCfg *objects.ArpGlobal, attrset []bool, op []*clntDefs.PatchOpInfo) (bool, error)
-	DeleteArpGlobal(cfg *objects.ArpGlobal) (bool, error)
+type AsicdActionClntIntf interface {
+	ExecuteActionAsicdClearCounters(cfg *actions.AsicdClearCounters) (bool, error)
 }

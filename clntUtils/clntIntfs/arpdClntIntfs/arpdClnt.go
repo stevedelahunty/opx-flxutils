@@ -29,19 +29,15 @@ import (
 	"utils/clntUtils/clntIntfs"
 )
 
-const (
-	FS_ARPD_CLNT = "FSArpdClnt"
-)
-
 type ArpdClntIntf interface {
 	ArpdIntObjClntIntf
 	ArpdExtObjClntIntf
 	ArpdActionClntIntf
 }
 
-func NewArpdClntInit(clntInitParams clntIntfs.BaseClnt) (ArpdClntIntf, error) {
+func NewArpdClntInit(clntInitParams *clntIntfs.BaseClntInitParams) (ArpdClntIntf, error) {
 	switch clntInitParams.PluginName {
-	case FS_ARPD_CLNT:
+	case clntIntfs.FlexswitchClnt:
 		return fsArpdClnt.NewArpdClntInit(clntInitParams)
 	default:
 		return nil, errors.New("Invalid Arpd Client Plugin Name")

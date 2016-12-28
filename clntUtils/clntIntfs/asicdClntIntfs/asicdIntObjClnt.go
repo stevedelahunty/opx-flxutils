@@ -21,20 +21,30 @@
 // |__|     |_______||_______/__/ \__\ |_______/        \__/  \__/     |__|     |__|      \______||__|  |__|
 //
 
-package arpdClntIntfs
+package asicdClntIntfs
 
 import (
-	"models/objects"
-	"utils/clntUtils/clntDefs"
-	"utils/clntUtils/clntDefs/arpdClntDefs"
+	"utils/clntUtils/clntDefs/asicdClntDefs"
 )
 
-type ArpdExtObjClntIntf interface {
-	GetBulkArpEntryState(fromIndex int, count int) (*arpdClntDefs.ArpEntryStateGetInfo, error)
-	GetArpEntryState(IpAddr string) (*objects.ArpEntryState, error)
-	GetBulkArpLinuxEntryState(fromIndex int, count int) (*arpdClntDefs.ArpLinuxEntryStateGetInfo, error)
-	GetArpLinuxEntryState(IpAddr string) (*objects.ArpLinuxEntryState, error)
-	CreateArpGlobal(cfg *objects.ArpGlobal) (bool, error)
-	UpdateArpGlobal(origCfg, newCfg *objects.ArpGlobal, attrset []bool, op []*clntDefs.PatchOpInfo) (bool, error)
-	DeleteArpGlobal(cfg *objects.ArpGlobal) (bool, error)
+type AsicdIntObjClntIntf interface {
+	CreateIPv4Neighbor(ipAddr string, macAddr string, vlanId int32, ifIndex int32) (int32, error)
+	UpdateIPv4Neighbor(ipAddr string, macAddr string, vlanId int32, ifIndex int32) (int32, error)
+	DeleteIPv4Neighbor(ipAddr string, macAddr string, vlanId int32, ifIndex int32) (int32, error)
+	CreateIPv6Neighbor(ipAddr string, macAddr string, vlanId int32, ifIndex int32) (int32, error)
+	UpdateIPv6Neighbor(ipAddr string, macAddr string, vlanId int32, ifIndex int32) (int32, error)
+	DeleteIPv6Neighbor(ipAddr string, macAddr string, vlanId int32, ifIndex int32) (int32, error)
+
+	GetBulkVlan(fromIndex int, count int) (*asicdClntDefs.VlanGetInfo, error)
+
+	CreateLag(ifname string, hashType int32, ifIndexList string) (int32, error)
+	DeleteLag(ifIndex int32) (int32, error)
+	UpdateLag(ifIndex, hashType int32, ifIndexList string) (int32, error)
+	CreateLagCfgIntfList(ifName string, ifIndexList []int32) (bool, error)
+	UpdateLagCfgIntfList(ifName string, ifIndexList []int32) (bool, error)
+	DeleteLagCfgIntfList(ifName string, ifIndexList []int32) (bool, error)
+
+	GetBulkLag(fromIndex int, count int) (*asicdClntDefs.LagGetInfo, error)
+
+	IsLinuxOnlyPlugin() (bool, error)
 }
