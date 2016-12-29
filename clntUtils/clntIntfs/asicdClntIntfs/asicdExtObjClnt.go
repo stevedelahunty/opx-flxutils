@@ -101,7 +101,7 @@ type AsicdExtObjClntIntf interface {
 	GetBulkAclState(fromIndex int, count int) (*asicdClntDefs.AclStateGetInfo, error)
 	GetAclState(AclName string) (*objects.AclState, error)
 	GetBulkLinkScopeIpState(fromIndex int, count int) (*asicdClntDefs.LinkScopeIpStateGetInfo, error)
-	GetLinkScopeIpState(LinkScopeIp string) (bool, error)
+	GetLinkScopeIpState(LinkScopeIp string) (*objects.LinkScopeIpState, error)
 	GetBulkCoppStatState(fromIndex int, count int) (*asicdClntDefs.CoppStatStateGetInfo, error)
 	GetCoppStatState(Protocol string) (*objects.CoppStatState, error)
 }
