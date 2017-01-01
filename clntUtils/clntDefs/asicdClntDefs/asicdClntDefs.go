@@ -27,6 +27,54 @@ import (
 	"models/objects"
 )
 
+type AsicGlobalStateGetInfo struct {
+	StartIdx            int32
+	EndIdx              int32
+	Count               int32
+	More                bool
+	AsicGlobalStateList []*objects.AsicGlobalState
+}
+
+type AsicGlobalPMGetInfo struct {
+	StartIdx         int32
+	EndIdx           int32
+	Count            int32
+	More             bool
+	AsicGlobalPMList []*objects.AsicGlobalPM
+}
+
+type AsicGlobalPMStateGetInfo struct {
+	StartIdx              int32
+	EndIdx                int32
+	Count                 int32
+	More                  bool
+	AsicGlobalPMStateList []*objects.AsicGlobalPMState
+}
+
+type EthernetPMStateGetInfo struct {
+	StartIdx            int32
+	EndIdx              int32
+	Count               int32
+	More                bool
+	EthernetPMStateList []*objects.EthernetPMState
+}
+
+type AsicSummaryStateGetInfo struct {
+	StartIdx             int32
+	EndIdx               int32
+	Count                int32
+	More                 bool
+	AsicSummaryStateList []*objects.AsicSummaryState
+}
+
+type VlanStateGetInfo struct {
+	StartIdx      int32
+	EndIdx        int32
+	Count         int32
+	More          bool
+	VlanStateList []*objects.VlanState
+}
+
 type IPv4IntfStateGetInfo struct {
 	StartIdx          int32
 	EndIdx            int32
@@ -51,6 +99,110 @@ type PortStateGetInfo struct {
 	PortStateList []*objects.PortState
 }
 
+type MacTableEntryStateGetInfo struct {
+	StartIdx               int32
+	EndIdx                 int32
+	Count                  int32
+	More                   bool
+	MacTableEntryStateList []*objects.MacTableEntryState
+}
+
+type IPv4RouteHwStateGetInfo struct {
+	StartIdx             int32
+	EndIdx               int32
+	Count                int32
+	More                 bool
+	IPv4RouteHwStateList []*objects.IPv4RouteHwState
+}
+
+type IPv6RouteHwStateGetInfo struct {
+	StartIdx             int32
+	EndIdx               int32
+	Count                int32
+	More                 bool
+	IPv6RouteHwStateList []*objects.IPv6RouteHwState
+}
+
+type ArpEntryHwStateGetInfo struct {
+	StartIdx            int32
+	EndIdx              int32
+	Count               int32
+	More                bool
+	ArpEntryHwStateList []*objects.ArpEntryHwState
+}
+
+type NdpEntryHwStateGetInfo struct {
+	StartIdx            int32
+	EndIdx              int32
+	Count               int32
+	More                bool
+	NdpEntryHwStateList []*objects.NdpEntryHwState
+}
+
+type LogicalIntfStateGetInfo struct {
+	StartIdx             int32
+	EndIdx               int32
+	Count                int32
+	More                 bool
+	LogicalIntfStateList []*objects.LogicalIntfState
+}
+
+type SubIPv4IntfStateGetInfo struct {
+	StartIdx             int32
+	EndIdx               int32
+	Count                int32
+	More                 bool
+	SubIPv4IntfStateList []*objects.SubIPv4IntfState
+}
+
+type IPv6IntfStateGetInfo struct {
+	StartIdx          int32
+	EndIdx            int32
+	Count             int32
+	More              bool
+	IPv6IntfStateList []*objects.IPv6IntfState
+}
+
+type SubIPv6IntfStateGetInfo struct {
+	StartIdx             int32
+	EndIdx               int32
+	Count                int32
+	More                 bool
+	SubIPv6IntfStateList []*objects.SubIPv6IntfState
+}
+
+type BufferGlobalStatStateGetInfo struct {
+	StartIdx                  int32
+	EndIdx                    int32
+	Count                     int32
+	More                      bool
+	BufferGlobalStatStateList []*objects.BufferGlobalStatState
+}
+
+type AclStateGetInfo struct {
+	StartIdx     int32
+	EndIdx       int32
+	Count        int32
+	More         bool
+	AclStateList []*objects.AclState
+}
+
+type LinkScopeIpStateGetInfo struct {
+	StartIdx             int32
+	EndIdx               int32
+	Count                int32
+	More                 bool
+	LinkScopeIpStateList []*objects.LinkScopeIpState
+}
+
+type CoppStatStateGetInfo struct {
+	StartIdx          int32
+	EndIdx            int32
+	Count             int32
+	More              bool
+	CoppStatStateList []*objects.CoppStatState
+}
+
 /* Internal Vlan Object */
 type Vlan struct {
 	VlanId           int32
@@ -65,14 +217,6 @@ type VlanGetInfo struct {
 	Count    int32
 	More     bool
 	VlanList []*Vlan
-}
-
-type VlanStateGetInfo struct {
-	StartIdx      int32
-	EndIdx        int32
-	Count         int32
-	More          bool
-	VlanStateList []*objects.VlanState
 }
 
 type Lag struct {
