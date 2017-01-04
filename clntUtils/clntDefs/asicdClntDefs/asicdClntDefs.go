@@ -51,6 +51,14 @@ type AsicGlobalPMStateGetInfo struct {
 	AsicGlobalPMStateList []*objects.AsicGlobalPMState
 }
 
+type EthernetPMGetInfo struct {
+	StartIdx       int32
+	EndIdx         int32
+	Count          int32
+	More           bool
+	EthernetPMList []*objects.EthernetPM
+}
+
 type EthernetPMStateGetInfo struct {
 	StartIdx            int32
 	EndIdx              int32
@@ -169,6 +177,14 @@ type SubIPv6IntfStateGetInfo struct {
 	Count                int32
 	More                 bool
 	SubIPv6IntfStateList []*objects.SubIPv6IntfState
+}
+
+type BufferPortStatStateGetInfo struct {
+	StartIdx                int32
+	EndIdx                  int32
+	Count                   int32
+	More                    bool
+	BufferPortStatStateList []*objects.BufferPortStatState
 }
 
 type BufferGlobalStatStateGetInfo struct {
