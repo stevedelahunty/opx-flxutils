@@ -24,28 +24,26 @@
 package asicdClntIntfs
 
 import (
-	"asicd/fsAsicdClnt"
-	"errors"
-	"utils/clntUtils/clntIntfs"
+	"models/objects"
+	"utils/clntUtils/clntDefs/asicdClntDefs"
 )
 
-type AsicdClntIntf interface {
-	AsicdIntObjClntIntf
-	AsicdExtObjClntIntf
-	AsicdActionClntIntf
-	AsicdCustomClntIntf
-	AsicdClntDeinit()
-}
-
-func NewAsicdClntInit(clntInitParams *clntIntfs.BaseClntInitParams) (AsicdClntIntf, error) {
-	switch clntInitParams.PluginName {
-	case clntIntfs.FlexswitchClnt:
-		return fsAsicdClnt.NewAsicdClntInit(clntInitParams)
-	default:
-		return nil, errors.New("Invalid Asicd Client Plugin Name")
-	}
-}
-
-func AsicdClntDeinit(clntIntf AsicdClntIntf) {
-	clntIntf.AsicdClntDeinit()
+func ConvertFromClntDefsToObjectPort(obj *asicdClntDefs.Port, retObj *objects.Port) {
+	retObj.IntfRef = string(obj.IntfRef)
+	retObj.IfIndex = int32(obj.IfIndex)
+	retObj.Description = string(obj.Description)
+	retObj.PhyIntfType = string(obj.PhyIntfType)
+	retObj.AdminState = string(obj.AdminState)
+	retObj.MacAddr = string(obj.MacAddr)
+	retObj.Speed = int32(obj.Speed)
+	retObj.Duplex = string(obj.Duplex)
+	retObj.Autoneg = string(obj.Autoneg)
+	retObj.MediaType = string(obj.MediaType)
+	retObj.Mtu = int32(obj.Mtu)
+	retObj.BreakOutMode = string(obj.BreakOutMode)
+	retObj.LoopbackMode = string(obj.LoopbackMode)
+	retObj.EnableFEC = bool(obj.EnableFEC)
+	retObj.PRBSTxEnable = bool(obj.PRBSTxEnable)
+	retObj.PRBSRxEnable = bool(obj.PRBSRxEnable)
+	retObj.PRBSPolynomial = string(obj.PRBSPolynomial)
 }
