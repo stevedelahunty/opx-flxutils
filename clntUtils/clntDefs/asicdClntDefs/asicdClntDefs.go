@@ -249,3 +249,23 @@ type LagGetInfo struct {
 	More     bool
 	LagList  []*Lag
 }
+
+type Port struct {
+	IntfRef        string
+	IfIndex        int32
+	Description    string
+	PhyIntfType    string
+	AdminState     string
+	MacAddr        string
+	Speed          int32
+	Duplex         string
+	Autoneg        string
+	MediaType      string
+	Mtu            int32
+	BreakOutMode   string
+	LoopbackMode   string
+	EnableFEC      bool
+	PRBSTxEnable   bool
+	PRBSRxEnable   bool
+	PRBSPolynomial string
+}

@@ -33,6 +33,7 @@ type ArpdClntIntf interface {
 	ArpdIntObjClntIntf
 	ArpdExtObjClntIntf
 	ArpdActionClntIntf
+	ArpdClntDeinit()
 }
 
 func NewArpdClntInit(clntInitParams *clntIntfs.BaseClntInitParams) (ArpdClntIntf, error) {
@@ -42,4 +43,8 @@ func NewArpdClntInit(clntInitParams *clntIntfs.BaseClntInitParams) (ArpdClntIntf
 	default:
 		return nil, errors.New("Invalid Arpd Client Plugin Name")
 	}
+}
+
+func ArpdClntDeinit(clntIntfs ArpdClntIntf) {
+	clntIntfs.ArpdClntDeinit()
 }

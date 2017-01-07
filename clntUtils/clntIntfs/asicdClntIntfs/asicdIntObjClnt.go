@@ -47,4 +47,5 @@ type AsicdIntObjClntIntf interface {
 	GetBulkLag(fromIndex int, count int) (*asicdClntDefs.LagGetInfo, error)
 
 	IsLinuxOnlyPlugin() (bool, error)
+	GetAllPortsWithDirtyCache() ([]*asicdClntDefs.Port, error)
 }
