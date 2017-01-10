@@ -46,6 +46,7 @@ type BaseClntInitParams struct {
 const (
 	ClntInfoFile   string = "clntInfo.json"
 	FlexswitchClnt string = "Flexswitch"
+	DellCPSClnt    string = "DellCPS"
 )
 
 func NewBaseClntInitParams(dmnName string, logger logging.LoggerIntf, nHdl NotificationHdl, enableSHdl bool,
