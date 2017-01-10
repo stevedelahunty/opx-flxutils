@@ -26,6 +26,7 @@ package asicdClntIntfs
 import (
 	"asicd/fsAsicdClnt"
 	"errors"
+	"ops-asic/cpsAsicdClnt"
 	"utils/clntUtils/clntIntfs"
 )
 
@@ -41,6 +42,8 @@ func NewAsicdClntInit(clntInitParams *clntIntfs.BaseClntInitParams) (AsicdClntIn
 	switch clntInitParams.PluginName {
 	case clntIntfs.FlexswitchClnt:
 		return fsAsicdClnt.NewAsicdClntInit(clntInitParams)
+	case clntIntfs.DellCPSClnt:
+		return cpsAsicdClnt.NewAsicdClntInit(clntInitParams)
 	default:
 		return nil, errors.New("Invalid Asicd Client Plugin Name")
 	}
