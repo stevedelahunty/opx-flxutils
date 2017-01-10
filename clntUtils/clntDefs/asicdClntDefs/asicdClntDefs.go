@@ -269,3 +269,27 @@ type Port struct {
 	PRBSRxEnable   bool
 	PRBSPolynomial string
 }
+
+type IPv4NextHop struct {
+	NextHopIp     string
+	Weight        int32
+	NextHopIfType int32
+}
+
+type IPv6NextHop struct {
+	NextHopIp     string
+	Weight        int32
+	NextHopIfType int32
+}
+
+type IPv4Route struct {
+	DestinationNw string
+	NetworkMask   string
+	NextHopList   []*IPv4NextHop
+}
+
+type IPv6Route struct {
+	DestinationNw string
+	NetworkMask   string
+	NextHopList   []*IPv6NextHop
+}

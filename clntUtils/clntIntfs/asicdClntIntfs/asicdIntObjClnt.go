@@ -48,4 +48,10 @@ type AsicdIntObjClntIntf interface {
 
 	IsLinuxOnlyPlugin() (bool, error)
 	GetAllPortsWithDirtyCache() ([]*asicdClntDefs.Port, error)
+
+	OnewayCreateIPv4Route(ipv4RouteList []*asicdClntDefs.IPv4Route)
+	OnewayDeleteIPv4Route(ipv4RouteList []*asicdClntDefs.IPv4Route)
+
+	OnewayCreateIPv6Route(ipv6RouteList []*asicdClntDefs.IPv6Route)
+	OnewayDeleteIPv6Route(ipv6RouteList []*asicdClntDefs.IPv6Route)
 }
