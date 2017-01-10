@@ -38,6 +38,7 @@ type NotifyMsg interface {
 type BaseClntInitParams struct {
 	Logger     logging.LoggerIntf
 	NHdl       NotificationHdl
+	EnableSHdl bool
 	ParamsFile string
 	PluginName string
 }
@@ -48,15 +49,24 @@ const (
 	DellCPSClnt    string = "DellCPS"
 )
 
-func NewBaseClntInitParams(dmnName string, logger logging.LoggerIntf, nHdl NotificationHdl, paramsDir string) (*BaseClntInitParams, error) {
-	clntInfoFile := paramsDir + ClntInfoFile
-	pluginName, paramsFile, err := cfgParser.GetDmnClntInfoFromClntInfoJson(dmnName, clntInfoFile)
-	if err != nil {
-		return nil, err
+func NewBaseClntInitParams(dmnName string, logger logging.LoggerIntf, nHdl NotificationHdl, enableSHdl bool,
+	paramsDir string) (*BaseClntInitParams, error) {
+	var (
+		pluginName, paramsFile string
+		err                    error
+	)
+
+	if enableSHdl {
+		clntInfoFile := paramsDir + ClntInfoFile
+		pluginName, paramsFile, err = cfgParser.GetDmnClntInfoFromClntInfoJson(dmnName, clntInfoFile)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &BaseClntInitParams{
 		Logger:     logger,
 		NHdl:       nHdl,
+		EnableSHdl: enableSHdl,
 		ParamsFile: paramsFile,
 		PluginName: pluginName,
 	}, nil
