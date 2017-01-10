@@ -50,9 +50,14 @@ const (
 
 func NewBaseClntInitParams(dmnName string, logger logging.LoggerIntf, nHdl NotificationHdl, enableSHdl bool,
 	paramsDir string) (*BaseClntInitParams, error) {
+	var (
+		pluginName, paramsFile string
+		err                    error
+	)
+
 	if enableSHdl {
 		clntInfoFile := paramsDir + ClntInfoFile
-		pluginName, paramsFile, err := cfgParser.GetDmnClntInfoFromClntInfoJson(dmnName, clntInfoFile)
+		pluginName, paramsFile, err = cfgParser.GetDmnClntInfoFromClntInfoJson(dmnName, clntInfoFile)
 		if err != nil {
 			return nil, err
 		}
