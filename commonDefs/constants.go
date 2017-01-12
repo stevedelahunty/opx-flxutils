@@ -100,4 +100,5 @@ const (
 	MOCK_PLUGIN             = "mock"
 	SUB_INTF_VIRTUAL_TYPE   = "virtual"
 	SUB_INTF_SECONDARY_TYPE = "secondary"
+	ALL_STRING              = "all"
 )
