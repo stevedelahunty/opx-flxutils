@@ -41,6 +41,14 @@ const (
 	IfTypeNull
 )
 
+const (
+	PORT     = "port"
+	LAG      = "lag"
+	VLAN     = "vlan"
+	VTEP     = "vtep"
+	LOOPBACK = "loopback"
+)
+
 var BGPWellKnownCommunitiesMap = map[string]uint32{
 	"NO_EXPORT":           0xFFFFFF01,
 	"NO_ADVERTISE":        0xFFFFFF02,
@@ -50,13 +58,15 @@ var BGPWellKnownCommunitiesMap = map[string]uint32{
 func GetIfTypeName(ifType int) string {
 	switch ifType {
 	case IfTypePort:
-		return "Port"
+		return PORT
 	case IfTypeLag:
-		return "Lag"
+		return LAG
 	case IfTypeVlan:
-		return "Vlan"
+		return VLAN
 	case IfTypeVtep:
-		return "Vtep"
+		return VTEP
+	case IfTypeLoopback:
+		return LOOPBACK
 	default:
 		return "Unknown"
 	}
