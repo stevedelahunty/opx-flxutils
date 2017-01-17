@@ -42,6 +42,7 @@ const (
 )
 
 const (
+	UNKNOWN  = "UnKnown"
 	PORT     = "port"
 	LAG      = "lag"
 	VLAN     = "vlan"
@@ -68,7 +69,7 @@ func GetIfTypeName(ifType int) string {
 	case IfTypeLoopback:
 		return LOOPBACK
 	default:
-		return "Unknown"
+		return UNKNOWN
 	}
 }
 
