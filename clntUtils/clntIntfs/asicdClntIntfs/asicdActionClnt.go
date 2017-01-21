@@ -29,4 +29,5 @@ import (
 
 type AsicdActionClntIntf interface {
 	ExecuteActionAsicdClearCounters(cfg *actions.AsicdClearCounters) (bool, error)
+	ExecuteActionFlushMacTableEntry(cfg *actions.FlushMacTableEntry) (bool, error)
 }
