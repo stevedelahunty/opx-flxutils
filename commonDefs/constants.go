@@ -41,6 +41,15 @@ const (
 	IfTypeNull
 )
 
+const (
+	UNKNOWN  = "UnKnown"
+	PORT     = "port"
+	LAG      = "lag"
+	VLAN     = "vlan"
+	VTEP     = "vtep"
+	LOOPBACK = "loopback"
+)
+
 var BGPWellKnownCommunitiesMap = map[string]uint32{
 	"NO_EXPORT":           0xFFFFFF01,
 	"NO_ADVERTISE":        0xFFFFFF02,
@@ -50,15 +59,17 @@ var BGPWellKnownCommunitiesMap = map[string]uint32{
 func GetIfTypeName(ifType int) string {
 	switch ifType {
 	case IfTypePort:
-		return "Port"
+		return PORT
 	case IfTypeLag:
-		return "Lag"
+		return LAG
 	case IfTypeVlan:
-		return "Vlan"
+		return VLAN
 	case IfTypeVtep:
-		return "Vtep"
+		return VTEP
+	case IfTypeLoopback:
+		return LOOPBACK
 	default:
-		return "Unknown"
+		return UNKNOWN
 	}
 }
 
@@ -100,4 +111,36 @@ const (
 	MOCK_PLUGIN             = "mock"
 	SUB_INTF_VIRTUAL_TYPE   = "virtual"
 	SUB_INTF_SECONDARY_TYPE = "secondary"
+	ALL_STRING              = "all"
+)
+
+const (
+	SFF_MODULE_TYPE_100G_AOC int = iota
+	SFF_MODULE_TYPE_100G_BASE_CR4
+	SFF_MODULE_TYPE_100G_BASE_SR4
+	SFF_MODULE_TYPE_100G_BASE_LR4
+	SFF_MODULE_TYPE_100G_CWDM4
+	SFF_MODULE_TYPE_40G_BASE_CR4
+	SFF_MODULE_TYPE_40G_BASE_SR4
+	SFF_MODULE_TYPE_40G_BASE_LR4
+	SFF_MODULE_TYPE_40G_BASE_LM4
+	SFF_MODULE_TYPE_40G_BASE_ACTIVE
+	SFF_MODULE_TYPE_40G_BASE_CR
+	SFF_MODULE_TYPE_40G_BASE_SR2
+	SFF_MODULE_TYPE_10G_BASE_SR
+	SFF_MODULE_TYPE_10G_BASE_LR
+	SFF_MODULE_TYPE_10G_BASE_LRM
+	SFF_MODULE_TYPE_10G_BASE_ER
+	SFF_MODULE_TYPE_10G_BASE_CR
+	SFF_MODULE_TYPE_10G_BASE_SX
+	SFF_MODULE_TYPE_10G_BASE_LX
+	SFF_MODULE_TYPE_10G_BASE_ZR
+	SFF_MODULE_TYPE_10G_BASE_SRL
+	SFF_MODULE_TYPE_1G_BASE_SX
+	SFF_MODULE_TYPE_1G_BASE_LX
+	SFF_MODULE_TYPE_1G_BASE_CX
+	SFF_MODULE_TYPE_1G_BASE_T
+	SFF_MODULE_TYPE_100_BASE_LX
+	SFF_MODULE_TYPE_100_BASE_FX
+	SFF_MODULE_TYPE_INVALID = -1
 )

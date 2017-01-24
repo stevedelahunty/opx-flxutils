@@ -227,3 +227,7 @@ func (asicdClientMgr *OvsAsicdClientMgr) GetAllSubIPv4IntfState() ([]*commonDefs
 func (asicdClientMgr *OvsAsicdClientMgr) GetAllSubIPv6IntfState() ([]*commonDefs.SubIPv6IntfState, error) {
 	return nil, nil
 }
+
+func (asicdClientMgr *OvsAsicdClientMgr) IsLinuxOnlyPlugin() (bool, error) {
+	return false, nil
+}
