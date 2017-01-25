@@ -8,7 +8,7 @@
 	"ClntInfoList": [
 		{
 			"ClntDmnName": "asicd",
-			"PluginName": "Flexswitch"
+			"PluginName": "DellCPS"
 		},
 		{
 			"ClntDmnName": "bgpd",

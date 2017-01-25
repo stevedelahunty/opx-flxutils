@@ -24,20 +24,14 @@
 package dmnBase
 
 import (
-	_ "asicd/asicdCommonDefs"
-	_ "asicdServices"
 	"encoding/json"
 	"flag"
 	"fmt"
-	_ "git.apache.org/thrift.git/lib/go/thrift"
 	//_nanomsg "github.com/op/go-nanomsg"
 	"io/ioutil"
-	_ "strconv"
-	_ "time"
 	"utils/asicdClient"
 	"utils/commonDefs"
 	"utils/dbutils"
-	_ "utils/ipcutils"
 	"utils/keepalive"
 	"utils/logging"
 )

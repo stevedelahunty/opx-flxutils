@@ -24,7 +24,6 @@
 package asicdClntIntfs
 
 import (
-	"asicd/fsAsicdClnt"
 	"errors"
 	"ops-asic/cpsAsicdClnt"
 	"utils/clntUtils/clntIntfs"
@@ -40,8 +39,6 @@ type AsicdClntIntf interface {
 
 func NewAsicdClntInit(clntInitParams *clntIntfs.BaseClntInitParams) (AsicdClntIntf, error) {
 	switch clntInitParams.PluginName {
-	case clntIntfs.FlexswitchClnt:
-		return fsAsicdClnt.NewAsicdClntInit(clntInitParams)
 	case clntIntfs.DellCPSClnt:
 		return cpsAsicdClnt.NewAsicdClntInit(clntInitParams)
 	default:
