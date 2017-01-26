@@ -3,6 +3,10 @@
 		{
 			"PluginName": "Flexswitch",
 			"ParamsFile": "/opt/flexswitch/params/clients.json"
+		},
+		{
+			"PluginName": "DellCPS",
+			"ParamsFile": "/opt/flexswitch/params/clients.json"
 		}
 	],
 	"ClntInfoList": [
