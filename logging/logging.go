@@ -34,7 +34,7 @@ import (
 	"log/syslog"
 	"models/objects"
 	"os"
-	"sysd"
+	//"sysd"
 	"time"
 )
 
@@ -156,17 +156,17 @@ func (logger *Writer) ReadComponentLoggingFromDb(dbHdl redis.Conn) error {
 		logger.Err("DB query failed for ComponentLogging config")
 		return err
 	}
-	if objList != nil {
-		for idx := 0; idx < len(objList); idx++ {
-			obj := sysd.NewComponentLogging()
-			dbObject := objList[idx].(objects.ComponentLogging)
-			objects.ConvertsysdComponentLoggingObjToThrift(&dbObject, obj)
-			if obj.Module == logger.MyComponentName {
-				logger.MyLogLevel = ConvertLevelStrToVal(obj.Level)
-				return nil
-			}
-		}
-	}
+//	if objList != nil {
+//		for idx := 0; idx < len(objList); idx++ {
+//			obj := sysd.NewComponentLogging()
+//			dbObject := objList[idx].(objects.ComponentLogging)
+//			objects.ConvertsysdComponentLoggingObjToThrift(&dbObject, obj)
+//			if obj.Module == logger.MyComponentName {
+//				logger.MyLogLevel = ConvertLevelStrToVal(obj.Level)
+//				return nil
+//			}
+//		}
+//	}
 	return nil
 }
 
