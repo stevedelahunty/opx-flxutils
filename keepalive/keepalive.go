@@ -30,7 +30,6 @@ import (
 	"infra/sysd/sysdCommonDefs"
 	"io/ioutil"
 	"strconv"
-	"sysd"
 	"time"
 	"utils/ipcutils"
 )
@@ -42,11 +41,9 @@ type ClientJson struct {
 
 type SysdClient struct {
 	ipcutils.IPCClientBase
-	ClientHdl *sysd.SYSDServicesClient
 }
 
 type KeepAlive struct {
-	sysdClient SysdClient
 	name       string
 	status     int32
 }
@@ -83,42 +80,6 @@ func InitKeepAlive(name string, paramsDir string) {
 	ka.status = KA_ACTIVE
 
 	for _, client := range clientsList {
-		if client.Name == "sysd" {
-			fmt.Println("found sysd at port", client.Port)
-			ka.sysdClient.Address = "localhost:" + strconv.Itoa(client.Port)
-			ka.sysdClient.TTransport, ka.sysdClient.PtrProtocolFactory, err = ipcutils.CreateIPCHandles(ka.sysdClient.Address)
-			if err != nil {
-				fmt.Println(ka.name, " Failed to connect to sysd, retrying until connection is successful")
-				count := 0
-				ticker := time.NewTicker(time.Duration(1000) * time.Millisecond)
-				for _ = range ticker.C {
-					ka.sysdClient.TTransport, ka.sysdClient.PtrProtocolFactory, err = ipcutils.CreateIPCHandles(ka.sysdClient.Address)
-					if err == nil {
-						ticker.Stop()
-						break
-					}
-					count++
-					if (count % 100) == 0 {
-						fmt.Println(ka.name, " Still can't connect to sysd, retrying...")
-					}
-				}
-			}
-		}
-	}
-	if ka.sysdClient.TTransport != nil && ka.sysdClient.PtrProtocolFactory != nil {
-		ka.sysdClient.ClientHdl = sysd.NewSYSDServicesClientFactory(ka.sysdClient.TTransport, ka.sysdClient.PtrProtocolFactory)
-		ka.sysdClient.IsConnected = true
-		fmt.Println(ka.name, " connected to sysd")
-	}
-	if ka.sysdClient.ClientHdl != nil && ka.sysdClient.IsConnected {
-		fmt.Println("Initialized KA for ", ka.name, " status ", ka.status)
-		retryTimer := time.NewTicker(time.Second * KA_INTERVAL)
-		for t := range retryTimer.C {
-			_ = t
-			ka.sysdClient.ClientHdl.PeriodicKeepAlive(ka.name)
-		}
-	} else {
-		fmt.Println("Failed to start KA for ", ka.name)
 	}
 	return
 }
